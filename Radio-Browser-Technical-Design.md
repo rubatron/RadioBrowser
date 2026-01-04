@@ -297,6 +297,4 @@ Content-Type: application/json
 - Background processing for bulk imports
 
 ---
-
-This document describes the complete technical implementation of the Radio Browser extension and its integration with the Moode Audio system. The architecture is designed for reliability, performance, and maintainability.</content>
-<parameter name="filePath">c:\Users\Rubatron\GitHub Repos\rubatron\moode-develop\Radio-Browser-Technical-Design.md
+</content>
