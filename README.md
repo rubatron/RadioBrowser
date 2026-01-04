@@ -1,10 +1,7 @@
 # RadioBrowser
 RadioBrowser for Moode
 Search and play internet radio stations from radio-browser.info
-# Radio Browser Favorites Fix
 
-This archive contains the fixed files for the Radio Browser extension in MoodeAudio to properly persist favorites.
-te
 ## Files Included
 
 - `var/www/extensions/installed/radio-browser/backend/api.php` - Added favorites API endpoint
