@@ -1,0 +1,209 @@
+<!--
+/*
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2014 The moOde audio player project / Tim Curtis
+ * moOde Extensions Framework - Radio Browser
+ */
+-->
+
+<div id="container">
+    <div class="container">
+        <div class="radio-browser-header">
+            <img src="/images/radio-d.svg" alt="Radio Browser Logo" class="radio-browser-logo">
+            <h1 class="config-title">Radio Browser</h1>
+        </div>
+        <p class="config-help-static" style="margin-bottom: 1.5rem;">Search and play internet radio stations from radio-browser.info</p>
+
+        <!-- Tab Navigation -->
+        <div class="rb-tabs">
+            <button type="button" class="rb-tab active" data-tab="search">Search Stations</button>
+            <button type="button" class="rb-tab" data-tab="settings">Settings</button>
+        </div>
+
+                <!-- Search Panel -->
+                <div id="rb-search-panel" class="rb-panel">
+        <form class="form-horizontal" id="radio-search-form">
+            <fieldset>
+                <legend style="display:none;">Search Stations</legend>
+                
+                <div class="control-group">
+                    <label class="control-label" for="rb-name">Station Name</label>
+                    <div class="controls">
+                        <input type="text" id="rb-name" class="input-xlarge" placeholder="e.g. Jazz, Classical, News...">
+                        <a class="info-toggle" data-cmd="info-rb-name" href="#notarget"><i class="fa-solid fa-sharp fa-info-circle"></i></a>
+                        <span id="info-rb-name" class="config-help-info hide">Search by station name or keywords. Leave empty and use Country/Genre for broader search.</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label" for="rb-country">Country</label>
+                    <div class="controls">
+                        <select id="rb-country" class="input-medium">
+                            <option value="">All Countries</option>
+                            <option value="NL">Netherlands</option>
+                            <option value="DE">Germany</option>
+                            <option value="GB">United Kingdom</option>
+                            <option value="US">United States</option>
+                            <option value="FR">France</option>
+                            <option value="BE">Belgium</option>
+                            <option value="AT">Austria</option>
+                            <option value="CH">Switzerland</option>
+                            <option value="ES">Spain</option>
+                            <option value="IT">Italy</option>
+                            <option value="AU">Australia</option>
+                            <option value="CA">Canada</option>
+                            <option value="JP">Japan</option>
+                            <option value="BR">Brazil</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label" for="rb-genre">Genre</label>
+                    <div class="controls">
+                        <select id="rb-genre" class="input-medium">
+                            <option value="">All Genres</option>
+                            <option value="jazz">Jazz</option>
+                            <option value="classical">Classical</option>
+                            <option value="pop">Pop</option>
+                            <option value="rock">Rock</option>
+                            <option value="electronic">Electronic</option>
+                            <option value="ambient">Ambient</option>
+                            <option value="blues">Blues</option>
+                            <option value="country">Country</option>
+                            <option value="folk">Folk</option>
+                            <option value="soul">Soul</option>
+                            <option value="r&b">R&B</option>
+                            <option value="hip hop">Hip Hop</option>
+                            <option value="reggae">Reggae</option>
+                            <option value="latin">Latin</option>
+                            <option value="world">World</option>
+                            <option value="news">News</option>
+                            <option value="talk">Talk</option>
+                            <option value="oldies">Oldies</option>
+                            <option value="80s">80s</option>
+                            <option value="90s">90s</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label"></label>
+                    <div class="controls">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-sharp fa-search"></i> Search
+                        </button>
+                        <button type="button" id="rb-top-stations" class="btn">
+                            <i class="fa-solid fa-sharp fa-star"></i> Top Stations
+                        </button>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+
+        <!-- Results -->
+        <fieldset id="rb-results-section" class="hide">
+            <legend>Results <span id="rb-result-count"></span></legend>
+            
+            <div id="rb-loading" class="rb-loading hide">
+                <i class="fa-solid fa-sharp fa-spinner fa-spin fa-2x"></i>
+                <p>Searching stations...</p>
+            </div>
+
+            <div id="rb-results" class="rb-results-grid"></div>
+            
+            <div id="rb-no-results" class="rb-no-results hide">
+                <i class="fa-solid fa-sharp fa-radio fa-2x"></i>
+                <p>No stations found. Try a different search.</p>
+            </div>
+
+            <div id="rb-pagination" class="rb-pagination hide">
+                <button type="button" id="rb-prev" class="btn btn-small" disabled>
+                    <i class="fa-solid fa-sharp fa-chevron-left"></i> Previous
+                </button>
+                <span id="rb-page-info"></span>
+                <button type="button" id="rb-next" class="btn btn-small">
+                    Next <i class="fa-solid fa-sharp fa-chevron-right"></i>
+                </button>
+            </div>
+        </fieldset>
+        </div><!-- end rb-search-panel -->
+
+        <!-- Settings Panel -->
+        <div id="rb-settings-panel" class="rb-panel hide">
+        
+        <!-- API Status -->
+        <fieldset>
+            <legend>API Status <button type="button" id="rb-refresh-status" class="btn btn-small" title="Refresh"><i class="fa-solid fa-sharp fa-sync"></i></button></legend>
+            <div id="rb-api-status" class="rb-api-status">
+                <div class="rb-status-loading"><i class="fa-solid fa-sharp fa-spinner fa-spin"></i> Checking API status...</div>
+            </div>
+        </fieldset>
+        
+        <form class="form-horizontal" method="post">
+            <fieldset>
+                <legend>API Service</legend>
+                
+                <div class="control-group">
+                    <label class="control-label">Active API</label>
+                    <div class="controls">
+                        <select name="radio_api_service" class="input-large">
+                            $_radio_api_options
+                        </select>
+                        <button class="btn btn-primary btn-small" type="submit" name="save_radio_api" value="1"><i class="fa-solid fa-sharp fa-check"></i> Save</button>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+
+        <form class="form-horizontal" method="post">
+            <fieldset>
+                <legend>Add Custom API</legend>
+                
+                <div class="control-group">
+                    <label class="control-label">Name</label>
+                    <div class="controls">
+                        <input type="text" name="custom_api_name" class="input-large" placeholder="My Radio API">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">URL</label>
+                    <div class="controls">
+                        <input type="url" name="custom_api_url" class="input-xlarge" placeholder="https://api.example.com">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Type</label>
+                    <div class="controls">
+                        <select name="custom_api_type" class="input-medium">
+                            <option value="radio-browser">Radio Browser</option>
+                            <option value="icecast">Icecast</option>
+                            <option value="shoutcast">Shoutcast</option>
+                        </select>
+                        <button class="btn btn-primary btn-small" type="submit" name="add_custom_api" value="1"><i class="fa-solid fa-sharp fa-plus"></i> Add</button>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+
+        <form class="form-horizontal" method="post" onsubmit="return confirm('Remove this custom API?');">
+            <fieldset>
+                <legend>Remove Custom API</legend>
+                
+                <div class="control-group">
+                    <label class="control-label">Service</label>
+                    <div class="controls">
+                        <select name="custom_api_to_remove" class="input-large">
+                            $_custom_api_options
+                        </select>
+                        <button class="btn btn-small" type="submit" name="remove_custom_api" value="1"><i class="fa-solid fa-sharp fa-trash"></i> Remove</button>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+        </div><!-- end rb-settings-panel -->
+
+    </div>
+</div>
