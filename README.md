@@ -17,13 +17,6 @@ te
 2. Copy the files to your MoodeAudio installation, preserving the directory structure
 3. Restart the web interface or clear browser cache
 
-## What Was Fixed
-
-- Favorites are now properly persisted in the SQLite database
-- The interface loads existing favorites on startup
-- Heart icons show correct state for favorited stations
-- Added stations appear in Moode's main radio interface
-
 ## Testing
 
 Test on a fresh MoodeAudio installation to verify:
