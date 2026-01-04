@@ -248,13 +248,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
-
-- **Moode Audio** team for the excellent music player
-- **Radio-Browser.info** for the radio station database
-- **Bootstrap** for the UI framework
-- **jQuery** for JavaScript functionality
-
 ## 📞 Support
 
 If you encounter any issues:
@@ -268,8 +261,6 @@ If you encounter any issues:
    - Steps to reproduce
 
 ## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
 
 ### Ways to Contribute
 - 🐛 **Bug Reports**: Found a bug? [Open an issue](https://github.com/rubatron/radio-browser-installer/issues)
@@ -295,15 +286,6 @@ sudo ./installer/radio-browser-cli.sh
 - Test your changes on a real Moode Audio system
 - Update documentation for any new features
 - Keep the CLI interface user-friendly
-
-## 🙏 Acknowledgments
-
-- **Tim Curtis** and the **Moode Audio team** for the excellent music player
-- **Radio-Browser.info** for providing the radio station database API
-- **Bootstrap** for the responsive UI framework
-- **jQuery** for JavaScript functionality
-- **Font Awesome** for beautiful icons
-
 ---
 
 ## 📊 Project Status
