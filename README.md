@@ -55,16 +55,33 @@
 - **Moode Audio** (Raspberry Pi based music player)
 - **PHP 8.4+** with cURL extension
 
-## � Installation
+## 🚀 Installation
 
-### Download from GitHub
+### Option 1: Download Complete ZIP (Recommended - No Git Required)
 ```bash
-# Clone or download the repository
-git clone https://github.com/rubatron/radio-browser-installer.git
-# or download the ZIP file from GitHub releases
+# Download the complete installer ZIP from GitHub
+# Go to: https://github.com/rubatron/RadioBrowser/tree/develop
+# Download: radio-browser-installer-complete.zip
 
-# Navigate to the directory
-cd radio-browser-installer
+# Extract the ZIP file
+unzip radio-browser-installer-complete.zip
+cd radio-browser-installer-complete
+
+# Make scripts executable
+chmod +x installer/*.sh
+
+# Run the beautiful CLI installer
+sudo ./installer/radio-browser-cli.sh
+```
+
+### Option 2: Clone Repository (Requires Git)
+```bash
+# Clone the repository
+git clone https://github.com/rubatron/RadioBrowser.git
+cd RadioBrowser
+
+# Switch to develop branch
+git checkout develop
 
 # Make scripts executable
 chmod +x installer/*.sh
