@@ -6,7 +6,6 @@
 
 A modern web extension that brings the power of [Radio Browser](https://www.radio-browser.info/) to your moOde Audio Player. Browse, search, and play over 30,000 internet radio stations directly from the moOde web interface.
 
-![Radio Browser Screenshot](docs/screenshot.png)
 
 ---
 
