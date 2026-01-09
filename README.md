@@ -34,21 +34,23 @@ A modern web extension that brings the power of [Radio Browser](https://www.radi
 
 ## 🚀 Installation
 
-**
-
-### One-Line Install (Recommended)
+### Quick Install (Recommended)
 
 SSH into your moOde device and run:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rubatron/RadioBrowser/Nightly-Builds/radio-browser/install.sh | sudo bash
+# Download installer
+wget https://github.com/rubatron/RadioBrowser/tree/main/radio-browser
+
+# Navigate into the radio-browser folder
+# Make executable and run
+chmod +x install.sh
+sudo ./install.sh
 ```
 
-Or using wget:
+Then select option **1** (Auto-install) from the menu.
 
-```bash
-wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/Nightly-Builds/radio-browser/install.sh | sudo bash
-```
+---
 
 ### Manual Install (Advanced)
 
