@@ -35,37 +35,20 @@ A modern web extension that brings the power of [Radio Browser](https://www.radi
 
 ## 🚀 Installation
 
-### One-Line Install (Recommended)
+### Quick Install (Recommended)
 
 SSH into your moOde device and run:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rubatron/RadioBrowser/Nightly-Builds/radio-browser/install.sh | sudo bash
+# Download installer
+wget -O install.sh 'https://raw.githubusercontent.com/rubatron/RadioBrowser/Nightly-Builds/install.sh'
+
+# Make executable and run
+chmod +x install.sh
+sudo ./install.sh
 ```
 
-Or using wget:
-
-```bash
-wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/Nightly-Builds/radio-browser/install.sh | sudo bash
-```
-
----
-
-### Install via Git
-
-```bash
-# SSH into your moOde device
-ssh pi@moode.local
-
-# Clone the repository
-git clone -b Nightly-Builds https://github.com/rubatron/RadioBrowser.git
-
-# Run the installer
-cd RadioBrowser/radio-browser && sudo ./install.sh
-
-# Optional: Remove the downloaded repo after install
-cd ~ && rm -rf RadioBrowser
-```
+Then select option **1** (Auto-install) from the menu.
 
 ---
 
@@ -78,9 +61,9 @@ ssh pi@moode.local
 # Download and extract ZIP
 wget https://github.com/rubatron/RadioBrowser/archive/refs/heads/Nightly-Builds.zip -O /tmp/rb.zip
 unzip -q /tmp/rb.zip -d /tmp
-cd /tmp/RadioBrowser-Nightly-Builds/radio-browser && sudo ./install.sh
+cd /tmp/RadioBrowser-Nightly-Builds && chmod +x install.sh && sudo ./install.sh
 
-# Cleanup
+# Cleanup after install
 rm -rf /tmp/rb.zip /tmp/RadioBrowser-Nightly-Builds
 ```
 
@@ -95,7 +78,7 @@ ssh pi@moode.local
 # Download and extract tarball
 wget https://github.com/rubatron/RadioBrowser/archive/refs/heads/Nightly-Builds.tar.gz -O /tmp/rb.tar.gz
 tar -xzf /tmp/rb.tar.gz -C /tmp
-cd /tmp/RadioBrowser-Nightly-Builds/radio-browser && sudo ./install.sh
+cd /tmp/RadioBrowser-Nightly-Builds && chmod +x install.sh && sudo ./install.sh
 
 # Cleanup
 rm -rf /tmp/rb.tar.gz /tmp/RadioBrowser-Nightly-Builds
