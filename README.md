@@ -6,7 +6,6 @@
 
 A modern web extension that brings the power of [Radio Browser](https://www.radio-browser.info/) to your moOde Audio Player. Browse, search, and play over 30,000 internet radio stations directly from the moOde web interface.
 
-![Radio Browser Screenshot](docs/screenshot.png)
 
 ---
 
@@ -41,48 +40,15 @@ SSH into your moOde device and run:
 
 ```bash
 # Download installer
-wget -O install.sh 'https://raw.githubusercontent.com/rubatron/RadioBrowser/Nightly-Builds/install.sh'
+wget https://github.com/rubatron/RadioBrowser/tree/main/radio-browser
 
+# Navigate into the radio-browser folder
 # Make executable and run
 chmod +x install.sh
 sudo ./install.sh
 ```
 
 Then select option **1** (Auto-install) from the menu.
-
----
-
-### Install via Download (ZIP)
-
-```bash
-# SSH into your moOde device
-ssh pi@moode.local
-
-# Download and extract ZIP
-wget https://github.com/rubatron/RadioBrowser/archive/refs/heads/Nightly-Builds.zip -O /tmp/rb.zip
-unzip -q /tmp/rb.zip -d /tmp
-cd /tmp/RadioBrowser-Nightly-Builds && chmod +x install.sh && sudo ./install.sh
-
-# Cleanup after install
-rm -rf /tmp/rb.zip /tmp/RadioBrowser-Nightly-Builds
-```
-
----
-
-### Install via Download (TAR.GZ)
-
-```bash
-# SSH into your moOde device
-ssh pi@moode.local
-
-# Download and extract tarball
-wget https://github.com/rubatron/RadioBrowser/archive/refs/heads/Nightly-Builds.tar.gz -O /tmp/rb.tar.gz
-tar -xzf /tmp/rb.tar.gz -C /tmp
-cd /tmp/RadioBrowser-Nightly-Builds && chmod +x install.sh && sudo ./install.sh
-
-# Cleanup
-rm -rf /tmp/rb.tar.gz /tmp/RadioBrowser-Nightly-Builds
-```
 
 ---
 
