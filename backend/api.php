@@ -544,14 +544,15 @@ switch ($cmd) {
         }
         break;
     case 'search':
+        // Use $_REQUEST to support both GET and POST requests
         $params = [
-            'name' => $_POST['name'] ?? '',
-            'countrycode' => $_POST['countrycode'] ?? '',
-            'tag' => $_POST['tag'] ?? '',
-            'offset' => $_POST['offset'] ?? 0,
-            'limit' => $_POST['limit'] ?? 30,
-            'order' => $_POST['order'] ?? 'clickcount',
-            'reverse' => $_POST['reverse'] ?? 'true',
+            'name' => $_REQUEST['name'] ?? '',
+            'countrycode' => $_REQUEST['countrycode'] ?? '',
+            'tag' => $_REQUEST['tag'] ?? '',
+            'offset' => $_REQUEST['offset'] ?? 0,
+            'limit' => $_REQUEST['limit'] ?? 30,
+            'order' => $_REQUEST['order'] ?? 'clickcount',
+            'reverse' => $_REQUEST['reverse'] ?? 'true',
         ];
         $params = array_filter($params, function($v) { return $v !== '' && $v !== null; });
         $cache_key = 'search_' . md5(json_encode($params));
