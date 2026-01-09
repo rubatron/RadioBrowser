@@ -20,13 +20,13 @@ require_once '/var/www/inc/sql.php';
 // --- CONFIG ---
 define('RB_DISCOVERY', 'https://all.api.radio-browser.info/json/servers');
 define('RB_FALLBACK', [
-    'de2.api.radio-browser.info',
-    'fi1.api.radio-browser.info',
-    'nl1.api.radio-browser.info',
-    'us1.api.radio-browser.info',
-    'at1.api.radio-browser.info',
-    'ru1.api.radio-browser.info',
-    'gb1.api.radio-browser.info'
+    'fi1.api.radio-browser.info',   // Finland - most reliable
+    'de2.api.radio-browser.info',   // Germany
+    'nl1.api.radio-browser.info',   // Netherlands
+    'at1.api.radio-browser.info',   // Austria
+    'gb1.api.radio-browser.info',   // UK
+    'us1.api.radio-browser.info',   // USA
+    'ru1.api.radio-browser.info'    // Russia - often blocked
 ]);
 define('RB_CACHE', __DIR__ . '/../cache');
 define('RB_IMAGE_CACHE', __DIR__ . '/../cache/images');
@@ -381,7 +381,8 @@ function rb_api($endpoint, $params = [], $timeout = 10) {
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_USERAGENT => RB_UA,
-            CURLOPT_HTTPHEADER => ['Accept: application/json']
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4  // Force IPv4 for better compatibility
         ]);
         $resp = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -466,7 +467,8 @@ switch ($cmd) {
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 5,
-                CURLOPT_USERAGENT => RB_UA
+                CURLOPT_USERAGENT => RB_UA,
+                CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4  // Force IPv4 for better compatibility
             ]);
             $start_time = microtime(true);
             $resp = curl_exec($ch);
@@ -542,14 +544,15 @@ switch ($cmd) {
         }
         break;
     case 'search':
+        // Use $_REQUEST to support both GET and POST requests
         $params = [
-            'name' => $_POST['name'] ?? '',
-            'countrycode' => $_POST['countrycode'] ?? '',
-            'tag' => $_POST['tag'] ?? '',
-            'offset' => $_POST['offset'] ?? 0,
-            'limit' => $_POST['limit'] ?? 30,
-            'order' => $_POST['order'] ?? 'clickcount',
-            'reverse' => $_POST['reverse'] ?? 'true',
+            'name' => $_REQUEST['name'] ?? '',
+            'countrycode' => $_REQUEST['countrycode'] ?? '',
+            'tag' => $_REQUEST['tag'] ?? '',
+            'offset' => $_REQUEST['offset'] ?? 0,
+            'limit' => $_REQUEST['limit'] ?? 30,
+            'order' => $_REQUEST['order'] ?? 'clickcount',
+            'reverse' => $_REQUEST['reverse'] ?? 'true',
         ];
         $params = array_filter($params, function($v) { return $v !== '' && $v !== null; });
         $cache_key = 'search_' . md5(json_encode($params));
