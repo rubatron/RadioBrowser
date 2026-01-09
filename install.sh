@@ -1,10 +1,13 @@
 #!/bin/bash
 # ============================================================================
-# Radio Browser Extension - Interactive Installation Script
+# RubaTron's Radio Browser Extension for moOde Audio Player
 # ============================================================================
-# Version: 2.0
-# Date: January 9, 2026
-# Description: Interactive installer with menu for moOde Radio Browser Extension
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright 2026 RubaTron (rubatron.com)
+# Version: 3.0.0
+# Date: January 2026
+#
+# Interactive installer with menu for moOde Radio Browser Extension
 # 
 # This script provides a menu-driven installation process with options to:
 # - Fully automatic installation

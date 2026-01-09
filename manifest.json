@@ -1,11 +1,11 @@
 {
     "id": "radio-browser",
     "name": "Radio Browser",
-    "version": "1.1.0",
-    "description": "Browse and play internet radio stations from Radio Browser API",
+    "version": "3.0.0",
+    "description": "RubaTron's Radio Browser Extension for moOde Audio Player",
     "type": "source",
     "author": "Rubatron",
-    "license": " ",
+    "license": "GPL-3.0-or-later",
     "requires": {
         "moode": ">=8.0.0",
         "php": ">=7.4"

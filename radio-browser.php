@@ -1,12 +1,13 @@
 <?php
 /**
- * Radio Browser Extension Main File
+ * RubaTron's Radio Browser Extension for moOde Audio Player
  * 
  * Standalone extension that works without modifying moOde system files.
  * Uses moOde's header.php and footer.min.php for consistent look and feel.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright 2014 The moOde audio player project / Tim Curtis
+ * Copyright 2026 RubaTron (rubatron.com)
+ * Version: 3.0.0
  */
 
 // Include moOde common functions (required for session, SQL, etc.)

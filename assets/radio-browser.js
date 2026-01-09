@@ -1,8 +1,10 @@
 /*!
+ * RubaTron's Radio Browser Extension for moOde Audio Player
+ * Frontend JavaScript
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright 2014 The moOde audio player project / Tim Curtis
- * moOde Extensions Framework - Radio Browser
- * Version: 2.0.2 - Race condition fix for search vs init
+ * Copyright 2026 RubaTron (rubatron.com)
+ * Version: 3.0.0
  */
 
 console.log('Radio Browser: Script file loaded v2.0.2');
