@@ -1,6 +1,9 @@
-# Radio Browser Extension v3.0.0
+# RubaTron's Radio Browser Extension v3.0.0
 
 Modern web extension for moOde Audio Player that integrates the Radio Browser API.
+
+**Copyright 2026 RubaTron (rubatron.com)**  
+**License: GPL-3.0-or-later**
 
 ## Features
 

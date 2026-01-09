@@ -1,11 +1,12 @@
 <?php
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright 2014 The moOde audio player project / Tim Curtis
-// moOde Extensions Framework - Radio Browser Extension
-
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright 2026 The moOde audio player project / Tim Curtis
-// Radio Browser Extension - Modern API backend
+/**
+ * RubaTron's Radio Browser Extension for moOde Audio Player
+ * Backend API
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 RubaTron (rubatron.com)
+ * Version: 3.0.0
+ */
 
 // --- EXTENSIEVE BACKEND LOGGING ---
 function rb_debug_log($msg) {

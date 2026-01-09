@@ -1,1 +1,56 @@
-#!/bin/bash# Radio Browser Extension - Test API Connection Script# SPDX-License-Identifier: GPL-3.0-or-later# Copyright 2014 The moOde audio player project / Tim Curtisecho "Radio Browser: Testing API connections..."echo ""# List of Radio Browser API serversSERVERS=(    "de2.api.radio-browser.info"    "fi1.api.radio-browser.info"    "nl1.api.radio-browser.info"    "us1.api.radio-browser.info"    "at1.api.radio-browser.info"    "ru1.api.radio-browser.info"    "gb1.api.radio-browser.info")ONLINE_COUNT=0OFFLINE_COUNT=0for SERVER in "${SERVERS[@]}"; do    URL="https://$SERVER/json/stats"        # Test connection with 5 second timeout    START=$(date +%s%N)    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 "$URL")    END=$(date +%s%N)        # Calculate latency in ms    LATENCY=$(( (END - START) / 1000000 ))        if [ "$HTTP_CODE" = "200" ]; then        echo "  ??? $SERVER - ONLINE (${LATENCY}ms)"        ((ONLINE_COUNT++))    else        echo "  ??? $SERVER - OFFLINE (HTTP $HTTP_CODE)"        ((OFFLINE_COUNT++))    fidoneecho ""echo "Summary: $ONLINE_COUNT online, $OFFLINE_COUNT offline"if [ $ONLINE_COUNT -eq 0 ]; then    echo ""    echo "WARNING: All API servers are offline!"    echo "Check your internet connection."    exit 1fiexit 0
+#!/bin/bash
+# RubaTron's Radio Browser Extension for moOde Audio Player
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright 2026 RubaTron (rubatron.com)
+# Version: 3.0.0
+#
+# Test API Connection Script
+
+echo "Radio Browser: Testing API connections..."
+echo ""
+
+# List of Radio Browser API servers
+SERVERS=(
+    "de2.api.radio-browser.info"
+    "fi1.api.radio-browser.info"
+    "nl1.api.radio-browser.info"
+    "us1.api.radio-browser.info"
+    "at1.api.radio-browser.info"
+    "ru1.api.radio-browser.info"
+    "gb1.api.radio-browser.info"
+)
+
+ONLINE_COUNT=0
+OFFLINE_COUNT=0
+
+for SERVER in "${SERVERS[@]}"; do
+    URL="https://$SERVER/json/stats"
+    
+    # Test connection with 5 second timeout
+    START=$(date +%s%N)
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 "$URL")
+    END=$(date +%s%N)
+    
+    # Calculate latency in ms
+    LATENCY=$(( (END - START) / 1000000 ))
+    
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo "  ✓ $SERVER - ONLINE (${LATENCY}ms)"
+        ((ONLINE_COUNT++))
+    else
+        echo "  ✗ $SERVER - OFFLINE (HTTP $HTTP_CODE)"
+        ((OFFLINE_COUNT++))
+    fi
+done
+
+echo ""
+echo "Summary: $ONLINE_COUNT online, $OFFLINE_COUNT offline"
+
+if [ $ONLINE_COUNT -eq 0 ]; then
+    echo ""
+    echo "WARNING: All API servers are offline!"
+    echo "Check your internet connection."
+    exit 1
+fi
+
+exit 0

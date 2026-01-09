@@ -1,11 +1,13 @@
 /*!
+ * RubaTron's Radio Browser Extension for moOde Audio Player
+ * Frontend JavaScript
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright 2014 The moOde audio player project / Tim Curtis
- * moOde Extensions Framework - Radio Browser
- * Version: 2.0.2 - Race condition fix for search vs init
+ * Copyright 2026 RubaTron (rubatron.com)
+ * Version: 3.0.0
  */
 
-console.log('Radio Browser: Script file loaded v2.0.2');
+console.log('Radio Browser: Script file loaded v3.0.1');
 
 (function waitForJQuery() {
     if (typeof jQuery !== 'undefined' || typeof $ !== 'undefined') {
@@ -26,7 +28,8 @@ function initRadioBrowser($) {
         limit: 30,
         loading: false,
         currentPlaying: null,
-        stationData: [],
+        stationData: [],           // Search results stations
+        recentStationData: [],     // Recently played stations (separate to prevent memory leak)
         favorites: [],
         favoritesMap: {},
         recentlyPlayed: [],
@@ -434,8 +437,9 @@ function initRadioBrowser($) {
         var container = $('#rb-recently-played');
         var html = [];
         
-        // Don't reset stationData here - it may already have search results
-        // Just append to existing stationData
+        // Reset recentStationData to prevent memory growth
+        // Using separate array from search results
+        state.recentStationData = [];
         
         stations.forEach(function(s, index) {
             // Logo field from our API is 'logo', can be 'local', cached path, or external URL
@@ -458,8 +462,8 @@ function initRadioBrowser($) {
                 '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/radio-logo.png\'">' :
                 '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
 
-            // Store in stationData with index for playback
-            var storeIndex = state.stationData.length;
+            // Store in recentStationData with index for playback
+            var storeIndex = index;
             var stationData = {
                 url: s.url,
                 url_fallback: s.url,
@@ -470,7 +474,7 @@ function initRadioBrowser($) {
                 bitrate: 0,
                 codec: ''
             };
-            state.stationData.push(stationData);
+            state.recentStationData.push(stationData);
 
             // Check if this station is in favorites
             var isFavorite = state.favorites.includes(s.url);
@@ -478,7 +482,7 @@ function initRadioBrowser($) {
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
 
             html.push(
-                '<div class="rb-station-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '">' +
+                '<div class="rb-station-card rb-recent-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '">' +
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
@@ -676,7 +680,10 @@ function initRadioBrowser($) {
 
     function playStation(card) {
         var stationIndex = parseInt(card.data('station-index'));
-        var stationData = state.stationData[stationIndex];
+        
+        // Check if this is a recently played card or a search result card
+        var isRecentCard = card.hasClass('rb-recent-card');
+        var stationData = isRecentCard ? state.recentStationData[stationIndex] : state.stationData[stationIndex];
         
         if (!stationData) {
             notify('Error', 'Station data not found', 'error');
@@ -741,7 +748,10 @@ function initRadioBrowser($) {
 
     function addToRadio(card) {
         var stationIndex = parseInt(card.data('station-index'));
-        var stationData = state.stationData[stationIndex];
+        
+        // Check if this is a recently played card or a search result card
+        var isRecentCard = card.hasClass('rb-recent-card');
+        var stationData = isRecentCard ? state.recentStationData[stationIndex] : state.stationData[stationIndex];
         
         if (!stationData) {
             notify('Error', 'Station data not found', 'error');

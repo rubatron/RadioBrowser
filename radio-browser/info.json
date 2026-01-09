@@ -1,7 +1,7 @@
 {
-    "name": "Radio Browser Extension",
-    "version": "2.0.0",
-    "author": "Rubatron",
+    "name": "RubaTron's Radio Browser Extension",
+    "version": "3.0.0",
+    "author": "RubaTron",
     "license": "GPL-3.0-or-later",
     "description": "Browse and play internet radio stations from radio-browser.info",
     "features": [
@@ -14,9 +14,10 @@
         "Troubleshooting tools",
         "API status monitoring"
     ],
-    "repository": "https://github.com/moode-player/moode",
-    "help_url": "https://github.com/moode-player/moode/wiki/Radio-Browser",
+    "repository": "https://github.com/rubatron/RadioBrowser",
+    "help_url": "https://github.com/rubatron/RadioBrowser/wiki",
     "changelog": {
+        "3.0.0": "RubaTron ownership, custom API support, session fix for currentsong.txt",
         "2.0.0": "Rewritten template system, troubleshooting panel, API latency monitoring, memory leak fixes",
         "1.2.0": "Searchable dropdowns, improved settings UI, system info panel",
         "1.1.0": "Recently played sidebar, favorites sync, logo integration",
