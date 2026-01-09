@@ -13,11 +13,37 @@ Modern web extension for moOde Audio Player that integrates the Radio Browser AP
 
 ## Installation
 
+### Quick Install (Recommended)
+
+Download and run the installer directly:
+
 ```bash
+wget -O install.sh 'https://raw.githubusercontent.com/rubatron/RadioBrowser/Nightly-Builds/install.sh'
+chmod +x install.sh
 sudo ./install.sh
 ```
 
-The installer will:
+Then select option **1** (Auto-install) from the menu.
+
+### Manual Download
+
+If you prefer to download all files first:
+
+```bash
+# Create temp folder
+mkdir -p /tmp/radio-browser && cd /tmp/radio-browser
+
+# Download extension archive
+wget 'https://github.com/rubatron/RadioBrowser/archive/refs/heads/Nightly-Builds.zip' -O radio-browser.zip
+unzip radio-browser.zip
+cd RadioBrowser-Nightly-Builds
+
+# Run installer
+chmod +x install.sh
+sudo ./install.sh
+```
+
+### What the installer does
 - Create folder structure (/var/www/extensions/installed/radio-browser/)
 - Copy all extension files
 - Set correct permissions

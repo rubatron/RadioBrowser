@@ -1,1 +1,29 @@
-{    "name": "Radio Browser Extension",    "version": "2.0.0",    "author": "Rubatron",    "license": "GPL-3.0-or-later",    "description": "Browse and play internet radio stations from radio-browser.info",    "features": [        "Search 30,000+ radio stations worldwide",        "Filter by country, genre, and name",        "Add favorites to moOde Radio library",        "Recently played history at top",        "Logo caching and display",        "Custom API server support",        "Troubleshooting tools",        "API status monitoring"    ],    "repository": "https://github.com/moode-player/moode",    "help_url": "https://github.com/moode-player/moode/wiki/Radio-Browser",    "changelog": {        "2.0.0": "Rewritten template system, troubleshooting panel, API latency monitoring, memory leak fixes",        "1.2.0": "Searchable dropdowns, improved settings UI, system info panel",        "1.1.0": "Recently played sidebar, favorites sync, logo integration",        "1.0.0": "Initial release with search and playback"    },    "requirements": {        "moode_min_version": "9.0.0",        "php_extensions": ["curl", "gd", "json"]    }}
+{
+    "name": "Radio Browser Extension",
+    "version": "2.0.0",
+    "author": "Rubatron",
+    "license": "GPL-3.0-or-later",
+    "description": "Browse and play internet radio stations from radio-browser.info",
+    "features": [
+        "Search 30,000+ radio stations worldwide",
+        "Filter by country, genre, and name",
+        "Add favorites to moOde Radio library",
+        "Recently played history at top",
+        "Logo caching and display",
+        "Custom API server support",
+        "Troubleshooting tools",
+        "API status monitoring"
+    ],
+    "repository": "https://github.com/moode-player/moode",
+    "help_url": "https://github.com/moode-player/moode/wiki/Radio-Browser",
+    "changelog": {
+        "2.0.0": "Rewritten template system, troubleshooting panel, API latency monitoring, memory leak fixes",
+        "1.2.0": "Searchable dropdowns, improved settings UI, system info panel",
+        "1.1.0": "Recently played sidebar, favorites sync, logo integration",
+        "1.0.0": "Initial release with search and playback"
+    },
+    "requirements": {
+        "moode_min_version": "9.0.0",
+        "php_extensions": ["curl", "gd", "json"]
+    }
+}

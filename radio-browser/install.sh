@@ -42,7 +42,6 @@ declare -A SOURCE_FILES=(
     ["scripts/test-api.sh"]="${SCRIPT_DIR}/scripts/test-api.sh"
     ["scripts/flush-cache.sh"]="${SCRIPT_DIR}/scripts/flush-cache.sh"
     ["scripts/clear-recently-played.sh"]="${SCRIPT_DIR}/scripts/clear-recently-played.sh"
-    ["info.txt"]="${SCRIPT_DIR}/info.txt"
     ["info.json"]="${SCRIPT_DIR}/info.json"
     ["version.txt"]="${SCRIPT_DIR}/version.txt"
     ["README.md"]="${SCRIPT_DIR}/README.md"
