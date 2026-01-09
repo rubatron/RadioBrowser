@@ -40,7 +40,7 @@ SSH into your moOde device and run:
 
 ```bash
 # Download installer
-wget https://github.com/rubatron/RadioBrowser/tree/main/radio-browser
+wget https://github.com/rubatron/RadioBrowser/archive/refs/heads/main.zip
 
 # Navigate into the radio-browser folder
 # Make executable and run
