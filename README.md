@@ -34,6 +34,8 @@ A modern web extension that brings the power of [Radio Browser](https://www.radi
 
 ## 🚀 Installation
 
+**
+
 ### One-Line Install (Recommended)
 
 SSH into your moOde device and run:
