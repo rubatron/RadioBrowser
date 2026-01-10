@@ -9,6 +9,7 @@
 ## 🎵 About
 
 **RubaTron's Radio Browser Installer** is an installation package for the Radio Browser extension in Moode Audio. This extension allows you to browse and play thousands of internet radio stations directly from your Moode Audio interface built on the radio-info API.
+![RadioBrowser screenshot](https://i.postimg.cc/3rbVZCrF/image.png "RadioBrowser")
 
 
 ### Radio Browser Interface
