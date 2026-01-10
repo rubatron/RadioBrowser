@@ -1,0 +1,666 @@
+/********************************************************************************
+ * RubaTron's Radio Browser Extension for moOde Audio Player
+ * Stylesheet
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * 2026 RubaTron
+ * Version: 3.0.0
+ *
+ * Radio Browser specific CSS - extends moOde's styles.min.css
+ * This file only contains Radio Browser specific styles.
+ * Base styles (buttons, forms, layout) are inherited from /css/styles.min.css
+ ********************************************************************************/
+
+/* ============================================
+   Radio Browser Header
+   ============================================ */
+
+.radio-browser-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.radio-browser-logo {
+    width: 48px;
+    height: 48px;
+    opacity: 0.8;
+}
+
+/* ============================================
+   Tab Navigation
+   ============================================ */
+
+.rb-tabs {
+    display: flex;
+    gap: 0;
+    justify-content: flex-start;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.rb-tab {
+    background: transparent;
+    border: none;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: -1px;
+}
+
+.rb-tab:hover {
+    color: #ddd;
+}
+
+.rb-tab.active {
+    color: var(--accentxts, #0dc5c1);
+    border-bottom-color: var(--accentxts, #0dc5c1);
+}
+
+/* ============================================
+   Panels
+   ============================================ */
+
+.rb-panel {
+    display: block !important;
+}
+
+.rb-panel.hide {
+    display: none !important;
+}
+
+/* General hide class for Radio Browser elements */
+.hide,
+#rb-results.hide,
+#rb-loading.hide,
+#rb-no-results.hide,
+#rb-results-section.hide,
+#rb-pagination.hide {
+    display: none !important;
+}
+
+/* ============================================
+   Station Cards Grid
+   ============================================ */
+
+.rb-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.rb-station-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid rgba(128,128,128,0.3);
+    border-radius: 8px;
+    background: #151515;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    color: #ddd;
+}
+
+.rb-station-card:hover {
+    border-color: #d35400;
+    box-shadow: 0 2px 8px rgba(211,84,0,0.3);
+    transform: translateY(-1px);
+    background: rgba(21,21,21,0.8);
+}
+
+.rb-station-card.playing {
+    border-color: #c95800;
+    background: linear-gradient(135deg, rgba(211,84,0,0.1) 0%, #151515 100%);
+    box-shadow: 0 2px 12px rgba(211,84,0,0.3);
+}
+
+/* Station Logo */
+.rb-logo {
+    flex-shrink: 0;
+    margin-right: 1rem;
+    border-radius: 6px;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.rb-logo-placeholder {
+    background: var(--config-toggleoff-bg-color);
+    border: 1px solid rgba(128,128,128,0.3);
+}
+
+/* Station Info */
+.rb-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.rb-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #ddd;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rb-meta {
+    font-size: 0.85rem;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Station Actions */
+.rb-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.rb-play-btn,
+.rb-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.rb-play-btn {
+    background: #d35400;
+    color: #ddd;
+}
+
+.rb-play-btn:hover {
+    background: rgba(211,84,0,0.9);
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(211,84,0,0.5);
+}
+
+.rb-play-btn.playing {
+    background: #c95800;
+    animation: pulse 2s infinite;
+}
+
+.rb-play-btn.playing:hover {
+    background: #c95800;
+}
+
+.rb-add-btn {
+    background: #333;
+    color: #888;
+    border: 1px solid rgba(128,128,128,0.3);
+}
+
+.rb-add-btn:hover {
+    background: rgba(51,51,51,0.8);
+    color: #ddd;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.rb-add-btn.added {
+    background: #333;
+    color: #ddd;
+    border-color: #333;
+}
+
+.rb-add-btn.added:hover {
+    background: rgba(51,51,51,0.8);
+    border-color: rgba(51,51,51,0.8);
+}
+
+.rb-add-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* ============================================
+   Loading and No Results States
+   ============================================ */
+
+.rb-loading,
+.rb-no-results {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #888;
+}
+
+.rb-loading i,
+.rb-no-results i {
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+/* ============================================
+   Pagination
+   ============================================ */
+
+.rb-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(128,128,128,0.3);
+}
+
+.rb-pagination .btn {
+    min-width: 100px;
+}
+
+.rb-pagination .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   API Status Section
+   ============================================ */
+
+.rb-api-status {
+    margin-top: 0.5rem;
+}
+
+.rb-status-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(128,128,128,0.2);
+}
+
+.rb-status-item:last-child {
+    border-bottom: none;
+}
+
+.rb-status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.rb-status-indicator.online {
+    background: #28a745;
+    box-shadow: 0 0 6px rgba(40,167,69,0.4);
+}
+
+.rb-status-indicator.offline {
+    background: #dc3545;
+}
+
+.rb-status-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.rb-status-latency {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.rb-status-latency.fast {
+    color: #28a745;
+}
+
+.rb-status-latency.slow {
+    color: #ffc107;
+}
+
+/* ============================================
+   Top Stations Button - Simple Star Color
+   ============================================ */
+
+#rb-top-stations .fa-star {
+    transition: color 0.2s ease;
+}
+
+/* ============================================
+   Country Autocomplete
+   ============================================ */
+
+.rb-autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #1a1a1a;
+    border: 1px solid rgba(128,128,128,0.3);
+    border-radius: 4px;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.rb-country-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #ddd;
+    border-bottom: 1px solid rgba(128,128,128,0.2);
+}
+
+.rb-country-item:last-child {
+    border-bottom: none;
+}
+
+.rb-country-item:hover {
+    background: rgba(211,84,0,0.2);
+    color: #fff;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 2px 12px rgba(40,167,69,0.2);
+    }
+    50% {
+        box-shadow: 0 2px 12px rgba(40,167,69,0.4);
+    }
+    100% {
+        box-shadow: 0 2px 12px rgba(40,167,69,0.2);
+    }
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    .rb-results-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rb-station-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+
+    .rb-logo {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+
+    .rb-actions {
+        margin-left: 0;
+        justify-content: center;
+    }
+
+    .rb-tabs {
+        flex-wrap: wrap;
+    }
+
+    .rb-tab {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .radio-browser-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .rb-station-card {
+        padding: 0.75rem;
+    }
+
+    .rb-actions {
+        flex-direction: column;
+        gap: 0.25rem;
+        width: 100%;
+    }
+
+    .rb-play-btn,
+    .rb-add-btn {
+        flex: 1;
+        width: 100%;
+        height: 36px;
+    }
+}
+
+/* ============================================
+   Accordion Styles (Settings Panel)
+   ============================================ */
+
+.rb-accordion {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.rb-accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    transition: background-color 0.15s ease;
+}
+
+.rb-accordion-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.rb-accordion-header h4,
+.rb-accordion-header h5 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rb-accordion-header h4 i,
+.rb-accordion-header h5 i {
+    color: #d35400;
+    font-size: 13px;
+}
+
+.rb-accordion-icon {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.rb-accordion.open .rb-accordion-icon {
+    transform: rotate(180deg);
+}
+
+.rb-accordion-content {
+    display: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rb-accordion.open .rb-accordion-content {
+    display: block;
+}
+
+.rb-accordion-body {
+    padding: 1rem;
+}
+
+/* Sub-accordion (nested) */
+.rb-sub-accordion {
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+}
+
+.rb-sub-accordion:last-child {
+    margin-bottom: 0;
+}
+
+.rb-sub-accordion .rb-accordion-header {
+    padding: 0.625rem 0.875rem;
+    background: transparent;
+}
+
+.rb-sub-accordion .rb-accordion-header h5 {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.rb-sub-accordion .rb-accordion-body {
+    padding: 0.875rem;
+}
+
+/* Info Grid (Extension Info) */
+.rb-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.rb-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.rb-info-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.rb-info-value {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Status Badges */
+.rb-status-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.rb-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.rb-status-ok {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.rb-status-error {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.rb-status-info {
+    background: rgba(52, 152, 219, 0.15);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+/* ============================================
+   Troubleshooting Section
+   ============================================ */
+
+.rb-troubleshoot-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.rb-action-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.rb-action-item .btn {
+    min-width: 140px;
+    text-align: left;
+}
+
+.rb-action-item.rb-action-danger {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #333;
+}
+
+.rb-action-item .btn-danger {
+    background: #c0392b;
+    border-color: #a33;
+    color: #fff;
+}
+
+.rb-action-item .btn-danger:hover {
+    background: #e74c3c;
+}
+
+.rb-action-desc {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.rb-log-output {
+    margin-top: 1rem;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.rb-log-output pre {
+    margin: 0;
+    padding: 0.75rem;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #0f0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
