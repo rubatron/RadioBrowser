@@ -26,7 +26,7 @@
 - 🔄 **Restore Functionality** from backups
 - 🧹 **Clean Uninstall** option
 - 📊 **Installation Logging** for troubleshooting
-- 🌐 **API Integration** with Radio-Browser.info
+- 🌐 **Redundant API Integration** with Radio-Browser.info
 - 🎯 **Country Selection** including custom ISO codes
 - ⭐ **Top Stations** and search functionality
 
