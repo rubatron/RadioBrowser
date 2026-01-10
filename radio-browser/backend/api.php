@@ -4,7 +4,7 @@
  * Backend API
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright 2026 RubaTron (rubatron.com)
+ * 2026 RubaTron
  * Version: 3.0.0
  */
 
@@ -614,28 +614,50 @@ switch ($cmd) {
         }
         require_once '/var/www/inc/mpd.php';
         
-        // Set session data for currentsong.txt compatibility
-        // This allows moOde's worker.php/enhanceMetadata() to show correct station info
+        $name = $station['name'] ?? 'Radio Browser Station';
+        $url = trim($station['url']);
+        $logo = !empty($station['favicon']) ? $station['favicon'] : 'local';
+        $bitrate = isset($station['bitrate']) && $station['bitrate'] > 0 ? (string)$station['bitrate'] : '';
+        $format = $station['codec'] ?? '';
+        
+        // Insert station into cfg_radio for currentsong.txt compatibility
+        // This allows moOde's worker.php/enhanceMetadata() to find station info via load_radio
+        $dbh = sqlConnect();
+        $checkSql = "SELECT 1 FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
+        $exists = sqlQuery($checkSql, $dbh);
+        if (!is_array($exists) || count($exists) == 0) {
+            // Station not in database, insert it
+            $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" . 
+                SQLite3::escapeString($url) . "', '" . 
+                SQLite3::escapeString($name) . "', 'rb', '" . 
+                SQLite3::escapeString($logo) . "', '', '', '', '', '', '" . 
+                SQLite3::escapeString($bitrate) . "', '" . 
+                SQLite3::escapeString($format) . "', 'No', '', 'No')";
+            sqlQuery($sql, $dbh);
+            rb_debug_log('Inserted station into cfg_radio: ' . $name . ', URL: ' . $url);
+        }
+        
+        // Add station to shared session file so worker.php's enhanceMetadata() can find it
+        // worker.php periodically opens/closes the session, so it will pick up this data
         phpSession('open');
-        $_SESSION[$station['url']] = [
-            'name' => $station['name'] ?? 'Radio Browser Station',
+        $_SESSION[$url] = [
+            'name' => $name,
             'type' => 'rb',
-            'logo' => !empty($station['favicon']) ? $station['favicon'] : 'local',
-            'bitrate' => isset($station['bitrate']) && $station['bitrate'] > 0 ? $station['bitrate'] : '',
-            'format' => $station['codec'] ?? '',
+            'logo' => $logo,
+            'bitrate' => $bitrate,
+            'format' => $format,
             'home_page' => $station['homepage'] ?? '',
             'monitor' => 'No'
         ];
         phpSession('close');
+        rb_debug_log('Added station to session: ' . $name . ', URL: ' . $url);
         
         // Track recently played using file-based storage (persistent, ordered by play time)
         rb_add_recently_played([
-            'url' => $station['url'],
-            'name' => $station['name'] ?? 'Radio Browser Station',
-            'logo' => !empty($station['favicon']) ? $station['favicon'] : 'local'
+            'url' => $url,
+            'name' => $name,
+            'logo' => $logo
         ]);
-        
-        rb_debug_log('Set session data for station: ' . $station['name'] . ', URL: ' . $station['url']);
         
         $sock = openMpdSock('localhost', 6600);
         if (!$sock) {
@@ -648,7 +670,7 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'MPD clear failed'];
             break;
         }
-        sendMpdCmd($sock, 'add "' . $station['url'] . '"');
+        sendMpdCmd($sock, 'add "' . $url . '"');
         $resp = readMpdResp($sock);
         if (strpos($resp, 'OK') === false) {
             $response = ['success' => false, 'message' => 'MPD add failed'];
@@ -661,7 +683,7 @@ switch ($cmd) {
             break;
         }
         closeMpdSock($sock);
-        $response = ['success' => true, 'message' => 'Playing: ' . $station['name']];
+        $response = ['success' => true, 'message' => 'Playing: ' . $name];
         break;
     case 'import':
         $station = json_decode(file_get_contents('php://input'), true);

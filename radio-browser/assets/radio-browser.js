@@ -3,7 +3,7 @@
  * Frontend JavaScript
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright 2026 RubaTron (rubatron.com)
+ * 2026 RubaTron
  * Version: 3.0.0
  */
 

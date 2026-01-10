@@ -6,7 +6,7 @@
  * Uses moOde's header.php and footer.min.php for consistent look and feel.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright 2026 RubaTron (rubatron.com)
+ * 2026 RubaTron
  * Version: 3.0.0
  */
 
