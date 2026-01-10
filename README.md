@@ -41,7 +41,7 @@
 Download and run the installer directly:
 
 ```bash
-wget https://github.com/rubatron/RadioBrowser/raw/refs/heads/main/radio-browser.zip
+wget https://github.com/rubatron/RadioBrowser/raw/refs/heads/develop/radio-browser.zip
 unzip radio-browser.zip
 cd radio-browser/
 chmod +x install.sh
