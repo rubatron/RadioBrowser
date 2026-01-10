@@ -40,46 +40,10 @@
 ### Option 1: Download Complete ZIP (Recommended - No Git Required)
 ```bash
 # Download the complete installer ZIP from GitHub
-# Go to: https://github.com/rubatron/RadioBrowser/tree/develop
 # Download: radio-browser-installer-complete.zip
 
-# Extract the ZIP file
-unzip radio-browser-installer-complete.zip
-cd radio-browser-installer-complete
-
-# Make scripts executable
-chmod +x installer/*.sh
-
-# Run the beautiful CLI installer
-sudo ./installer/radio-browser-cli.sh
-```
-
-### Option 2: Clone Repository (Requires Git)
-```bash
-# Clone the repository
-git clone https://github.com/rubatron/RadioBrowser.git
-cd RadioBrowser
-
-# Switch to develop branch
-git checkout develop
-
-# Make scripts executable
-chmod +x installer/*.sh
-
-# Run the installer
-sudo ./installer/radio-browser-cli.sh
-```
-
-### Option 2: Advanced Script
-
-```bash
-# Use the advanced installer script
-sudo ./installer/install-radio-browser-advanced.sh
-```
-
-## 📖 Usage
-
-### CLI Menu Options
+# Extract the ZIP file. 
+Run he installation script. 
 
 1. **Install Radio Browser Extension** - Complete installation with backup
 2. **Create Backup Only** - Backup existing files without installing
@@ -303,3 +267,4 @@ sudo ./installer/radio-browser-cli.sh
 
 
 *Enjoy listening to internet radio on your Moode Audio player!* 🎵
+
