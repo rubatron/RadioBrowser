@@ -83,7 +83,6 @@ The API will immediately appear in the "Active API" dropdown and "Saved APIs" li
 
 - moOde Audio Player  8.0.0
 - PHP  7.4 with cURL extension
-- nginx web server
 
 ## Troubleshooting
 
