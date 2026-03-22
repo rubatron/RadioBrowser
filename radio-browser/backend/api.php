@@ -57,6 +57,85 @@ define('RB_RECENTLY_PLAYED_FILE', RB_CACHE . '/recently_played.json');
 define('RB_DATA_DIR', __DIR__ . '/../data');
 define('RB_CUSTOM_APIS_FILE', RB_DATA_DIR . '/custom_apis.json');
 define('RB_SETTINGS_FILE', RB_DATA_DIR . '/settings.json');
+define('RB_FAVORITES_FILE', RB_DATA_DIR . '/favorites.json');
+
+// ============================================================================
+// FAVORITES FUNCTIONS (file-based, separate from cfg_radio)
+// ============================================================================
+
+function rb_get_favorites()
+{
+    if (file_exists(RB_FAVORITES_FILE)) {
+        $data = @json_decode(file_get_contents(RB_FAVORITES_FILE), true);
+        return is_array($data) ? $data : [];
+    }
+    return [];
+}
+
+function rb_save_favorites($favorites)
+{
+    if (!is_dir(RB_DATA_DIR)) @mkdir(RB_DATA_DIR, 0775, true);
+    return @file_put_contents(RB_FAVORITES_FILE, json_encode($favorites, JSON_PRETTY_PRINT)) !== false;
+}
+
+function rb_add_favorite($url, $name, $logo = 'local')
+{
+    $favorites = rb_get_favorites();
+    $normalizedUrl = preg_replace('/^https?:\/\//', '', rtrim($url, '/'));
+
+    // Check if already exists
+    foreach ($favorites as $fav) {
+        $favNormalized = preg_replace('/^https?:\/\//', '', rtrim($fav['url'], '/'));
+        if ($favNormalized === $normalizedUrl) {
+            return false; // Already exists
+        }
+    }
+
+    $favorites[] = [
+        'url' => $url,
+        'name' => $name,
+        'logo' => $logo,
+        'added' => date('Y-m-d H:i:s')
+    ];
+
+    return rb_save_favorites($favorites);
+}
+
+function rb_remove_favorite($url)
+{
+    $favorites = rb_get_favorites();
+    $normalizedUrl = preg_replace('/^https?:\/\//', '', rtrim($url, '/'));
+
+    $newFavorites = [];
+    $found = false;
+    foreach ($favorites as $fav) {
+        $favNormalized = preg_replace('/^https?:\/\//', '', rtrim($fav['url'], '/'));
+        if ($favNormalized !== $normalizedUrl) {
+            $newFavorites[] = $fav;
+        } else {
+            $found = true;
+        }
+    }
+
+    if ($found) {
+        rb_save_favorites($newFavorites);
+    }
+    return $found;
+}
+
+function rb_is_favorite($url)
+{
+    $favorites = rb_get_favorites();
+    $normalizedUrl = preg_replace('/^https?:\/\//', '', rtrim($url, '/'));
+
+    foreach ($favorites as $fav) {
+        $favNormalized = preg_replace('/^https?:\/\//', '', rtrim($fav['url'], '/'));
+        if ($favNormalized === $normalizedUrl) {
+            return true;
+        }
+    }
+    return false;
+}
 
 function rb_get_custom_apis()
 {
@@ -805,12 +884,19 @@ switch ($cmd) {
         $url = trim($station['url']);
         $favicon = !empty($station['favicon']) ? trim($station['favicon']) : '';
 
-        // Check if station already exists (by URL OR by name to prevent duplicates)
+        // Check if station already in Radio Browser favorites (file-based)
+        if (rb_is_favorite($url)) {
+            rb_debug_log('Station already in Radio Browser favorites: ' . $name . ' (URL: ' . $url . ')');
+            $response = ['success' => false, 'message' => 'Station already in favorites'];
+            break;
+        }
+
+        // Also check moOde database (by URL OR by name to prevent duplicates in Radio)
         $checkSql = "SELECT station, name FROM cfg_radio WHERE (station = '" . SQLite3::escapeString($url) . "' OR name = '" . SQLite3::escapeString($name) . "') AND type='u' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
         if (is_array($checkResult) && count($checkResult) > 0) {
-            rb_debug_log('Station already exists: ' . $name . ' (URL: ' . $url . ')');
-            $response = ['success' => false, 'message' => 'Station already in favorites'];
+            rb_debug_log('Station already exists in moOde Radio: ' . $name . ' (URL: ' . $url . ')');
+            $response = ['success' => false, 'message' => 'Station already in Radio'];
             break;
         }
 
@@ -894,6 +980,9 @@ switch ($cmd) {
             putStationCover($name);
         }
 
+        // Add to file-based favorites (separate from cfg_radio)
+        rb_add_favorite($url, $name, $favicon);
+
         $response = ['success' => true, 'message' => 'Station added to Radio'];
         break;
     case 'current_status':
@@ -911,22 +1000,8 @@ switch ($cmd) {
         $response = ['success' => true, 'is_playing' => $is_playing, 'current_url' => $current_url];
         break;
     case 'favorites':
-        $dbh = sqlConnect();
-        if (!$dbh) {
-            $response = ['success' => false, 'message' => 'Database connection failed'];
-            break;
-        }
-        $result = sqlQuery("SELECT station, name, logo FROM cfg_radio WHERE type='u'", $dbh);
-        $favorites = [];
-        if (is_array($result)) {
-            foreach ($result as $row) {
-                $favorites[] = [
-                    'url' => trim($row['station']),
-                    'name' => trim($row['name']),
-                    'logo' => trim($row['logo'])
-                ];
-            }
-        }
+        // Use file-based favorites (separate from cfg_radio to avoid conflicts with moOde's type='u' stations)
+        $favorites = rb_get_favorites();
         $response = ['success' => true, 'favorites' => $favorites];
         break;
     case 'remove':
@@ -991,6 +1066,9 @@ switch ($cmd) {
             readMpdResp($sock);
             closeMpdSock($sock);
         }
+
+        // Remove from file-based favorites
+        rb_remove_favorite($url);
 
         rb_debug_log('Station removed from favorites: ' . $stationName . ', URL: ' . $url);
         $response = ['success' => true, 'message' => 'Station removed from Radio'];
