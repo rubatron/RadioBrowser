@@ -805,10 +805,11 @@ switch ($cmd) {
         $url = trim($station['url']);
         $favicon = !empty($station['favicon']) ? trim($station['favicon']) : '';
 
-        // Check if station already exists
-        $checkSql = "SELECT 1 FROM cfg_radio WHERE name = '" . SQLite3::escapeString($name) . "' AND type='u' LIMIT 1";
+        // Check if station already exists (by URL OR by name to prevent duplicates)
+        $checkSql = "SELECT station, name FROM cfg_radio WHERE (station = '" . SQLite3::escapeString($url) . "' OR name = '" . SQLite3::escapeString($name) . "') AND type='u' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
         if (is_array($checkResult) && count($checkResult) > 0) {
+            rb_debug_log('Station already exists: ' . $name . ' (URL: ' . $url . ')');
             $response = ['success' => false, 'message' => 'Station already in favorites'];
             break;
         }

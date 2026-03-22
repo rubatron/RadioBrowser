@@ -38,6 +38,28 @@ function initRadioBrowser($) {
         initComplete: false  // Track if initial load is done
     };
 
+    /**
+     * Normalize URL for comparison (handles http/https, trailing slashes)
+     */
+    function normalizeUrl(url) {
+        if (!url) return '';
+        return url.replace(/^https?:\/\//, '').replace(/\/+$/, '').toLowerCase();
+    }
+
+    /**
+     * Check if URL is in favorites (flexible matching)
+     */
+    function isInFavorites(url) {
+        if (!url) return false;
+        var normalizedUrl = normalizeUrl(url);
+        for (var i = 0; i < state.favorites.length; i++) {
+            if (normalizeUrl(state.favorites[i]) === normalizedUrl) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Country list for autocomplete
     var COUNTRIES = [
         {code: '', name: 'All Countries'},
@@ -477,7 +499,7 @@ function initRadioBrowser($) {
             state.recentStationData.push(stationData);
 
             // Check if this station is in favorites
-            var isFavorite = state.favorites.includes(s.url);
+            var isFavorite = isInFavorites(s.url);
             var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
             var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
@@ -654,7 +676,7 @@ function initRadioBrowser($) {
             state.stationData.push(stationData);
             var storeIndex = startIndex + index;
 
-            var isFavorite = state.favorites.includes(stationData.url);
+            var isFavorite = isInFavorites(stationData.url);
             var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
             var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
@@ -823,7 +845,7 @@ function initRadioBrowser($) {
     function updateFavoriteState(url, isFavorite, stationData) {
         if (isFavorite) {
             // Add to state
-            if (!state.favorites.includes(url)) {
+            if (!isInFavorites(url)) {
                 state.favorites.push(url);
             }
             if (stationData) {
