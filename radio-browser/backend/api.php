@@ -297,7 +297,7 @@ function rb_cache_image($url)
 /**
  * Save station logo permanently as JPG to moOde radio-logos folder
  * Converts any image format (PNG, GIF, WEBP) to JPG
- * @param string $stationName Station name (used as filename)
+ * @param string $stationName Station name (used as filename) - must match cfg_radio name exactly
  * @param string $imageData Raw image binary data
  * @return bool Success
  */
@@ -308,8 +308,9 @@ function rb_save_permanent_logo($stationName, $imageData)
         return false;
     }
 
-    // Clean station name for filename
-    $safeName = preg_replace('/[^a-zA-Z0-9\-_\s]/', '', $stationName);
+    // Use station name exactly as-is (matching moOde behavior)
+    // Only remove characters that are truly invalid for Linux filenames
+    $safeName = str_replace(['/', '\0'], '', $stationName);
     $safeName = trim($safeName);
     if (empty($safeName)) {
         $safeName = 'station_' . md5($stationName);
@@ -319,7 +320,10 @@ function rb_save_permanent_logo($stationName, $imageData)
     $thumbPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg';
     $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
 
-    rb_debug_log('rb_save_permanent_logo: Saving logo for ' . $stationName . ' to ' . $logoPath);
+    rb_debug_log('rb_save_permanent_logo: Station "' . $stationName . '" -> files: ' . $safeName . '.jpg');
+    rb_debug_log('rb_save_permanent_logo: Logo path: ' . $logoPath);
+    rb_debug_log('rb_save_permanent_logo: Thumb path: ' . $thumbPath);
+    rb_debug_log('rb_save_permanent_logo: ThumbSm path: ' . $thumbSmPath);
 
     // Create image from data (auto-detect format)
     $srcImage = @imagecreatefromstring($imageData);
@@ -354,8 +358,9 @@ function rb_save_permanent_logo($stationName, $imageData)
     $y = (int)(($mainSize - $newHeight) / 2);
 
     imagecopyresampled($mainImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
-    imagejpeg($mainImage, $logoPath, 85);
+    $mainSaved = @imagejpeg($mainImage, $logoPath, 85);
     imagedestroy($mainImage);
+    rb_debug_log('rb_save_permanent_logo: Main logo saved: ' . ($mainSaved ? 'YES' : 'NO'));
 
     // Save thumbnail (200x200)
     $thumbSize = 200;
@@ -367,10 +372,11 @@ function rb_save_permanent_logo($stationName, $imageData)
     $x = (int)(($thumbSize - $newWidth) / 2);
     $y = (int)(($thumbSize - $newHeight) / 2);
     imagecopyresampled($thumbImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
-    imagejpeg($thumbImage, $thumbPath, 85);
+    $thumbSaved = @imagejpeg($thumbImage, $thumbPath, 85);
     imagedestroy($thumbImage);
+    rb_debug_log('rb_save_permanent_logo: Thumbnail saved: ' . ($thumbSaved ? 'YES' : 'NO'));
 
-    // Save small thumbnail (80x80)
+    // Save small thumbnail (80x80) - REQUIRED by moOde playbar
     $smallSize = 80;
     $smallImage = imagecreatetruecolor($smallSize, $smallSize);
     imagefill($smallImage, 0, 0, $white);
@@ -380,18 +386,27 @@ function rb_save_permanent_logo($stationName, $imageData)
     $x = (int)(($smallSize - $newWidth) / 2);
     $y = (int)(($smallSize - $newHeight) / 2);
     imagecopyresampled($smallImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
-    imagejpeg($smallImage, $thumbSmPath, 85);
+    $smallSaved = @imagejpeg($smallImage, $thumbSmPath, 85);
     imagedestroy($smallImage);
+    rb_debug_log('rb_save_permanent_logo: Small thumb (_sm) saved: ' . ($smallSaved ? 'YES' : 'NO'));
 
     imagedestroy($srcImage);
 
-    // Verify files were created
-    if (file_exists($logoPath) && file_exists($thumbPath)) {
-        rb_debug_log('rb_save_permanent_logo: Successfully saved logo and thumbnails');
+    // Verify ALL THREE files were created (including _sm.jpg for moOde playbar)
+    $logoExists = file_exists($logoPath);
+    $thumbExists = file_exists($thumbPath);
+    $thumbSmExists = file_exists($thumbSmPath);
+    
+    rb_debug_log('rb_save_permanent_logo: File check - logo:' . ($logoExists ? 'Y' : 'N') . 
+                 ' thumb:' . ($thumbExists ? 'Y' : 'N') . 
+                 ' thumbSm:' . ($thumbSmExists ? 'Y' : 'N'));
+    
+    if ($logoExists && $thumbExists && $thumbSmExists) {
+        rb_debug_log('rb_save_permanent_logo: Successfully saved all logo files');
         return true;
     }
 
-    rb_debug_log('rb_save_permanent_logo: Failed to save logo files');
+    rb_debug_log('rb_save_permanent_logo: Failed to save some logo files');
     return false;
 }
 
