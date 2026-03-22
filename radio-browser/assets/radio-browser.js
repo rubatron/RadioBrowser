@@ -480,6 +480,7 @@ function initRadioBrowser($) {
             var isFavorite = state.favorites.includes(s.url);
             var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
+            var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
 
             html.push(
                 '<div class="rb-station-card rb-recent-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '">' +
@@ -490,7 +491,7 @@ function initRadioBrowser($) {
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
-                        '<button class="' + addBtnClass + '" title="Add to Favorites">' + addBtnIcon + '</button>' +
+                        '<button class="' + addBtnClass + '" title="' + addBtnTitle + '">' + addBtnIcon + '</button>' +
                     '</div>' +
                 '</div>'
             );
@@ -656,6 +657,7 @@ function initRadioBrowser($) {
             var isFavorite = state.favorites.includes(stationData.url);
             var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
+            var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
 
             html.push(
                 '<div class="rb-station-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(stationData.url) + '">' +
@@ -666,7 +668,7 @@ function initRadioBrowser($) {
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
-                        '<button class="' + addBtnClass + '" title="Add to Favorites">' + addBtnIcon + '</button>' +
+                        '<button class="' + addBtnClass + '" title="' + addBtnTitle + '">' + addBtnIcon + '</button>' +
                     '</div>' +
                 '</div>'
             );
@@ -759,37 +761,98 @@ function initRadioBrowser($) {
         }
 
         var btn = card.find('.rb-add-btn');
-
-        if (btn.hasClass('added')) {
-            notify('Info', 'Already in favorites', 'info');
-            return;
-        }
+        var isAlreadyFavorite = btn.hasClass('added');
 
         btn.prop('disabled', true);
 
-        $.ajax({
-            url: API_URL + '?cmd=import',
-            type: 'POST',
-            data: JSON.stringify(stationData),
-            contentType: 'application/json',
-            dataType: 'json',
-            timeout: 20000,
-            success: function(data) {
-                btn.prop('disabled', false);
-                if (data.success) {
-                    btn.addClass('added');
-                    btn.html('<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>');
-                    // Update favorites state
-                    state.favorites.push(stationData.url);
-                    state.favoritesMap[stationData.url] = stationData;
-                    notify('Added', 'Station added to Favorites', 'success');
-                } else {
-                    notify('Info', data.message || 'Could not add', 'info');
+        if (isAlreadyFavorite) {
+            // REMOVE from favorites
+            $.ajax({
+                url: API_URL + '?cmd=remove',
+                type: 'POST',
+                data: JSON.stringify({ url: stationData.url }),
+                contentType: 'application/json',
+                dataType: 'json',
+                timeout: 10000,
+                success: function(data) {
+                    btn.prop('disabled', false);
+                    if (data.success) {
+                        // Update ALL cards with same URL (recent + search results)
+                        updateFavoriteState(stationData.url, false);
+                        notify('Removed', 'Station removed from Favorites', 'success');
+                    } else {
+                        notify('Error', data.message || 'Could not remove', 'error');
+                    }
+                },
+                error: function() {
+                    btn.prop('disabled', false);
+                    notify('Error', 'Failed to remove', 'error');
                 }
-            },
-            error: function() {
-                btn.prop('disabled', false);
-                notify('Error', 'Failed to add', 'error');
+            });
+        } else {
+            // ADD to favorites
+            $.ajax({
+                url: API_URL + '?cmd=import',
+                type: 'POST',
+                data: JSON.stringify(stationData),
+                contentType: 'application/json',
+                dataType: 'json',
+                timeout: 20000,
+                success: function(data) {
+                    btn.prop('disabled', false);
+                    if (data.success) {
+                        // Update ALL cards with same URL (recent + search results)
+                        updateFavoriteState(stationData.url, true, stationData);
+                        notify('Added', 'Station added to Favorites', 'success');
+                    } else {
+                        notify('Info', data.message || 'Could not add', 'info');
+                    }
+                },
+                error: function() {
+                    btn.prop('disabled', false);
+                    notify('Error', 'Failed to add', 'error');
+                }
+            });
+        }
+    }
+
+    /**
+     * Update favorite state for ALL cards with matching URL
+     * This ensures both Recently Played and Search Results cards stay in sync
+     */
+    function updateFavoriteState(url, isFavorite, stationData) {
+        if (isFavorite) {
+            // Add to state
+            if (!state.favorites.includes(url)) {
+                state.favorites.push(url);
+            }
+            if (stationData) {
+                state.favoritesMap[url] = stationData;
+            }
+        } else {
+            // Remove from state
+            var idx = state.favorites.indexOf(url);
+            if (idx > -1) {
+                state.favorites.splice(idx, 1);
+            }
+            delete state.favoritesMap[url];
+        }
+
+        // Update ALL cards with this URL (both recent and search results)
+        $('.rb-station-card').each(function() {
+            var card = $(this);
+            var cardUrl = card.data('url');
+            if (cardUrl === url) {
+                var btn = card.find('.rb-add-btn');
+                if (isFavorite) {
+                    btn.addClass('added');
+                    btn.attr('title', 'Remove from Favorites');
+                    btn.html('<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>');
+                } else {
+                    btn.removeClass('added');
+                    btn.attr('title', 'Add to Favorites');
+                    btn.html('<i class="fa-solid fa-sharp fa-heart"></i>');
+                }
             }
         });
     }

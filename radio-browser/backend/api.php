@@ -893,21 +893,35 @@ switch ($cmd) {
             // Try to get station data from POST parameters
             $station = $_POST;
             if (!$station || empty($station['url'])) {
+                rb_debug_log('Remove failed: No station data provided');
                 $response = ['success' => false, 'message' => 'No station data'];
                 break;
             }
         }
         $dbh = sqlConnect();
         $url = trim($station['url']);
+        rb_debug_log('Remove station request for URL: ' . $url);
+
+        // Check if station exists before removing
+        $checkSql = "SELECT name FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='rb' LIMIT 1";
+        $checkResult = sqlQuery($checkSql, $dbh);
+        if (!is_array($checkResult) || count($checkResult) === 0) {
+            rb_debug_log('Remove failed: Station not found in favorites: ' . $url);
+            $response = ['success' => false, 'message' => 'Station not found in favorites'];
+            break;
+        }
+        $stationName = $checkResult[0]['name'];
 
         // Remove from database
         $sql = "DELETE FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='rb'";
         $result = sqlQuery($sql, $dbh);
         if ($result !== true) {
+            rb_debug_log('Remove failed: Database delete error for: ' . $url);
             $response = ['success' => false, 'message' => 'Failed to remove station from database'];
             break;
         }
 
+        rb_debug_log('Station removed from favorites: ' . $stationName . ', URL: ' . $url);
         $response = ['success' => true, 'message' => 'Station removed from Radio'];
         break;
     case 'recently_played':
