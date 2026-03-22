@@ -396,11 +396,11 @@ function rb_save_permanent_logo($stationName, $imageData)
     $logoExists = file_exists($logoPath);
     $thumbExists = file_exists($thumbPath);
     $thumbSmExists = file_exists($thumbSmPath);
-    
-    rb_debug_log('rb_save_permanent_logo: File check - logo:' . ($logoExists ? 'Y' : 'N') . 
-                 ' thumb:' . ($thumbExists ? 'Y' : 'N') . 
-                 ' thumbSm:' . ($thumbSmExists ? 'Y' : 'N'));
-    
+
+    rb_debug_log('rb_save_permanent_logo: File check - logo:' . ($logoExists ? 'Y' : 'N') .
+        ' thumb:' . ($thumbExists ? 'Y' : 'N') .
+        ' thumbSm:' . ($thumbSmExists ? 'Y' : 'N'));
+
     if ($logoExists && $thumbExists && $thumbSmExists) {
         rb_debug_log('rb_save_permanent_logo: Successfully saved all logo files');
         return true;
@@ -601,7 +601,7 @@ switch ($cmd) {
         try {
             // Query database for station logo
             $dbh = sqlConnect();
-            $sql = "SELECT logo FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='rb'";
+            $sql = "SELECT logo FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='u'";
             $result = sqlQuery($sql, $dbh);
 
             if ($result && count($result) > 0 && isset($result[0]['logo']) && !empty($result[0]['logo'])) {
@@ -734,7 +734,7 @@ switch ($cmd) {
             // Station not in database, insert it
             $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" .
                 SQLite3::escapeString($url) . "', '" .
-                SQLite3::escapeString($name) . "', 'rb', '" .
+                SQLite3::escapeString($name) . "', 'u', '" .
                 SQLite3::escapeString($logo) . "', '', '', '', '', '', '" .
                 SQLite3::escapeString($bitrate) . "', '" .
                 SQLite3::escapeString($format) . "', 'No', '', 'No')";
@@ -747,7 +747,7 @@ switch ($cmd) {
         phpSession('open');
         $_SESSION[$url] = [
             'name' => $name,
-            'type' => 'rb',
+            'type' => 'u',
             'logo' => $logo,
             'bitrate' => $bitrate,
             'format' => $format,
@@ -806,7 +806,7 @@ switch ($cmd) {
         $favicon = !empty($station['favicon']) ? trim($station['favicon']) : '';
 
         // Check if station already exists
-        $checkSql = "SELECT 1 FROM cfg_radio WHERE name = '" . SQLite3::escapeString($name) . "' AND type='rb' LIMIT 1";
+        $checkSql = "SELECT 1 FROM cfg_radio WHERE name = '" . SQLite3::escapeString($name) . "' AND type='u' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
         if (is_array($checkResult) && count($checkResult) > 0) {
             $response = ['success' => false, 'message' => 'Station already in favorites'];
@@ -855,11 +855,37 @@ switch ($cmd) {
             rb_debug_log('No favicon processing for station: ' . $name . ', favicon: ' . ($favicon ?: 'empty'));
         }
 
-        $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" . SQLite3::escapeString($url) . "', '" . SQLite3::escapeString($name) . "', 'rb', '" . SQLite3::escapeString($logo) . "', '', '', '', '', '', '', '', 'No', '', '')";
+        $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" . SQLite3::escapeString($url) . "', '" . SQLite3::escapeString($name) . "', 'u', '" . SQLite3::escapeString($logo) . "', '', '', '', '', '', '', '', 'No', '', '')";
         $result = sqlQuery($sql, $dbh);
         if ($result !== true) {
             $response = ['success' => false, 'message' => 'Failed to add station to database'];
             break;
+        }
+
+        // Create .pls file for MPD (required for moOde Radio Stations browser)
+        $plsFile = '/var/lib/mpd/music/RADIO/' . $name . '.pls';
+        $plsContent = "[playlist]\n";
+        $plsContent .= "File1=" . $url . "\n";
+        $plsContent .= "Title1=" . $name . "\n";
+        $plsContent .= "Length1=-1\n";
+        $plsContent .= "NumberOfEntries=1\n";
+        $plsContent .= "Version=2\n";
+
+        if (@file_put_contents($plsFile, $plsContent) !== false) {
+            @chmod($plsFile, 0777);
+            rb_debug_log('Created .pls file: ' . $plsFile);
+
+            // Update MPD database to pick up the new station
+            require_once '/var/www/inc/mpd.php';
+            $sock = openMpdSock('localhost', 6600);
+            if ($sock) {
+                sendMpdCmd($sock, 'update RADIO');
+                readMpdResp($sock);
+                closeMpdSock($sock);
+                rb_debug_log('MPD database update triggered for RADIO folder');
+            }
+        } else {
+            rb_debug_log('Warning: Could not create .pls file: ' . $plsFile);
         }
 
         // Move processed thumbnails to final location (only if we used the job system)
@@ -889,7 +915,7 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'Database connection failed'];
             break;
         }
-        $result = sqlQuery("SELECT station, name, logo FROM cfg_radio WHERE type='rb'", $dbh);
+        $result = sqlQuery("SELECT station, name, logo FROM cfg_radio WHERE type='u'", $dbh);
         $favorites = [];
         if (is_array($result)) {
             foreach ($result as $row) {
@@ -918,7 +944,7 @@ switch ($cmd) {
         rb_debug_log('Remove station request for URL: ' . $url);
 
         // Check if station exists before removing
-        $checkSql = "SELECT name FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='rb' LIMIT 1";
+        $checkSql = "SELECT name FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='u' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
         if (!is_array($checkResult) || count($checkResult) === 0) {
             rb_debug_log('Remove failed: Station not found in favorites: ' . $url);
@@ -928,12 +954,41 @@ switch ($cmd) {
         $stationName = $checkResult[0]['name'];
 
         // Remove from database
-        $sql = "DELETE FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='rb'";
+        $sql = "DELETE FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='u'";
         $result = sqlQuery($sql, $dbh);
         if ($result !== true) {
             rb_debug_log('Remove failed: Database delete error for: ' . $url);
             $response = ['success' => false, 'message' => 'Failed to remove station from database'];
             break;
+        }
+
+        // Remove .pls file
+        $plsFile = '/var/lib/mpd/music/RADIO/' . $stationName . '.pls';
+        if (file_exists($plsFile)) {
+            @unlink($plsFile);
+            rb_debug_log('Removed .pls file: ' . $plsFile);
+        }
+
+        // Remove logo files
+        $logoFiles = [
+            RADIO_LOGOS_ROOT . $stationName . '.jpg',
+            RADIO_LOGOS_ROOT . 'thumbs/' . $stationName . '.jpg',
+            RADIO_LOGOS_ROOT . 'thumbs/' . $stationName . '_sm.jpg'
+        ];
+        foreach ($logoFiles as $logoFile) {
+            if (file_exists($logoFile)) {
+                @unlink($logoFile);
+                rb_debug_log('Removed logo file: ' . $logoFile);
+            }
+        }
+
+        // Update MPD database
+        require_once '/var/www/inc/mpd.php';
+        $sock = openMpdSock('localhost', 6600);
+        if ($sock) {
+            sendMpdCmd($sock, 'update RADIO');
+            readMpdResp($sock);
+            closeMpdSock($sock);
         }
 
         rb_debug_log('Station removed from favorites: ' . $stationName . ', URL: ' . $url);
@@ -959,7 +1014,7 @@ switch ($cmd) {
             // Fallback to database for first-time users
             $dbh = sqlConnect();
             if ($dbh) {
-                $result = sqlQuery("SELECT station, name, logo FROM cfg_radio WHERE type='rb' ORDER BY id DESC LIMIT 10", $dbh);
+                $result = sqlQuery("SELECT station, name, logo FROM cfg_radio WHERE type='u' ORDER BY id DESC LIMIT 10", $dbh);
                 if (is_array($result)) {
                     foreach ($result as $row) {
                         $stations[] = [
