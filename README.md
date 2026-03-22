@@ -11,8 +11,8 @@
 **RubaTron's Radio Browser Installer** is an installation package for the Radio Browser extension in Moode Audio. This extension allows you to browse and play thousands of internet radio stations directly from your Moode Audio interface built on the radio-info API.
 ![RadioBrowser screenshot](https://i.postimg.cc/3rbVZCrF/image.png "RadioBrowser")
 
-
 ### Radio Browser Interface
+
 *The Radio Browser interface provides an intuitive way to browse and play thousands of internet radio stations with advanced search and filtering capabilities.*
 
 ## ✨ Features
@@ -28,15 +28,32 @@
 - ⭐ **Top Stations** and search functionality
 
 ## Experimental Features/ Work in progress
- - **Custom API** not working flawlessly 
+
+- **Custom API** not working flawlessly
 
 ## 📋 Requirements
 
 - **Moode Audio** (Raspberry Pi based music player)
 - **PHP 8.4+** with cURL extension
+- **ffmpeg** (optional, for stream recording)
+
 ## Installation
 
-### Quick Install (Recommended)
+### One-Liner Install (Easiest)
+
+Run this command on your moOde system:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rubatron/RadioBrowser/main/bootstrap.sh | sudo bash
+```
+
+Or with wget:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/main/bootstrap.sh | sudo bash
+```
+
+### Manual Install
 
 Download and run the installer directly:
 
@@ -51,6 +68,7 @@ sudo bash install.sh
 Then select option **1** (Auto-install) from the menu.
 
 ### What the installer does
+
 - Create folder structure (/var/www/extensions/installed/radio-browser/)
 - Copy all extension files
 - Set correct permissions
@@ -73,6 +91,7 @@ radio-browser/
 Custom APIs are stored in `data/custom_apis.json` and survive cache flushes.
 
 **Add via UI:**
+
 1. Go to Settings  Custom API
 2. Enter Name, URL, and Type
 3. Click "Add Custom API"
@@ -87,8 +106,9 @@ The API will immediately appear in the "Active API" dropdown and "Saved APIs" li
 ## Troubleshooting
 
 Built-in tools available in Settings  Troubleshooting:
+
 - **Flush Cache** - Clear API cache and images
-- ** Restart NginX webservice and remove server caching**
+- **Restart NginX webservice and remove server caching**
 - **Fix Permissions** - Reset file/folder permissions
 - **Test API** - Verify Radio Browser API connectivity
 - **View/Clear Log** - Debug logging

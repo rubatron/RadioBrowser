@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RubaTron's Radio Browser Extension for moOde Audio Player
  * Backend API
@@ -9,8 +10,9 @@
  */
 
 // --- EXTENSIEVE BACKEND LOGGING ---
-function rb_debug_log($msg) {
-    @file_put_contents(RB_LOG, '[DEBUG '.date('c').'] '.$msg."\n", FILE_APPEND);
+function rb_debug_log($msg)
+{
+    @file_put_contents(RB_LOG, '[DEBUG ' . date('c') . '] ' . $msg . "\n", FILE_APPEND);
 }
 
 require_once '/var/www/inc/common.php';
@@ -54,8 +56,10 @@ define('RB_RECENTLY_PLAYED_FILE', RB_CACHE . '/recently_played.json');
 // File-based custom API storage (in data folder, NOT cache - survives cache flush)
 define('RB_DATA_DIR', __DIR__ . '/../data');
 define('RB_CUSTOM_APIS_FILE', RB_DATA_DIR . '/custom_apis.json');
+define('RB_SETTINGS_FILE', RB_DATA_DIR . '/settings.json');
 
-function rb_get_custom_apis() {
+function rb_get_custom_apis()
+{
     if (file_exists(RB_CUSTOM_APIS_FILE)) {
         $data = @json_decode(file_get_contents(RB_CUSTOM_APIS_FILE), true);
         return is_array($data) ? $data : [];
@@ -63,31 +67,33 @@ function rb_get_custom_apis() {
     return [];
 }
 
-function rb_save_custom_apis($apis) {
+function rb_save_custom_apis($apis)
+{
     if (!is_dir(RB_DATA_DIR)) @mkdir(RB_DATA_DIR, 0775, true);
     return @file_put_contents(RB_CUSTOM_APIS_FILE, json_encode($apis, JSON_PRETTY_PRINT)) !== false;
 }
 
-function rb_add_custom_api($name, $url, $type) {
+function rb_add_custom_api($name, $url, $type)
+{
     $apis = rb_get_custom_apis();
-    
+
     // Generate unique ID
     $id = 'custom_' . preg_replace('/[^a-z0-9]/', '_', strtolower($name)) . '_' . substr(md5($url), 0, 6);
-    
+
     // Check for duplicate URL
     foreach ($apis as $api) {
         if ($api['url'] === $url) {
             return ['success' => false, 'message' => 'API with this URL already exists'];
         }
     }
-    
+
     $apis[$id] = [
         'name' => $name,
         'url' => $url,
         'type' => $type,
         'added' => date('Y-m-d H:i:s')
     ];
-    
+
     if (rb_save_custom_apis($apis)) {
         rb_debug_log('Custom API added: ' . $name . ' (' . $url . ')');
         return ['success' => true, 'message' => 'Custom API added', 'id' => $id, 'apis' => $apis];
@@ -95,16 +101,17 @@ function rb_add_custom_api($name, $url, $type) {
     return ['success' => false, 'message' => 'Failed to save custom API'];
 }
 
-function rb_remove_custom_api($id) {
+function rb_remove_custom_api($id)
+{
     $apis = rb_get_custom_apis();
-    
+
     if (!isset($apis[$id])) {
         return ['success' => false, 'message' => 'Custom API not found'];
     }
-    
+
     $name = $apis[$id]['name'];
     unset($apis[$id]);
-    
+
     if (rb_save_custom_apis($apis)) {
         rb_debug_log('Custom API removed: ' . $name);
         return ['success' => true, 'message' => 'Custom API removed', 'apis' => $apis];
@@ -112,7 +119,79 @@ function rb_remove_custom_api($id) {
     return ['success' => false, 'message' => 'Failed to remove custom API'];
 }
 
-function rb_get_recently_played() {
+// ============================================================================
+// SETTINGS / VISIBILITY FUNCTIONS
+// ============================================================================
+
+function rb_get_default_settings()
+{
+    return [
+        'visibility' => [
+            'header' => true,
+            'library' => true,
+            'm' => true,
+            'system' => true
+        ],
+        'version' => '3.0.0',
+        'updated' => date('Y-m-d H:i:s')
+    ];
+}
+
+function rb_get_settings()
+{
+    if (file_exists(RB_SETTINGS_FILE)) {
+        $data = @json_decode(file_get_contents(RB_SETTINGS_FILE), true);
+        if (is_array($data)) {
+            // Merge with defaults to ensure all keys exist
+            $defaults = rb_get_default_settings();
+            return array_replace_recursive($defaults, $data);
+        }
+    }
+    return rb_get_default_settings();
+}
+
+function rb_save_settings($settings)
+{
+    if (!is_dir(RB_DATA_DIR)) @mkdir(RB_DATA_DIR, 0775, true);
+    $settings['updated'] = date('Y-m-d H:i:s');
+    return @file_put_contents(RB_SETTINGS_FILE, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false;
+}
+
+function rb_set_visibility($area, $visible)
+{
+    $allowed = ['header', 'library', 'm', 'system'];
+    if (!in_array($area, $allowed, true)) {
+        return ['success' => false, 'error' => 'Invalid area. Use header, library, m, or system.'];
+    }
+
+    $settings = rb_get_settings();
+    if (!isset($settings['visibility']) || !is_array($settings['visibility'])) {
+        $settings['visibility'] = rb_get_default_settings()['visibility'];
+    }
+
+    $settings['visibility'][$area] = (bool)$visible;
+
+    // Ensure all visibility keys exist
+    foreach ($allowed as $key) {
+        if (!array_key_exists($key, $settings['visibility'])) {
+            $settings['visibility'][$key] = true;
+        }
+    }
+
+    if (rb_save_settings($settings)) {
+        rb_debug_log('Visibility updated: ' . $area . ' = ' . ($visible ? 'visible' : 'hidden'));
+        return [
+            'success' => true,
+            'area' => $area,
+            'visible' => $visible,
+            'visibility' => $settings['visibility']
+        ];
+    }
+    return ['success' => false, 'error' => 'Failed to save settings'];
+}
+
+function rb_get_recently_played()
+{
     if (file_exists(RB_RECENTLY_PLAYED_FILE)) {
         $data = @json_decode(file_get_contents(RB_RECENTLY_PLAYED_FILE), true);
         return is_array($data) ? $data : [];
@@ -120,16 +199,17 @@ function rb_get_recently_played() {
     return [];
 }
 
-function rb_add_recently_played($station) {
+function rb_add_recently_played($station)
+{
     $list = rb_get_recently_played();
-    
+
     // Remove existing entry with same URL (to move it to top)
     $url = trim($station['url']);
-    $list = array_filter($list, function($item) use ($url) {
+    $list = array_filter($list, function ($item) use ($url) {
         return $item['url'] !== $url;
     });
     $list = array_values($list); // Re-index
-    
+
     // Add to beginning (most recent first)
     array_unshift($list, [
         'url' => $url,
@@ -137,26 +217,28 @@ function rb_add_recently_played($station) {
         'logo' => $station['logo'] ?? 'local',
         'played_at' => time()
     ]);
-    
+
     // Keep only last 6 (to match UI display)
     $list = array_slice($list, 0, 6);
-    
+
     // Save to file
     @file_put_contents(RB_RECENTLY_PLAYED_FILE, json_encode($list, JSON_PRETTY_PRINT));
     rb_debug_log('Recently played updated: ' . ($station['name'] ?? 'Unknown') . ' now first, total: ' . count($list));
-    
+
     return $list;
 }
 
 // Log elke inkomende request
 $cmd = $_GET['cmd'] ?? $_POST['cmd'] ?? '';
-rb_debug_log('IN: cmd='.$cmd.', params='.json_encode($_REQUEST).', IP='.$_SERVER['REMOTE_ADDR']);
+rb_debug_log('IN: cmd=' . $cmd . ', params=' . json_encode($_REQUEST) . ', IP=' . $_SERVER['REMOTE_ADDR']);
 
-function rb_log($msg) {
-    @file_put_contents(RB_LOG, '['.date('c').'] '.$msg."\n", FILE_APPEND);
+function rb_log($msg)
+{
+    @file_put_contents(RB_LOG, '[' . date('c') . '] ' . $msg . "\n", FILE_APPEND);
 }
 
-function rb_cache_get($key, $ttl) {
+function rb_cache_get($key, $ttl)
+{
     $file = RB_CACHE . '/' . md5($key) . '.json';
     if (file_exists($file) && (time() - filemtime($file) < $ttl)) {
         $data = @file_get_contents($file);
@@ -164,24 +246,26 @@ function rb_cache_get($key, $ttl) {
     }
     return false;
 }
-function rb_cache_set($key, $data) {
+function rb_cache_set($key, $data)
+{
     if (!is_dir(RB_CACHE)) @mkdir(RB_CACHE, 0777, true);
     $file = RB_CACHE . '/' . md5($key) . '.json';
     @file_put_contents($file, json_encode($data));
 }
 
 // Image caching functions
-function rb_cache_image($url) {
+function rb_cache_image($url)
+{
     if (empty($url)) return false;
-    
+
     $url_hash = md5($url);
     $cache_file = RB_IMAGE_CACHE . '/' . $url_hash . '.png';
-    
+
     // Check if image is already cached
     if (file_exists($cache_file) && (time() - filemtime($cache_file) < RB_CACHE_TTL_STATIC)) {
         return '/extensions/installed/radio-browser/cache/images/' . $url_hash . '.png';
     }
-    
+
     // Download and cache the image
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -191,22 +275,22 @@ function rb_cache_image($url) {
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS => 3
     ]);
-    
+
     $image_data = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    
+
     if ($image_data && $http_code == 200 && strlen($image_data) < 50000) { // Max 50KB per image
         if (!is_dir(RB_IMAGE_CACHE)) @mkdir(RB_IMAGE_CACHE, 0777, true);
-        
+
         // Check cache size before adding new image
         rb_cleanup_image_cache();
-        
+
         if (@file_put_contents($cache_file, $image_data)) {
             return '/extensions/installed/radio-browser/cache/images/' . $url_hash . '.png';
         }
     }
-    
+
     return false;
 }
 
@@ -217,36 +301,37 @@ function rb_cache_image($url) {
  * @param string $imageData Raw image binary data
  * @return bool Success
  */
-function rb_save_permanent_logo($stationName, $imageData) {
+function rb_save_permanent_logo($stationName, $imageData)
+{
     if (empty($stationName) || empty($imageData)) {
         rb_debug_log('rb_save_permanent_logo: Empty station name or image data');
         return false;
     }
-    
+
     // Clean station name for filename
     $safeName = preg_replace('/[^a-zA-Z0-9\-_\s]/', '', $stationName);
     $safeName = trim($safeName);
     if (empty($safeName)) {
         $safeName = 'station_' . md5($stationName);
     }
-    
+
     $logoPath = RADIO_LOGOS_ROOT . $safeName . '.jpg';
     $thumbPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg';
     $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
-    
+
     rb_debug_log('rb_save_permanent_logo: Saving logo for ' . $stationName . ' to ' . $logoPath);
-    
+
     // Create image from data (auto-detect format)
     $srcImage = @imagecreatefromstring($imageData);
     if (!$srcImage) {
         rb_debug_log('rb_save_permanent_logo: Failed to create image from data');
         return false;
     }
-    
+
     // Get original dimensions
     $srcWidth = imagesx($srcImage);
     $srcHeight = imagesy($srcImage);
-    
+
     // Create directories if needed
     if (!is_dir(RADIO_LOGOS_ROOT)) {
         @mkdir(RADIO_LOGOS_ROOT, 0755, true);
@@ -254,24 +339,24 @@ function rb_save_permanent_logo($stationName, $imageData) {
     if (!is_dir(RADIO_LOGOS_ROOT . 'thumbs/')) {
         @mkdir(RADIO_LOGOS_ROOT . 'thumbs/', 0755, true);
     }
-    
+
     // Save main logo (resize to 400x400 max)
     $mainSize = 400;
     $mainImage = imagecreatetruecolor($mainSize, $mainSize);
     $white = imagecolorallocate($mainImage, 255, 255, 255);
     imagefill($mainImage, 0, 0, $white);
-    
+
     // Calculate scaling to fit in square
     $scale = min($mainSize / $srcWidth, $mainSize / $srcHeight);
     $newWidth = (int)($srcWidth * $scale);
     $newHeight = (int)($srcHeight * $scale);
     $x = (int)(($mainSize - $newWidth) / 2);
     $y = (int)(($mainSize - $newHeight) / 2);
-    
+
     imagecopyresampled($mainImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
     imagejpeg($mainImage, $logoPath, 85);
     imagedestroy($mainImage);
-    
+
     // Save thumbnail (200x200)
     $thumbSize = 200;
     $thumbImage = imagecreatetruecolor($thumbSize, $thumbSize);
@@ -284,7 +369,7 @@ function rb_save_permanent_logo($stationName, $imageData) {
     imagecopyresampled($thumbImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
     imagejpeg($thumbImage, $thumbPath, 85);
     imagedestroy($thumbImage);
-    
+
     // Save small thumbnail (80x80)
     $smallSize = 80;
     $smallImage = imagecreatetruecolor($smallSize, $smallSize);
@@ -297,26 +382,27 @@ function rb_save_permanent_logo($stationName, $imageData) {
     imagecopyresampled($smallImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
     imagejpeg($smallImage, $thumbSmPath, 85);
     imagedestroy($smallImage);
-    
+
     imagedestroy($srcImage);
-    
+
     // Verify files were created
     if (file_exists($logoPath) && file_exists($thumbPath)) {
         rb_debug_log('rb_save_permanent_logo: Successfully saved logo and thumbnails');
         return true;
     }
-    
+
     rb_debug_log('rb_save_permanent_logo: Failed to save logo files');
     return false;
 }
 
-function rb_cleanup_image_cache() {
+function rb_cleanup_image_cache()
+{
     if (!is_dir(RB_IMAGE_CACHE)) return;
-    
+
     $files = glob(RB_IMAGE_CACHE . '/*.png');
     $total_size = 0;
     $file_info = [];
-    
+
     foreach ($files as $file) {
         $size = filesize($file);
         $total_size += $size;
@@ -326,15 +412,15 @@ function rb_cleanup_image_cache() {
             'mtime' => filemtime($file)
         ];
     }
-    
+
     $max_size = RB_IMAGE_CACHE_SIZE_MB * 1024 * 1024; // Convert MB to bytes
-    
+
     if ($total_size > $max_size) {
         // Sort by modification time (oldest first)
-        usort($file_info, function($a, $b) {
+        usort($file_info, function ($a, $b) {
             return $a['mtime'] <=> $b['mtime'];
         });
-        
+
         // Remove oldest files until we're under the limit
         foreach ($file_info as $info) {
             if ($total_size <= $max_size) break;
@@ -344,7 +430,8 @@ function rb_cleanup_image_cache() {
     }
 }
 
-function rb_get_servers() {
+function rb_get_servers()
+{
     $cache = rb_cache_get('servers', RB_SERVERS_TTL);
     if ($cache && is_array($cache)) return $cache;
     $servers = [];
@@ -370,7 +457,8 @@ function rb_get_servers() {
     return $servers;
 }
 
-function rb_api($endpoint, $params = [], $timeout = 10) {
+function rb_api($endpoint, $params = [], $timeout = 10)
+{
     $servers = rb_get_servers();
     $query = http_build_query($params);
     foreach ($servers as $srv) {
@@ -406,12 +494,12 @@ switch ($cmd) {
         $apis = rb_get_custom_apis();
         $response = ['success' => true, 'apis' => $apis];
         break;
-    
+
     case 'custom_api_add':
         $name = trim($_POST['name'] ?? $_GET['name'] ?? '');
         $url = trim($_POST['url'] ?? $_GET['url'] ?? '');
         $type = trim($_POST['type'] ?? $_GET['type'] ?? 'radio-browser');
-        
+
         if (empty($name)) {
             $response = ['success' => false, 'message' => 'Name is required'];
         } elseif (empty($url)) {
@@ -422,17 +510,17 @@ switch ($cmd) {
             $response = rb_add_custom_api($name, $url, $type);
         }
         break;
-    
+
     case 'custom_api_remove':
         $id = trim($_POST['id'] ?? $_GET['id'] ?? '');
-        
+
         if (empty($id)) {
             $response = ['success' => false, 'message' => 'API ID is required'];
         } else {
             $response = rb_remove_custom_api($id);
         }
         break;
-    
+
     case 'test':
         $response = ['success' => true, 'message' => 'Radio Browser API is working', 'timestamp' => time(), 'version' => '1.1.0'];
         break;
@@ -475,10 +563,10 @@ switch ($cmd) {
             $end_time = microtime(true);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            
+
             // Calculate latency in milliseconds
             $latency = ($code === 200) ? round(($end_time - $start_time) * 1000) : 0;
-            
+
             $results[] = [
                 'name' => $srv,
                 'online' => ($code === 200),
@@ -494,13 +582,13 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'No URL provided'];
             break;
         }
-        
+
         try {
             // Query database for station logo
             $dbh = sqlConnect();
             $sql = "SELECT logo FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='rb'";
             $result = sqlQuery($sql, $dbh);
-            
+
             if ($result && count($result) > 0 && isset($result[0]['logo']) && !empty($result[0]['logo'])) {
                 $logo = $result[0]['logo'];
                 // If logo is a relative path, make it absolute
@@ -554,7 +642,9 @@ switch ($cmd) {
             'order' => $_REQUEST['order'] ?? 'clickcount',
             'reverse' => $_REQUEST['reverse'] ?? 'true',
         ];
-        $params = array_filter($params, function($v) { return $v !== '' && $v !== null; });
+        $params = array_filter($params, function ($v) {
+            return $v !== '' && $v !== null;
+        });
         $cache_key = 'search_' . md5(json_encode($params));
         $data = rb_cache_get($cache_key, RB_CACHE_TTL);
         if ($data === false) {
@@ -583,7 +673,7 @@ switch ($cmd) {
         $cache_key = 'top_click_' . $limit;
         $data = rb_cache_get($cache_key, RB_CACHE_TTL_STATIC);
         if ($data === false) {
-            $data = rb_api('/json/stations/topclick/'.$limit);
+            $data = rb_api('/json/stations/topclick/' . $limit);
             if ($data !== false) {
                 rb_cache_set($cache_key, $data);
             } else {
@@ -613,13 +703,13 @@ switch ($cmd) {
             break;
         }
         require_once '/var/www/inc/mpd.php';
-        
+
         $name = $station['name'] ?? 'Radio Browser Station';
         $url = trim($station['url']);
         $logo = !empty($station['favicon']) ? $station['favicon'] : 'local';
         $bitrate = isset($station['bitrate']) && $station['bitrate'] > 0 ? (string)$station['bitrate'] : '';
         $format = $station['codec'] ?? '';
-        
+
         // Insert station into cfg_radio for currentsong.txt compatibility
         // This allows moOde's worker.php/enhanceMetadata() to find station info via load_radio
         $dbh = sqlConnect();
@@ -627,16 +717,16 @@ switch ($cmd) {
         $exists = sqlQuery($checkSql, $dbh);
         if (!is_array($exists) || count($exists) == 0) {
             // Station not in database, insert it
-            $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" . 
-                SQLite3::escapeString($url) . "', '" . 
-                SQLite3::escapeString($name) . "', 'rb', '" . 
-                SQLite3::escapeString($logo) . "', '', '', '', '', '', '" . 
-                SQLite3::escapeString($bitrate) . "', '" . 
+            $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" .
+                SQLite3::escapeString($url) . "', '" .
+                SQLite3::escapeString($name) . "', 'rb', '" .
+                SQLite3::escapeString($logo) . "', '', '', '', '', '', '" .
+                SQLite3::escapeString($bitrate) . "', '" .
                 SQLite3::escapeString($format) . "', 'No', '', 'No')";
             sqlQuery($sql, $dbh);
             rb_debug_log('Inserted station into cfg_radio: ' . $name . ', URL: ' . $url);
         }
-        
+
         // Add station to shared session file so worker.php's enhanceMetadata() can find it
         // worker.php periodically opens/closes the session, so it will pick up this data
         phpSession('open');
@@ -651,14 +741,14 @@ switch ($cmd) {
         ];
         phpSession('close');
         rb_debug_log('Added station to session: ' . $name . ', URL: ' . $url);
-        
+
         // Track recently played using file-based storage (persistent, ordered by play time)
         rb_add_recently_played([
             'url' => $url,
             'name' => $name,
             'logo' => $logo
         ]);
-        
+
         $sock = openMpdSock('localhost', 6600);
         if (!$sock) {
             $response = ['success' => false, 'message' => 'Cannot connect to MPD'];
@@ -699,7 +789,7 @@ switch ($cmd) {
         $name = !empty($station['name']) ? trim($station['name']) : 'Unknown Station';
         $url = trim($station['url']);
         $favicon = !empty($station['favicon']) ? trim($station['favicon']) : '';
-        
+
         // Check if station already exists
         $checkSql = "SELECT 1 FROM cfg_radio WHERE name = '" . SQLite3::escapeString($name) . "' AND type='rb' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
@@ -707,13 +797,13 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'Station already in favorites'];
             break;
         }
-        
+
         // Process favicon if available - download and convert to JPG
         $logo = 'local'; // Default to local logo
         $logoSaved = false;
         if (!empty($favicon) && !str_contains($favicon, 'encrypted-tbn0.gstatic.com')) {
             rb_debug_log('Processing favicon for station: ' . $name . ', URL: ' . $favicon);
-            
+
             // Download favicon
             $ch = curl_init($favicon);
             curl_setopt_array($ch, [
@@ -726,10 +816,10 @@ switch ($cmd) {
             $imageData = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            
+
             if ($imageData !== false && $httpCode == 200 && strlen($imageData) > 100) {
                 rb_debug_log('Downloaded favicon, size: ' . strlen($imageData) . ' bytes');
-                
+
                 // Use our own PNG->JPG conversion and save directly
                 if (rb_save_permanent_logo($name, $imageData)) {
                     rb_debug_log('Logo saved permanently using rb_save_permanent_logo');
@@ -749,19 +839,19 @@ switch ($cmd) {
         } else {
             rb_debug_log('No favicon processing for station: ' . $name . ', favicon: ' . ($favicon ?: 'empty'));
         }
-        
+
         $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" . SQLite3::escapeString($url) . "', '" . SQLite3::escapeString($name) . "', 'rb', '" . SQLite3::escapeString($logo) . "', '', '', '', '', '', '', '', 'No', '', '')";
         $result = sqlQuery($sql, $dbh);
         if ($result !== true) {
             $response = ['success' => false, 'message' => 'Failed to add station to database'];
             break;
         }
-        
+
         // Move processed thumbnails to final location (only if we used the job system)
         if ($logo == 'local' && !$logoSaved) {
             putStationCover($name);
         }
-        
+
         $response = ['success' => true, 'message' => 'Station added to Radio'];
         break;
     case 'current_status':
@@ -809,7 +899,7 @@ switch ($cmd) {
         }
         $dbh = sqlConnect();
         $url = trim($station['url']);
-        
+
         // Remove from database
         $sql = "DELETE FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='rb'";
         $result = sqlQuery($sql, $dbh);
@@ -817,16 +907,16 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'Failed to remove station from database'];
             break;
         }
-        
+
         $response = ['success' => true, 'message' => 'Station removed from Radio'];
         break;
     case 'recently_played':
         // Recently played: Get from file-based storage (tracks play order) with fallback to database
         $stations = [];
-        
+
         // First try file-based recently played (ordered by play time)
         $fileBasedList = rb_get_recently_played();
-        
+
         if (!empty($fileBasedList)) {
             foreach ($fileBasedList as $entry) {
                 $stations[] = [
@@ -853,7 +943,7 @@ switch ($cmd) {
                 rb_debug_log('Recently played from database (fallback): ' . count($stations) . ' stations');
             }
         }
-        
+
         $response = ['success' => true, 'stations' => $stations];
         break;
     case 'flush_cache':
@@ -874,11 +964,11 @@ switch ($cmd) {
         // Restart nginx and PHP-FPM using background process
         // We need to send response first, then restart in background so connection doesn't die
         rb_debug_log('Services restart requested');
-        
+
         // Send success response immediately before restarting
         header('Content-Type: application/json');
         echo json_encode(['success' => true, 'message' => 'Services restart initiated...']);
-        
+
         // Flush output to client
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
@@ -886,15 +976,15 @@ switch ($cmd) {
             ob_end_flush();
             flush();
         }
-        
+
         // Small delay to ensure response is sent
         usleep(100000); // 100ms
-        
+
         // Now restart services (connection already closed)
         exec('sudo /usr/bin/systemctl restart nginx 2>&1');
         sleep(1);
         exec('sudo /usr/bin/systemctl restart php8.4-fpm 2>&1');
-        
+
         rb_debug_log('Services restart completed');
         exit; // Already sent response, don't continue
         break;
@@ -919,11 +1009,11 @@ switch ($cmd) {
     case 'reboot':
         // Reboot the system
         rb_debug_log('System reboot requested');
-        
+
         // Send success response immediately before rebooting
         header('Content-Type: application/json');
         echo json_encode(['success' => true, 'message' => 'System is rebooting...']);
-        
+
         // Flush output to client
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
@@ -931,45 +1021,100 @@ switch ($cmd) {
             ob_end_flush();
             flush();
         }
-        
+
         // Small delay to ensure response is sent
         usleep(500000); // 500ms
-        
+
         // Execute reboot command
         exec('sudo /sbin/reboot');
-        
+
         rb_debug_log('Reboot command executed');
         exit;
         break;
+
+    // ============================================================================
+    // SETTINGS / VISIBILITY API
+    // ============================================================================
+    case 'get_settings':
+        $settings = rb_get_settings();
+        $response = ['success' => true, 'settings' => $settings];
+        break;
+
+    case 'set_visibility':
+        $area = strtolower(trim($_POST['area'] ?? $_GET['area'] ?? ''));
+        $value = $_POST['value'] ?? $_GET['value'] ?? '1';
+        $visible = ($value === '1' || strtolower($value) === 'true' || $value === true);
+
+        $result = rb_set_visibility($area, $visible);
+        if (isset($result['success']) && $result['success']) {
+            $response = ['success' => true, 'data' => $result];
+        } else {
+            $response = ['success' => false, 'message' => $result['error'] ?? 'Unknown error'];
+        }
+        break;
+
+    // ============================================================================
+    // STREAM DOWNLOAD API (Simple - return URL info)
+    // ============================================================================
+    case 'get_stream_url':
+        // Get current playing stream URL - client-side handles m3u creation
+        require_once '/var/www/inc/mpd.php';
+        $sock = openMpdSock('localhost', 6600);
+        if (!$sock) {
+            $response = ['success' => false, 'message' => 'Cannot connect to MPD'];
+            break;
+        }
+        $current = getCurrentSong($sock);
+        closeMpdSock($sock);
+
+        if (isset($current['file']) && !empty($current['file'])) {
+            // Try to get station name from database
+            $dbh = sqlConnect();
+            $url = $current['file'];
+            $sql = "SELECT name FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
+            $result = sqlQuery($sql, $dbh);
+            $name = (is_array($result) && count($result) > 0) ? $result[0]['name'] : 'Radio Stream';
+
+            $response = [
+                'success' => true,
+                'url' => $url,
+                'name' => $name
+            ];
+        } else {
+            $response = ['success' => false, 'message' => 'No station currently playing'];
+        }
+        break;
+
     default:
         $response = ['success' => false, 'message' => 'Unknown command'];
 }
 
-function putStationCover($stName) {
-	$stTmpImage = RADIO_LOGOS_ROOT . TMP_IMAGE_PREFIX . $stName . '.jpg';
-	$stTmpImageThm = RADIO_LOGOS_ROOT . 'thumbs/' . TMP_IMAGE_PREFIX . $stName . '.jpg';
-	$stTmpImageThmSm = RADIO_LOGOS_ROOT . 'thumbs/' . TMP_IMAGE_PREFIX . $stName . '_sm.jpg';
+function putStationCover($stName)
+{
+    $stTmpImage = RADIO_LOGOS_ROOT . TMP_IMAGE_PREFIX . $stName . '.jpg';
+    $stTmpImageThm = RADIO_LOGOS_ROOT . 'thumbs/' . TMP_IMAGE_PREFIX . $stName . '.jpg';
+    $stTmpImageThmSm = RADIO_LOGOS_ROOT . 'thumbs/' . TMP_IMAGE_PREFIX . $stName . '_sm.jpg';
 
-	$stCoverImage = RADIO_LOGOS_ROOT . $stName . '.jpg';
-	$stCoverImageThm = RADIO_LOGOS_ROOT . 'thumbs/' .  $stName . '.jpg';
-	$stCoverImageThmSm = RADIO_LOGOS_ROOT . 'thumbs/' .  $stName . '_sm.jpg';
+    $stCoverImage = RADIO_LOGOS_ROOT . $stName . '.jpg';
+    $stCoverImageThm = RADIO_LOGOS_ROOT . 'thumbs/' .  $stName . '.jpg';
+    $stCoverImageThmSm = RADIO_LOGOS_ROOT . 'thumbs/' .  $stName . '_sm.jpg';
 
-	$defaultImage = DEFAULT_NOTFOUND_COVER;
-	sendFECmd('set_cover_image1'); // Show spinner
-	sleep(3); // Allow time for set_ralogo_image job to create __tmp__ image file
+    $defaultImage = DEFAULT_NOTFOUND_COVER;
+    sendFECmd('set_cover_image1'); // Show spinner
+    sleep(3); // Allow time for set_ralogo_image job to create __tmp__ image file
 
-	if (file_exists($stTmpImage)) {
-		sysCmd('mv "' . $stTmpImage . '" "' . $stCoverImage . '"');
-		sysCmd('mv "' . $stTmpImageThm . '" "' . $stCoverImageThm . '"');
-		sysCmd('mv "' . $stTmpImageThmSm . '" "' . $stCoverImageThmSm . '"');
-	} else if (!file_exists($stCoverImage)) {
-		sysCmd('cp "' . $defaultImage . '" "' . $stCoverImage . '"');
-		sysCmd('cp "' . $defaultImage . '" "' . $stCoverImageThm . '"');
-		sysCmd('cp "' . $defaultImage . '" "' . $stCoverImageThmSm . '"');
-	}
+    if (file_exists($stTmpImage)) {
+        sysCmd('mv "' . $stTmpImage . '" "' . $stCoverImage . '"');
+        sysCmd('mv "' . $stTmpImageThm . '" "' . $stCoverImageThm . '"');
+        sysCmd('mv "' . $stTmpImageThmSm . '" "' . $stCoverImageThmSm . '"');
+    } else if (!file_exists($stCoverImage)) {
+        sysCmd('cp "' . $defaultImage . '" "' . $stCoverImage . '"');
+        sysCmd('cp "' . $defaultImage . '" "' . $stCoverImageThm . '"');
+        sysCmd('cp "' . $defaultImage . '" "' . $stCoverImageThmSm . '"');
+    }
 
-	sendFECmd('set_cover_image0'); // Hide spinner
+    sendFECmd('set_cover_image0'); // Hide spinner
 }
 
-rb_debug_log('OUT: '.json_encode($response));
+rb_debug_log('OUT: ' . json_encode($response));
 echo json_encode($response);
