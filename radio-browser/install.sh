@@ -379,6 +379,10 @@ set_permissions() {
     chmod 777 "${CACHE_DIR}"
     chmod 777 "${IMAGE_CACHE_DIR}"
 
+    # Make moOde radio-logos directory writable for thumbnail creation
+    chmod 777 /var/local/www/imagesw/radio-logos 2>/dev/null || true
+    chmod 777 /var/local/www/imagesw/radio-logos/thumbs 2>/dev/null || true
+
     success "Permissions set correctly"
     return 0
 }

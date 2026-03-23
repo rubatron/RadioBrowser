@@ -736,20 +736,40 @@ switch ($cmd) {
         $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
 
         if (!empty($favicon) && !str_contains($favicon, 'encrypted-tbn0.gstatic.com') && !file_exists($thumbSmPath)) {
-            rb_debug_log('Play: Downloading logo for ' . $name . ' from ' . $favicon);
-            $ch = curl_init($favicon);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 5,  // Quick timeout for play
-                CURLOPT_USERAGENT => RB_UA,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS => 3
-            ]);
-            $imageData = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            rb_debug_log('Play: Getting logo for ' . $name . ' from ' . $favicon);
+            $imageData = false;
 
-            if ($imageData !== false && $httpCode == 200 && strlen($imageData) > 100) {
+            // Check if favicon is a local cached file (starts with / but not http)
+            if (str_starts_with($favicon, '/') && !str_starts_with($favicon, 'http')) {
+                // Local file - could be our cache or web root path
+                $localPath = $favicon;
+                if (str_starts_with($favicon, '/extensions/')) {
+                    $localPath = '/var/www' . $favicon;
+                }
+                if (file_exists($localPath)) {
+                    $imageData = file_get_contents($localPath);
+                    rb_debug_log('Play: Read local cache file: ' . $localPath);
+                }
+            } else {
+                // External URL - use curl
+                $ch = curl_init($favicon);
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 5,
+                    CURLOPT_USERAGENT => RB_UA,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS => 3
+                ]);
+                $imageData = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($httpCode != 200) {
+                    $imageData = false;
+                }
+            }
+
+            if ($imageData !== false && strlen($imageData) > 100) {
                 if (rb_save_permanent_logo($name, $imageData)) {
                     rb_debug_log('Play: Logo saved for ' . $name);
                 }
