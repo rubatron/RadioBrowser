@@ -57,85 +57,8 @@ define('RB_RECENTLY_PLAYED_FILE', RB_CACHE . '/recently_played.json');
 define('RB_DATA_DIR', __DIR__ . '/../data');
 define('RB_CUSTOM_APIS_FILE', RB_DATA_DIR . '/custom_apis.json');
 define('RB_SETTINGS_FILE', RB_DATA_DIR . '/settings.json');
-define('RB_FAVORITES_FILE', RB_DATA_DIR . '/favorites.json');
-
-// ============================================================================
-// FAVORITES FUNCTIONS (file-based, separate from cfg_radio)
-// ============================================================================
-
-function rb_get_favorites()
-{
-    if (file_exists(RB_FAVORITES_FILE)) {
-        $data = @json_decode(file_get_contents(RB_FAVORITES_FILE), true);
-        return is_array($data) ? $data : [];
-    }
-    return [];
-}
-
-function rb_save_favorites($favorites)
-{
-    if (!is_dir(RB_DATA_DIR)) @mkdir(RB_DATA_DIR, 0775, true);
-    return @file_put_contents(RB_FAVORITES_FILE, json_encode($favorites, JSON_PRETTY_PRINT)) !== false;
-}
-
-function rb_add_favorite($url, $name, $logo = 'local')
-{
-    $favorites = rb_get_favorites();
-    $normalizedUrl = preg_replace('/^https?:\/\//', '', rtrim($url, '/'));
-
-    // Check if already exists
-    foreach ($favorites as $fav) {
-        $favNormalized = preg_replace('/^https?:\/\//', '', rtrim($fav['url'], '/'));
-        if ($favNormalized === $normalizedUrl) {
-            return false; // Already exists
-        }
-    }
-
-    $favorites[] = [
-        'url' => $url,
-        'name' => $name,
-        'logo' => $logo,
-        'added' => date('Y-m-d H:i:s')
-    ];
-
-    return rb_save_favorites($favorites);
-}
-
-function rb_remove_favorite($url)
-{
-    $favorites = rb_get_favorites();
-    $normalizedUrl = preg_replace('/^https?:\/\//', '', rtrim($url, '/'));
-
-    $newFavorites = [];
-    $found = false;
-    foreach ($favorites as $fav) {
-        $favNormalized = preg_replace('/^https?:\/\//', '', rtrim($fav['url'], '/'));
-        if ($favNormalized !== $normalizedUrl) {
-            $newFavorites[] = $fav;
-        } else {
-            $found = true;
-        }
-    }
-
-    if ($found) {
-        rb_save_favorites($newFavorites);
-    }
-    return $found;
-}
-
-function rb_is_favorite($url)
-{
-    $favorites = rb_get_favorites();
-    $normalizedUrl = preg_replace('/^https?:\/\//', '', rtrim($url, '/'));
-
-    foreach ($favorites as $fav) {
-        $favNormalized = preg_replace('/^https?:\/\//', '', rtrim($fav['url'], '/'));
-        if ($favNormalized === $normalizedUrl) {
-            return true;
-        }
-    }
-    return false;
-}
+// NOTE: Favorites use moOde's native system (type='f' in cfg_radio)
+// This integrates with moOde's Favorites playlist
 
 function rb_get_custom_apis()
 {
@@ -884,19 +807,18 @@ switch ($cmd) {
         $url = trim($station['url']);
         $favicon = !empty($station['favicon']) ? trim($station['favicon']) : '';
 
-        // Check if station already in Radio Browser favorites (file-based)
-        if (rb_is_favorite($url)) {
-            rb_debug_log('Station already in Radio Browser favorites: ' . $name . ' (URL: ' . $url . ')');
-            $response = ['success' => false, 'message' => 'Station already in favorites'];
-            break;
-        }
-
-        // Also check moOde database (by URL OR by name to prevent duplicates in Radio)
-        $checkSql = "SELECT station, name FROM cfg_radio WHERE (station = '" . SQLite3::escapeString($url) . "' OR name = '" . SQLite3::escapeString($name) . "') AND type='u' LIMIT 1";
+        // Check if station already exists in moOde (by URL OR by name, any type)
+        $checkSql = "SELECT station, name, type FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' OR name = '" . SQLite3::escapeString($name) . "' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
         if (is_array($checkResult) && count($checkResult) > 0) {
-            rb_debug_log('Station already exists in moOde Radio: ' . $name . ' (URL: ' . $url . ')');
-            $response = ['success' => false, 'message' => 'Station already in Radio'];
+            $existingType = $checkResult[0]['type'];
+            if ($existingType == 'f') {
+                rb_debug_log('Station already in favorites: ' . $name . ' (URL: ' . $url . ')');
+                $response = ['success' => false, 'message' => 'Station already in favorites'];
+            } else {
+                rb_debug_log('Station already exists in moOde Radio: ' . $name . ' (URL: ' . $url . ', type: ' . $existingType . ')');
+                $response = ['success' => false, 'message' => 'Station already in Radio'];
+            }
             break;
         }
 
@@ -942,7 +864,8 @@ switch ($cmd) {
             rb_debug_log('No favicon processing for station: ' . $name . ', favicon: ' . ($favicon ?: 'empty'));
         }
 
-        $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" . SQLite3::escapeString($url) . "', '" . SQLite3::escapeString($name) . "', 'u', '" . SQLite3::escapeString($logo) . "', '', '', '', '', '', '', '', 'No', '', '')";
+        // Use type='f' (favorite) - integrates with moOde's native favorites system
+        $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" . SQLite3::escapeString($url) . "', '" . SQLite3::escapeString($name) . "', 'f', '" . SQLite3::escapeString($logo) . "', '', '', '', '', '', '', '', 'No', '', '')";
         $result = sqlQuery($sql, $dbh);
         if ($result !== true) {
             $response = ['success' => false, 'message' => 'Failed to add station to database'];
@@ -980,10 +903,7 @@ switch ($cmd) {
             putStationCover($name);
         }
 
-        // Add to file-based favorites (separate from cfg_radio)
-        rb_add_favorite($url, $name, $favicon);
-
-        $response = ['success' => true, 'message' => 'Station added to Radio'];
+        $response = ['success' => true, 'message' => 'Station added to favorites'];
         break;
     case 'current_status':
         require_once '/var/www/inc/mpd.php';
@@ -1000,8 +920,23 @@ switch ($cmd) {
         $response = ['success' => true, 'is_playing' => $is_playing, 'current_url' => $current_url];
         break;
     case 'favorites':
-        // Use file-based favorites (separate from cfg_radio to avoid conflicts with moOde's type='u' stations)
-        $favorites = rb_get_favorites();
+        // Use moOde's native favorites system (type='f' in cfg_radio)
+        $dbh = sqlConnect();
+        if (!$dbh) {
+            $response = ['success' => false, 'message' => 'Database connection failed'];
+            break;
+        }
+        $result = sqlQuery("SELECT station, name, logo FROM cfg_radio WHERE type='f'", $dbh);
+        $favorites = [];
+        if (is_array($result)) {
+            foreach ($result as $row) {
+                $favorites[] = [
+                    'url' => trim($row['station']),
+                    'name' => trim($row['name']),
+                    'logo' => trim($row['logo'])
+                ];
+            }
+        }
         $response = ['success' => true, 'favorites' => $favorites];
         break;
     case 'remove':
@@ -1019,8 +954,8 @@ switch ($cmd) {
         $url = trim($station['url']);
         rb_debug_log('Remove station request for URL: ' . $url);
 
-        // Check if station exists before removing
-        $checkSql = "SELECT name FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='u' LIMIT 1";
+        // Check if station exists before removing (type='f' = favorite)
+        $checkSql = "SELECT name FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='f' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
         if (!is_array($checkResult) || count($checkResult) === 0) {
             rb_debug_log('Remove failed: Station not found in favorites: ' . $url);
@@ -1029,8 +964,8 @@ switch ($cmd) {
         }
         $stationName = $checkResult[0]['name'];
 
-        // Remove from database
-        $sql = "DELETE FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='u'";
+        // Remove from database (type='f' = favorite)
+        $sql = "DELETE FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='f'";
         $result = sqlQuery($sql, $dbh);
         if ($result !== true) {
             rb_debug_log('Remove failed: Database delete error for: ' . $url);
@@ -1067,11 +1002,8 @@ switch ($cmd) {
             closeMpdSock($sock);
         }
 
-        // Remove from file-based favorites
-        rb_remove_favorite($url);
-
         rb_debug_log('Station removed from favorites: ' . $stationName . ', URL: ' . $url);
-        $response = ['success' => true, 'message' => 'Station removed from Radio'];
+        $response = ['success' => true, 'message' => 'Station removed from favorites'];
         break;
     case 'recently_played':
         // Recently played: Get from file-based storage (tracks play order) with fallback to database
