@@ -807,21 +807,34 @@ switch ($cmd) {
         $url = trim($station['url']);
         $favicon = !empty($station['favicon']) ? trim($station['favicon']) : '';
 
-        // Check if station already exists in moOde (by URL OR by name, any type)
-        $checkSql = "SELECT station, name, type FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' OR name = '" . SQLite3::escapeString($name) . "' LIMIT 1";
+        // Check if station already exists in moOde (by URL, any type)
+        $checkSql = "SELECT station, name, type FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
-        if (is_array($checkResult) && count($checkResult) > 0) {
+        $stationExists = is_array($checkResult) && count($checkResult) > 0;
+
+        if ($stationExists) {
             $existingType = $checkResult[0]['type'];
+            $existingName = $checkResult[0]['name'];
+
             if ($existingType == 'f') {
-                rb_debug_log('Station already in favorites: ' . $name . ' (URL: ' . $url . ')');
+                rb_debug_log('Station already in favorites: ' . $existingName . ' (URL: ' . $url . ')');
                 $response = ['success' => false, 'message' => 'Station already in favorites'];
+                break;
+            }
+
+            // Station exists with type 'r' or 'u' - promote to favorite
+            rb_debug_log('Promoting existing station to favorite: ' . $existingName . ' (type: ' . $existingType . ' -> f)');
+            $updateSql = "UPDATE cfg_radio SET type='f' WHERE station = '" . SQLite3::escapeString($url) . "'";
+            $result = sqlQuery($updateSql, $dbh);
+            if ($result === true) {
+                $response = ['success' => true, 'message' => 'Station added to favorites'];
             } else {
-                rb_debug_log('Station already exists in moOde Radio: ' . $name . ' (URL: ' . $url . ', type: ' . $existingType . ')');
-                $response = ['success' => false, 'message' => 'Station already in Radio'];
+                $response = ['success' => false, 'message' => 'Failed to update station'];
             }
             break;
         }
 
+        // Station doesn't exist - will be inserted below
         // Process favicon if available - download and convert to JPG
         $logo = 'local'; // Default to local logo
         $logoSaved = false;
@@ -955,54 +968,32 @@ switch ($cmd) {
         rb_debug_log('Remove station request for URL: ' . $url);
 
         // Check if station exists before removing (type='f' = favorite)
-        $checkSql = "SELECT name FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='f' LIMIT 1";
+        $checkSql = "SELECT name, type FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
         $checkResult = sqlQuery($checkSql, $dbh);
         if (!is_array($checkResult) || count($checkResult) === 0) {
-            rb_debug_log('Remove failed: Station not found in favorites: ' . $url);
-            $response = ['success' => false, 'message' => 'Station not found in favorites'];
+            rb_debug_log('Remove failed: Station not found: ' . $url);
+            $response = ['success' => false, 'message' => 'Station not found'];
             break;
         }
         $stationName = $checkResult[0]['name'];
+        $stationType = $checkResult[0]['type'];
 
-        // Remove from database (type='f' = favorite)
-        $sql = "DELETE FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='f'";
-        $result = sqlQuery($sql, $dbh);
-        if ($result !== true) {
-            rb_debug_log('Remove failed: Database delete error for: ' . $url);
-            $response = ['success' => false, 'message' => 'Failed to remove station from database'];
+        if ($stationType != 'f') {
+            rb_debug_log('Remove failed: Station is not a favorite (type=' . $stationType . '): ' . $url);
+            $response = ['success' => false, 'message' => 'Station is not in favorites'];
             break;
         }
 
-        // Remove .pls file
-        $plsFile = '/var/lib/mpd/music/RADIO/' . $stationName . '.pls';
-        if (file_exists($plsFile)) {
-            @unlink($plsFile);
-            rb_debug_log('Removed .pls file: ' . $plsFile);
+        // Downgrade from favorite to regular (keeps station in moOde Radio but removes favorite status)
+        $sql = "UPDATE cfg_radio SET type='r' WHERE station = '" . SQLite3::escapeString($url) . "'";
+        $result = sqlQuery($sql, $dbh);
+        if ($result !== true) {
+            rb_debug_log('Remove failed: Database update error for: ' . $url);
+            $response = ['success' => false, 'message' => 'Failed to update station'];
+            break;
         }
 
-        // Remove logo files
-        $logoFiles = [
-            RADIO_LOGOS_ROOT . $stationName . '.jpg',
-            RADIO_LOGOS_ROOT . 'thumbs/' . $stationName . '.jpg',
-            RADIO_LOGOS_ROOT . 'thumbs/' . $stationName . '_sm.jpg'
-        ];
-        foreach ($logoFiles as $logoFile) {
-            if (file_exists($logoFile)) {
-                @unlink($logoFile);
-                rb_debug_log('Removed logo file: ' . $logoFile);
-            }
-        }
-
-        // Update MPD database
-        require_once '/var/www/inc/mpd.php';
-        $sock = openMpdSock('localhost', 6600);
-        if ($sock) {
-            sendMpdCmd($sock, 'update RADIO');
-            readMpdResp($sock);
-            closeMpdSock($sock);
-        }
-
-        rb_debug_log('Station removed from favorites: ' . $stationName . ', URL: ' . $url);
+        rb_debug_log('Station removed from favorites (downgraded to regular): ' . $stationName . ', URL: ' . $url);
         $response = ['success' => true, 'message' => 'Station removed from favorites'];
         break;
     case 'recently_played':
