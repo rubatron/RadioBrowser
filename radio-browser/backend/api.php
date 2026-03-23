@@ -132,24 +132,75 @@ function rb_get_default_settings()
             'header' => true,
             'library' => true,
             'm' => true,
-            'system' => true
+            'system' => false
         ],
         'version' => '3.0.0',
         'updated' => date('Y-m-d H:i:s')
     ];
 }
 
+/**
+ * Read visibility from ext-mgr registry if available
+ * Returns null if ext-mgr is not installed or radio-browser not registered
+ */
+function rb_get_extmgr_visibility()
+{
+    $registryPath = '/var/www/extensions/sys/registry.json';
+    
+    if (!file_exists($registryPath)) {
+        return null;
+    }
+    
+    $registry = @json_decode(file_get_contents($registryPath), true);
+    if (!is_array($registry) || !isset($registry['extensions']) || !is_array($registry['extensions'])) {
+        return null;
+    }
+    
+    foreach ($registry['extensions'] as $ext) {
+        if (($ext['id'] ?? '') === 'radio-browser') {
+            if (isset($ext['menuVisibility']) && is_array($ext['menuVisibility'])) {
+                return [
+                    'header' => (bool)($ext['menuVisibility']['header'] ?? $ext['headerVisible'] ?? true),
+                    'library' => (bool)($ext['menuVisibility']['library'] ?? $ext['showInLibrary'] ?? true),
+                    'm' => (bool)($ext['menuVisibility']['m'] ?? $ext['showInMMenu'] ?? true),
+                    'system' => (bool)($ext['menuVisibility']['system'] ?? false)
+                ];
+            }
+            // Legacy fields only
+            return [
+                'header' => (bool)($ext['headerVisible'] ?? true),
+                'library' => (bool)($ext['showInLibrary'] ?? true),
+                'm' => (bool)($ext['showInMMenu'] ?? true),
+                'system' => false
+            ];
+        }
+    }
+    
+    return null;
+}
+
 function rb_get_settings()
 {
+    $settings = rb_get_default_settings();
+    
+    // First try to load from local settings file
     if (file_exists(RB_SETTINGS_FILE)) {
         $data = @json_decode(file_get_contents(RB_SETTINGS_FILE), true);
         if (is_array($data)) {
-            // Merge with defaults to ensure all keys exist
-            $defaults = rb_get_default_settings();
-            return array_replace_recursive($defaults, $data);
+            $settings = array_replace_recursive($settings, $data);
         }
     }
-    return rb_get_default_settings();
+    
+    // Override with ext-mgr registry visibility if available (source of truth for menus)
+    $extmgrVisibility = rb_get_extmgr_visibility();
+    if ($extmgrVisibility !== null) {
+        $settings['visibility'] = $extmgrVisibility;
+        $settings['extmgr_integrated'] = true;
+    } else {
+        $settings['extmgr_integrated'] = false;
+    }
+    
+    return $settings;
 }
 
 function rb_save_settings($settings)
@@ -157,6 +208,105 @@ function rb_save_settings($settings)
     if (!is_dir(RB_DATA_DIR)) @mkdir(RB_DATA_DIR, 0775, true);
     $settings['updated'] = date('Y-m-d H:i:s');
     return @file_put_contents(RB_SETTINGS_FILE, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false;
+}
+
+/**
+ * Update ext-mgr registry.json for Radio Browser's menu visibility
+ * This integrates with ext-mgr's dynamic menu injection system
+ * If Radio Browser is not in the registry, it will be added
+ */
+function rb_update_extmgr_registry($visibility)
+{
+    $registryPath = '/var/www/extensions/sys/registry.json';
+    
+    // If ext-mgr is not installed, skip
+    if (!file_exists($registryPath)) {
+        rb_debug_log('ext-mgr registry not found, skipping menu integration');
+        return false;
+    }
+    
+    $registry = @json_decode(file_get_contents($registryPath), true);
+    if (!is_array($registry)) {
+        rb_debug_log('ext-mgr registry invalid');
+        return false;
+    }
+    
+    // Ensure extensions array exists
+    if (!isset($registry['extensions']) || !is_array($registry['extensions'])) {
+        $registry['extensions'] = [];
+    }
+    
+    $updated = false;
+    $found = false;
+    
+    foreach ($registry['extensions'] as &$ext) {
+        if (($ext['id'] ?? '') === 'radio-browser') {
+            $found = true;
+            // Update menuVisibility
+            if (!isset($ext['menuVisibility']) || !is_array($ext['menuVisibility'])) {
+                $ext['menuVisibility'] = ['m' => true, 'library' => true, 'system' => false, 'header' => true];
+            }
+            $ext['menuVisibility']['m'] = (bool)($visibility['m'] ?? true);
+            $ext['menuVisibility']['library'] = (bool)($visibility['library'] ?? true);
+            $ext['menuVisibility']['system'] = (bool)($visibility['system'] ?? false);
+            $ext['menuVisibility']['header'] = (bool)($visibility['header'] ?? true);
+            
+            // Also update legacy fields for backwards compatibility
+            $ext['showInMMenu'] = $ext['menuVisibility']['m'];
+            $ext['showInLibrary'] = $ext['menuVisibility']['library'];
+            $ext['headerVisible'] = $ext['menuVisibility']['header'];
+            
+            $updated = true;
+            rb_debug_log('Updated ext-mgr registry for radio-browser: ' . json_encode($ext['menuVisibility']));
+            break;
+        }
+    }
+    unset($ext);
+    
+    // If radio-browser not found in registry, add it
+    if (!$found) {
+        rb_debug_log('radio-browser not in ext-mgr registry, adding entry');
+        $newEntry = [
+            'id' => 'radio-browser',
+            'name' => 'Radio Browser',
+            'version' => '3.1.0',
+            'enabled' => true,
+            'route' => '/radio-browser.php',
+            'installPath' => '/var/www/extensions/installed/radio-browser',
+            'menuVisibility' => [
+                'm' => (bool)($visibility['m'] ?? true),
+                'library' => (bool)($visibility['library'] ?? true),
+                'system' => (bool)($visibility['system'] ?? false),
+                'header' => (bool)($visibility['header'] ?? true)
+            ],
+            'showInMMenu' => (bool)($visibility['m'] ?? true),
+            'showInLibrary' => (bool)($visibility['library'] ?? true),
+            'headerVisible' => (bool)($visibility['header'] ?? true),
+            'settingsCardOnly' => false,
+            'description' => 'Search and play internet radio stations from radio-browser.info',
+            'author' => 'RubaTron',
+            'icon' => 'fa-solid fa-sharp fa-radio',
+            'selfManaged' => true,
+            'addedAt' => date('Y-m-d H:i:s')
+        ];
+        $registry['extensions'][] = $newEntry;
+        $updated = true;
+        rb_debug_log('Added radio-browser to ext-mgr registry');
+    }
+    
+    if (!$updated) {
+        return false;
+    }
+    
+    // Write back to registry
+    $result = @file_put_contents($registryPath, json_encode($registry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    if ($result === false) {
+        rb_debug_log('Failed to write ext-mgr registry');
+        return false;
+    }
+    
+    rb_debug_log('ext-mgr registry updated successfully');
+    return true;
 }
 
 function rb_set_visibility($area, $visible)
@@ -182,6 +332,10 @@ function rb_set_visibility($area, $visible)
 
     if (rb_save_settings($settings)) {
         rb_debug_log('Visibility updated: ' . $area . ' = ' . ($visible ? 'visible' : 'hidden'));
+        
+        // Also update ext-mgr registry for menu integration
+        rb_update_extmgr_registry($settings['visibility']);
+        
         return [
             'success' => true,
             'area' => $area,

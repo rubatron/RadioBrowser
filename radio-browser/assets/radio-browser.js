@@ -1198,8 +1198,21 @@ function initRadioBrowser($) {
             dataType: 'json',
             timeout: 10000,
             success: function(data) {
-                if (data.success && data.settings && data.settings.visibility) {
-                    renderVisibility(data.settings.visibility);
+                if (data.success && data.settings) {
+                    if (data.settings.visibility) {
+                        renderVisibility(data.settings.visibility);
+                    }
+                    // Update note based on ext-mgr integration status
+                    var noteEl = $('#rb-visibility-note');
+                    if (noteEl.length) {
+                        if (data.settings.extmgr_integrated) {
+                            noteEl.html('<i class="fa-solid fa-sharp fa-check"></i> Integrated with Extension Manager. Changes apply on next page refresh.')
+                                .removeClass('error').addClass('ok');
+                        } else {
+                            noteEl.html('<i class="fa-solid fa-sharp fa-exclamation-triangle"></i> Extension Manager not detected. Toggle visibility to register.')
+                                .removeClass('ok').addClass('error');
+                        }
+                    }
                 }
             }
         });
