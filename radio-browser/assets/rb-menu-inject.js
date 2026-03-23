@@ -1,10 +1,10 @@
 /**
  * Radio Browser Menu Injection Script (Standalone)
- * 
+ *
  * This script injects Radio Browser menu entries into moOde's UI
  * without requiring ext-mgr. It runs on every page load and adds
  * Radio Browser to the Library dropdown and M Menu based on settings.
- * 
+ *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
  */
@@ -148,12 +148,12 @@
         entry.href = '/radio-browser.php';
         entry.style.cssText = 'font-size: 0.92em; opacity: 0.95; border-color: transparent;';
         entry.innerHTML = '<i class="fa-solid fa-sharp fa-radio" style="margin-right:.5em;"></i> Radio Browser';
-        
+
         // Highlight if current page
         if (normalizePath(window.location.pathname) === '/radio-browser.php') {
             entry.classList.add('active');
         }
-        
+
         container.appendChild(entry);
     }
 
@@ -261,7 +261,7 @@
         if (!tabs) return;
 
         var existing = document.getElementById('rb-header-btn');
-        
+
         if (!showInHeader) {
             if (existing) existing.style.display = 'none';
             return;

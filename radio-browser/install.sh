@@ -8,7 +8,7 @@
 # Date: January 2026
 #
 # Interactive installer with menu for moOde Radio Browser Extension
-# 
+#
 # This script provides a menu-driven installation process with options to:
 # - Fully automatic installation
 # - Individual installation steps
@@ -113,18 +113,18 @@ confirm() {
     local prompt="$1"
     local default="${2:-n}"
     local yn
-    
+
     if [[ "$default" == "y" ]]; then
         read -p "$prompt [Y/n]: " -n 1 -r yn
     else
         read -p "$prompt [y/N]: " -n 1 -r yn
     fi
     echo
-    
+
     if [[ -z "$yn" ]]; then
         yn="$default"
     fi
-    
+
     [[ "$yn" =~ ^[Yy]$ ]]
 }
 
@@ -148,7 +148,7 @@ check_root() {
 check_source_files() {
     log "Checking source files..."
     local missing=0
-    
+
     for file in "${!SOURCE_FILES[@]}"; do
         local path="${SOURCE_FILES[$file]}"
         if [[ -f "$path" ]]; then
@@ -158,19 +158,19 @@ check_source_files() {
             ((missing++))
         fi
     done
-    
+
     if [[ $missing -gt 0 ]]; then
         warning "$missing file(s) missing!"
         return 1
     fi
-    
+
     success "All source files found"
     return 0
 }
 
 check_curl() {
     log "Checking cURL..."
-    
+
     if command -v curl &> /dev/null; then
         local version=$(curl --version | head -1)
         success "cURL is installed: $version"
@@ -183,10 +183,10 @@ check_curl() {
 
 check_php_curl() {
     log "Checking PHP cURL extension..."
-    
+
     # Find PHP version
     local php_version=$(php -v 2>/dev/null | head -1 | cut -d' ' -f2 | cut -d'.' -f1,2)
-    
+
     if php -m 2>/dev/null | grep -qi "^curl$"; then
         success "PHP cURL extension is installed (PHP $php_version)"
         return 0
@@ -201,7 +201,7 @@ check_installation() {
     log "Checking current installation status..."
     local installed=0
     local total=0
-    
+
     for file in "${!SOURCE_FILES[@]}"; do
         ((total++))
         local dest="${EXT_BASE}/${file}"
@@ -212,7 +212,7 @@ check_installation() {
             echo -e "  ${YELLOW}○${NC} $dest (not installed)"
         fi
     done
-    
+
     echo
     if [[ $installed -eq $total ]]; then
         success "Extension is fully installed ($installed/$total files)"
@@ -231,12 +231,12 @@ check_installation() {
 # ============================================================================
 install_curl() {
     log "Installing cURL..."
-    
+
     if command -v curl &> /dev/null; then
         success "cURL is already installed"
         return 0
     fi
-    
+
     if command -v apt-get &> /dev/null; then
         apt-get update
         apt-get install -y curl
@@ -248,7 +248,7 @@ install_curl() {
         error "Could not determine package manager"
         return 1
     fi
-    
+
     if command -v curl &> /dev/null; then
         success "cURL installed successfully"
         return 0
@@ -260,19 +260,19 @@ install_curl() {
 
 install_php_curl() {
     log "Installing PHP cURL extension..."
-    
+
     # Find PHP version
     local php_version=$(php -v 2>/dev/null | head -1 | cut -d' ' -f2 | cut -d'.' -f1,2)
-    
+
     if php -m 2>/dev/null | grep -qi "^curl$"; then
         success "PHP cURL extension is already installed"
         return 0
     fi
-    
+
     if command -v apt-get &> /dev/null; then
         apt-get update
         apt-get install -y "php${php_version}-curl"
-        
+
         # Restart PHP-FPM if running
         if systemctl is-active --quiet "php${php_version}-fpm" 2>/dev/null; then
             log "Restarting PHP-FPM..."
@@ -282,7 +282,7 @@ install_php_curl() {
         error "Could not determine package manager"
         return 1
     fi
-    
+
     if php -m 2>/dev/null | grep -qi "^curl$"; then
         success "PHP cURL extension installed successfully"
         return 0
@@ -294,7 +294,7 @@ install_php_curl() {
 
 create_folders() {
     log "Creating folder structure..."
-    
+
     local folders=(
         "${EXT_BASE}"
         "${EXT_BASE}/backend"
@@ -305,7 +305,7 @@ create_folders() {
         "${IMAGE_CACHE_DIR}"
         "${DATA_DIR}"
     )
-    
+
     for folder in "${folders[@]}"; do
         if [[ ! -d "$folder" ]]; then
             mkdir -p "$folder"
@@ -314,25 +314,25 @@ create_folders() {
             echo -e "  ${BLUE}○${NC} Exists: $folder"
         fi
     done
-    
+
     success "Folder structure ready"
     return 0
 }
 
 copy_files() {
     log "Copying extension files..."
-    
+
     local copied=0
     local failed=0
-    
+
     for file in "${!SOURCE_FILES[@]}"; do
         local src="${SOURCE_FILES[$file]}"
         local dest="${EXT_BASE}/${file}"
-        
+
         if [[ -f "$src" ]]; then
             # Create parent directory if needed
             mkdir -p "$(dirname "$dest")"
-            
+
             if cp "$src" "$dest"; then
                 echo -e "  ${GREEN}✓${NC} Copied: $file"
                 ((copied++))
@@ -345,14 +345,14 @@ copy_files() {
             ((failed++))
         fi
     done
-    
+
     # Create symlink for main PHP file
     log "Creating symlink..."
     ln -sf "${EXT_BASE}/radio-browser.php" "${WEB_ROOT}/radio-browser.php"
     if [[ -L "${WEB_ROOT}/radio-browser.php" ]]; then
         echo -e "  ${GREEN}✓${NC} Symlink: /var/www/radio-browser.php -> ${EXT_BASE}/radio-browser.php"
     fi
-    
+
     if [[ $failed -eq 0 ]]; then
         success "All files copied successfully ($copied files)"
         return 0
@@ -364,36 +364,36 @@ copy_files() {
 
 set_permissions() {
     log "Setting file permissions..."
-    
+
     # Set ownership
     chown -R www-data:www-data "${EXT_BASE}"
     chown -h www-data:www-data "${WEB_ROOT}/radio-browser.php" 2>/dev/null || true
-    
+
     # Set directory permissions (755)
     find "${EXT_BASE}" -type d -exec chmod 755 {} \;
-    
+
     # Set file permissions (644)
     find "${EXT_BASE}" -type f -exec chmod 644 {} \;
-    
+
     # Make cache writable
     chmod 777 "${CACHE_DIR}"
     chmod 777 "${IMAGE_CACHE_DIR}"
-    
+
     success "Permissions set correctly"
     return 0
 }
 
 create_backup() {
     log "Creating backup of current installation..."
-    
+
     if [[ ! -d "${EXT_BASE}" ]]; then
         info "No existing installation to backup"
         return 0
     fi
-    
+
     local timestamp=$(date +%Y%m%d-%H%M%S)
     local backup_file="/tmp/radio-browser-backup-${timestamp}.tar.gz"
-    
+
     if tar -czf "$backup_file" -C "$(dirname ${EXT_BASE})" "$(basename ${EXT_BASE})" 2>/dev/null; then
         success "Backup created: $backup_file"
         return 0
@@ -405,22 +405,22 @@ create_backup() {
 
 restart_services() {
     log "Restarting services..."
-    
+
     # Find PHP version
     local php_version=$(php -v 2>/dev/null | head -1 | cut -d' ' -f2 | cut -d'.' -f1,2)
-    
+
     # Restart PHP-FPM
     if systemctl is-active --quiet "php${php_version}-fpm" 2>/dev/null; then
         systemctl restart "php${php_version}-fpm"
         echo -e "  ${GREEN}✓${NC} Restarted php${php_version}-fpm"
     fi
-    
+
     # Restart nginx
     if systemctl is-active --quiet nginx 2>/dev/null; then
         systemctl restart nginx
         echo -e "  ${GREEN}✓${NC} Restarted nginx"
     fi
-    
+
     success "Services restarted"
     return 0
 }
@@ -433,28 +433,28 @@ restart_services() {
 
 patch_moode_header() {
     log "Patching moOde header for menu integration..."
-    
+
     # Check if header.php exists
     if [[ ! -f "$HEADER_FILE" ]]; then
         warning "header.php not found at $HEADER_FILE"
         warning "Menu integration skipped - you can add Radio Browser manually"
         return 0
     fi
-    
+
     # Check if already patched
     if grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE" 2>/dev/null; then
         info "Shell bridge already installed in header.php"
         return 0
     fi
-    
+
     # Create backup
     local backup_file="${HEADER_FILE}.rb-backup-$(date +%Y%m%d-%H%M%S)"
     cp "$HEADER_FILE" "$backup_file"
     echo -e "  ${GREEN}✓${NC} Backup created: $backup_file"
-    
+
     # The include code to inject (before </head>)
     local bridge_include='<?php /* RB_SHELL_BRIDGE_START */ if (file_exists("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php")) { include_once("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php"); } /* RB_SHELL_BRIDGE_END */ ?>'
-    
+
     # Use sed to insert before </head>
     # First, check if </head> exists
     if ! grep -q "</head>" "$HEADER_FILE"; then
@@ -462,10 +462,10 @@ patch_moode_header() {
         warning "Menu integration skipped"
         return 1
     fi
-    
+
     # Insert the bridge include before </head>
     sed -i "s|</head>|${bridge_include}\n</head>|" "$HEADER_FILE"
-    
+
     # Verify the patch was applied
     if grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE"; then
         success "Shell bridge installed in header.php"
@@ -482,25 +482,25 @@ patch_moode_header() {
 
 cleanup_shell_bridge() {
     log "Removing shell bridge from header.php..."
-    
+
     if [[ ! -f "$HEADER_FILE" ]]; then
         info "header.php not found, nothing to clean"
         return 0
     fi
-    
+
     # Check if our bridge is installed
     if ! grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE" 2>/dev/null; then
         info "Shell bridge not found in header.php"
         return 0
     fi
-    
+
     # Create backup before removal
     local backup_file="${HEADER_FILE}.rb-cleanup-$(date +%Y%m%d-%H%M%S)"
     cp "$HEADER_FILE" "$backup_file"
-    
+
     # Remove the bridge line (everything between markers on same line)
     sed -i '/RB_SHELL_BRIDGE_START.*RB_SHELL_BRIDGE_END/d' "$HEADER_FILE"
-    
+
     # Verify removal
     if ! grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE"; then
         success "Shell bridge removed from header.php"
@@ -520,41 +520,41 @@ uninstall() {
     echo -e "${RED}║                    UNINSTALL RADIO BROWSER                   ║${NC}"
     echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
-    
+
     warning "This will remove all Radio Browser extension files!"
     echo "The following will be removed:"
     echo "  • ${EXT_BASE}/"
     echo "  • ${WEB_ROOT}/radio-browser.php"
     echo "  • Menu integration from header.php"
     echo
-    
+
     if ! confirm "Are you sure you want to uninstall?" "n"; then
         info "Uninstall cancelled"
         return 0
     fi
-    
+
     # Create backup first
     if confirm "Create backup before uninstalling?" "y"; then
         create_backup
     fi
-    
+
     # Remove menu integration from header.php
     cleanup_shell_bridge
-    
+
     log "Removing files..."
-    
+
     # Remove symlink
     if [[ -L "${WEB_ROOT}/radio-browser.php" ]]; then
         rm "${WEB_ROOT}/radio-browser.php"
         echo -e "  ${GREEN}✓${NC} Removed symlink"
     fi
-    
+
     # Remove extension directory
     if [[ -d "${EXT_BASE}" ]]; then
         rm -rf "${EXT_BASE}"
         echo -e "  ${GREEN}✓${NC} Removed extension directory"
     fi
-    
+
     success "Radio Browser extension uninstalled"
     return 0
 }
@@ -568,50 +568,50 @@ auto_install() {
     echo -e "${GREEN}║               AUTOMATIC INSTALLATION                         ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
-    
+
     local errors=0
-    
+
     # Step 1: Check root
     echo -e "${BOLD}Step 1/8: Checking permissions...${NC}"
     check_root || { error "Must run as root"; return 1; }
     echo
-    
+
     # Step 2: Check source files
     echo -e "${BOLD}Step 2/8: Checking source files...${NC}"
     check_source_files || { error "Source files missing"; return 1; }
     echo
-    
+
     # Step 3: Install dependencies
     echo -e "${BOLD}Step 3/8: Installing dependencies...${NC}"
     install_curl || warning "cURL installation issue"
     install_php_curl || warning "PHP cURL installation issue"
     echo
-    
+
     # Step 4: Create backup
     echo -e "${BOLD}Step 4/8: Creating backup...${NC}"
     create_backup || warning "Backup creation issue"
     echo
-    
+
     # Step 5: Create folders
     echo -e "${BOLD}Step 5/8: Creating folders...${NC}"
     create_folders || { error "Failed to create folders"; ((errors++)); }
     echo
-    
+
     # Step 6: Copy files
     echo -e "${BOLD}Step 6/8: Copying files...${NC}"
     copy_files || { error "Failed to copy files"; ((errors++)); }
     echo
-    
+
     # Step 7: Set permissions
     echo -e "${BOLD}Step 7/8: Setting permissions...${NC}"
     set_permissions || { error "Failed to set permissions"; ((errors++)); }
     echo
-    
+
     # Step 8: Install menu integration
     echo -e "${BOLD}Step 8/8: Installing menu integration...${NC}"
     patch_moode_header || warning "Menu integration issue"
     echo
-    
+
     # Summary
     if [[ $errors -eq 0 ]]; then
         echo
@@ -633,7 +633,7 @@ auto_install() {
         echo
         echo "$errors error(s) occurred. Check log file: $LOG_FILE"
     fi
-    
+
     return $errors
 }
 
@@ -695,21 +695,21 @@ show_help() {
 show_status() {
     echo
     echo -e "${BOLD}Current Status:${NC}"
-    
+
     # Check installation
     if [[ -d "${EXT_BASE}" ]] && [[ -f "${EXT_BASE}/radio-browser.php" ]]; then
         echo -e "  Extension: ${GREEN}Installed${NC}"
     else
         echo -e "  Extension: ${YELLOW}Not installed${NC}"
     fi
-    
+
     # Check cURL
     if command -v curl &> /dev/null; then
         echo -e "  cURL:      ${GREEN}Installed${NC}"
     else
         echo -e "  cURL:      ${RED}Not installed${NC}"
     fi
-    
+
     # Check PHP cURL
     if php -m 2>/dev/null | grep -qi "^curl$"; then
         echo -e "  PHP cURL:  ${GREEN}Installed${NC}"
@@ -723,9 +723,9 @@ show_menu() {
     echo -e "${MAGENTA}╔══════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${MAGENTA}║       🎵 RADIO BROWSER EXTENSION INSTALLER v${SCRIPT_VERSION}            ║${NC}"
     echo -e "${MAGENTA}╚══════════════════════════════════════════════════════════════╝${NC}"
-    
+
     show_status
-    
+
     echo
     echo -e "${BOLD}Installation Options:${NC}"
     echo "  1. Auto-install (recommended)"
@@ -752,7 +752,7 @@ main_menu() {
         show_menu
         read -p "Select option: " -n 1 choice
         echo
-        
+
         case $choice in
             1)
                 auto_install
@@ -845,7 +845,7 @@ main_menu() {
 main() {
     # Create log file
     touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/dev/null"
-    
+
     # Check for command line arguments
     case "${1:-}" in
         --auto|-a)
