@@ -1202,17 +1202,6 @@ function initRadioBrowser($) {
                     if (data.settings.visibility) {
                         renderVisibility(data.settings.visibility);
                     }
-                    // Update note based on ext-mgr integration status
-                    var noteEl = $('#rb-visibility-note');
-                    if (noteEl.length) {
-                        if (data.settings.extmgr_integrated) {
-                            noteEl.html('<i class="fa-solid fa-sharp fa-check"></i> Integrated with Extension Manager. Changes apply on next page refresh.')
-                                .removeClass('error').addClass('ok');
-                        } else {
-                            noteEl.html('<i class="fa-solid fa-sharp fa-exclamation-triangle"></i> Extension Manager not detected. Toggle visibility to register.')
-                                .removeClass('ok').addClass('error');
-                        }
-                    }
                 }
             }
         });

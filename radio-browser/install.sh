@@ -40,6 +40,8 @@ declare -A SOURCE_FILES=(
     ["assets/radio-browser.js"]="${SCRIPT_DIR}/assets/radio-browser.js"
     ["assets/radio-browser.css"]="${SCRIPT_DIR}/assets/radio-browser.css"
     ["assets/coverart-fix.js"]="${SCRIPT_DIR}/assets/coverart-fix.js"
+    ["assets/rb-menu-inject.js"]="${SCRIPT_DIR}/assets/rb-menu-inject.js"
+    ["rb-shell-bridge.php"]="${SCRIPT_DIR}/rb-shell-bridge.php"
     ["templates/radio-browser.html"]="${SCRIPT_DIR}/templates/radio-browser.html"
     ["scripts/fix-permissions.sh"]="${SCRIPT_DIR}/scripts/fix-permissions.sh"
     ["scripts/test-api.sh"]="${SCRIPT_DIR}/scripts/test-api.sh"
@@ -49,6 +51,9 @@ declare -A SOURCE_FILES=(
     ["version.txt"]="${SCRIPT_DIR}/version.txt"
     ["README.md"]="${SCRIPT_DIR}/README.md"
 )
+
+# moOde integration paths
+HEADER_FILE="/var/www/header.php"
 
 # ============================================================================
 # COLORS AND FORMATTING
@@ -421,6 +426,92 @@ restart_services() {
 }
 
 # ============================================================================
+# SHELL-BRIDGE INTEGRATION (Menu Injection)
+# ============================================================================
+# Injects a PHP include into moOde's header.php to load our menu injection script
+# Uses markers to safely add/remove without breaking the header
+
+patch_moode_header() {
+    log "Patching moOde header for menu integration..."
+    
+    # Check if header.php exists
+    if [[ ! -f "$HEADER_FILE" ]]; then
+        warning "header.php not found at $HEADER_FILE"
+        warning "Menu integration skipped - you can add Radio Browser manually"
+        return 0
+    fi
+    
+    # Check if already patched
+    if grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE" 2>/dev/null; then
+        info "Shell bridge already installed in header.php"
+        return 0
+    fi
+    
+    # Create backup
+    local backup_file="${HEADER_FILE}.rb-backup-$(date +%Y%m%d-%H%M%S)"
+    cp "$HEADER_FILE" "$backup_file"
+    echo -e "  ${GREEN}✓${NC} Backup created: $backup_file"
+    
+    # The include code to inject (before </head>)
+    local bridge_include='<?php /* RB_SHELL_BRIDGE_START */ if (file_exists("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php")) { include_once("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php"); } /* RB_SHELL_BRIDGE_END */ ?>'
+    
+    # Use sed to insert before </head>
+    # First, check if </head> exists
+    if ! grep -q "</head>" "$HEADER_FILE"; then
+        warning "Could not find </head> in header.php"
+        warning "Menu integration skipped"
+        return 1
+    fi
+    
+    # Insert the bridge include before </head>
+    sed -i "s|</head>|${bridge_include}\n</head>|" "$HEADER_FILE"
+    
+    # Verify the patch was applied
+    if grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE"; then
+        success "Shell bridge installed in header.php"
+        echo -e "  ${CYAN}→${NC} Radio Browser will appear in menus based on visibility settings"
+        return 0
+    else
+        error "Failed to patch header.php"
+        # Restore backup
+        cp "$backup_file" "$HEADER_FILE"
+        echo -e "  ${YELLOW}!${NC} Backup restored"
+        return 1
+    fi
+}
+
+cleanup_shell_bridge() {
+    log "Removing shell bridge from header.php..."
+    
+    if [[ ! -f "$HEADER_FILE" ]]; then
+        info "header.php not found, nothing to clean"
+        return 0
+    fi
+    
+    # Check if our bridge is installed
+    if ! grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE" 2>/dev/null; then
+        info "Shell bridge not found in header.php"
+        return 0
+    fi
+    
+    # Create backup before removal
+    local backup_file="${HEADER_FILE}.rb-cleanup-$(date +%Y%m%d-%H%M%S)"
+    cp "$HEADER_FILE" "$backup_file"
+    
+    # Remove the bridge line (everything between markers on same line)
+    sed -i '/RB_SHELL_BRIDGE_START.*RB_SHELL_BRIDGE_END/d' "$HEADER_FILE"
+    
+    # Verify removal
+    if ! grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE"; then
+        success "Shell bridge removed from header.php"
+        return 0
+    else
+        warning "Could not fully remove shell bridge"
+        return 1
+    fi
+}
+
+# ============================================================================
 # UNINSTALL FUNCTION
 # ============================================================================
 uninstall() {
@@ -431,9 +522,10 @@ uninstall() {
     echo
     
     warning "This will remove all Radio Browser extension files!"
-    echo "The following will be deleted:"
+    echo "The following will be removed:"
     echo "  • ${EXT_BASE}/"
     echo "  • ${WEB_ROOT}/radio-browser.php"
+    echo "  • Menu integration from header.php"
     echo
     
     if ! confirm "Are you sure you want to uninstall?" "n"; then
@@ -445,6 +537,9 @@ uninstall() {
     if confirm "Create backup before uninstalling?" "y"; then
         create_backup
     fi
+    
+    # Remove menu integration from header.php
+    cleanup_shell_bridge
     
     log "Removing files..."
     
@@ -477,39 +572,44 @@ auto_install() {
     local errors=0
     
     # Step 1: Check root
-    echo -e "${BOLD}Step 1/7: Checking permissions...${NC}"
+    echo -e "${BOLD}Step 1/8: Checking permissions...${NC}"
     check_root || { error "Must run as root"; return 1; }
     echo
     
     # Step 2: Check source files
-    echo -e "${BOLD}Step 2/7: Checking source files...${NC}"
+    echo -e "${BOLD}Step 2/8: Checking source files...${NC}"
     check_source_files || { error "Source files missing"; return 1; }
     echo
     
     # Step 3: Install dependencies
-    echo -e "${BOLD}Step 3/7: Installing dependencies...${NC}"
+    echo -e "${BOLD}Step 3/8: Installing dependencies...${NC}"
     install_curl || warning "cURL installation issue"
     install_php_curl || warning "PHP cURL installation issue"
     echo
     
     # Step 4: Create backup
-    echo -e "${BOLD}Step 4/7: Creating backup...${NC}"
+    echo -e "${BOLD}Step 4/8: Creating backup...${NC}"
     create_backup || warning "Backup creation issue"
     echo
     
     # Step 5: Create folders
-    echo -e "${BOLD}Step 5/7: Creating folders...${NC}"
+    echo -e "${BOLD}Step 5/8: Creating folders...${NC}"
     create_folders || { error "Failed to create folders"; ((errors++)); }
     echo
     
     # Step 6: Copy files
-    echo -e "${BOLD}Step 6/7: Copying files...${NC}"
+    echo -e "${BOLD}Step 6/8: Copying files...${NC}"
     copy_files || { error "Failed to copy files"; ((errors++)); }
     echo
     
     # Step 7: Set permissions
-    echo -e "${BOLD}Step 7/7: Setting permissions...${NC}"
+    echo -e "${BOLD}Step 7/8: Setting permissions...${NC}"
     set_permissions || { error "Failed to set permissions"; ((errors++)); }
+    echo
+    
+    # Step 8: Install menu integration
+    echo -e "${BOLD}Step 8/8: Installing menu integration...${NC}"
+    patch_moode_header || warning "Menu integration issue"
     echo
     
     # Summary
