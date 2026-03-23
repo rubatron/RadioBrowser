@@ -290,6 +290,17 @@
     }
 
     /**
+     * Debounce helper - prevents excessive calls
+     */
+    var debounceTimer = null;
+    function debounce(fn, delay) {
+        return function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(fn, delay);
+        };
+    }
+
+    /**
      * Main render function - refresh all menu injections
      */
     function renderAll() {
@@ -300,46 +311,27 @@
         });
     }
 
+    // Debounced version for event handlers (300ms delay)
+    var renderAllDebounced = debounce(renderAll, 300);
+
     /**
      * Initialize and set up observers
      */
     function init() {
-        // Initial render
+        // Initial render (once)
         renderAll();
 
-        // Re-render when dropdowns are opened (MutationObserver)
-        var observer = new MutationObserver(function(mutations) {
-            var shouldRender = false;
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList' || mutation.type === 'attributes') {
-                    if (mutation.target.classList && (
-                        mutation.target.classList.contains('dropdown-menu') ||
-                        mutation.target.classList.contains('open') ||
-                        mutation.target.id === 'menu-settings'
-                    )) {
-                        shouldRender = true;
-                    }
-                }
-            });
-            if (shouldRender) {
-                renderAll();
-            }
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['class']
-        });
-
-        // Also re-render on dropdown show events
-        document.addEventListener('shown.bs.dropdown', renderAll);
+        // Only listen for dropdown toggle clicks - no MutationObserver on body
         document.addEventListener('click', function(e) {
-            if (e.target.closest('.dropdown-toggle, #menu-settings, #viewswitch')) {
-                setTimeout(renderAll, 50);
+            var toggle = e.target.closest('.dropdown-toggle, #menu-settings, #viewswitch');
+            if (toggle) {
+                // Debounced render after dropdown opens
+                renderAllDebounced();
             }
         });
+
+        // Bootstrap dropdown events (if available)
+        document.addEventListener('shown.bs.dropdown', renderAllDebounced);
     }
 
     // Run when DOM is ready
