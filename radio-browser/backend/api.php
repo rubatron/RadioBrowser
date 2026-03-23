@@ -723,9 +723,36 @@ switch ($cmd) {
 
         $name = $station['name'] ?? 'Radio Browser Station';
         $url = trim($station['url']);
-        $logo = !empty($station['favicon']) ? $station['favicon'] : 'local';
+        $favicon = !empty($station['favicon']) ? $station['favicon'] : '';
+        $logo = 'local'; // Use 'local' to indicate we save logos locally
         $bitrate = isset($station['bitrate']) && $station['bitrate'] > 0 ? (string)$station['bitrate'] : '';
         $format = $station['codec'] ?? '';
+
+        // Check if logo files exist for this station, if not download them
+        $safeName = str_replace(['/', '\0'], '', $name);
+        $logoPath = RADIO_LOGOS_ROOT . $safeName . '.jpg';
+        $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
+        
+        if (!empty($favicon) && !str_contains($favicon, 'encrypted-tbn0.gstatic.com') && !file_exists($thumbSmPath)) {
+            rb_debug_log('Play: Downloading logo for ' . $name . ' from ' . $favicon);
+            $ch = curl_init($favicon);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 5,  // Quick timeout for play
+                CURLOPT_USERAGENT => RB_UA,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 3
+            ]);
+            $imageData = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($imageData !== false && $httpCode == 200 && strlen($imageData) > 100) {
+                if (rb_save_permanent_logo($name, $imageData)) {
+                    rb_debug_log('Play: Logo saved for ' . $name);
+                }
+            }
+        }
 
         // Insert station into cfg_radio for currentsong.txt compatibility
         // This allows moOde's worker.php/enhanceMetadata() to find station info via load_radio
@@ -763,7 +790,7 @@ switch ($cmd) {
         rb_add_recently_played([
             'url' => $url,
             'name' => $name,
-            'logo' => $logo
+            'logo' => $favicon ?: $logo
         ]);
 
         $sock = openMpdSock('localhost', 6600);
