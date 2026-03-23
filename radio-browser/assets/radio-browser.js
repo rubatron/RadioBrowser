@@ -31,6 +31,7 @@ function initRadioBrowser($) {
         stationData: [],           // Search results stations
         recentStationData: [],     // Recently played stations (separate to prevent memory leak)
         favorites: [],
+        favoriteNames: [],         // Station names for matching when URLs differ
         favoritesMap: {},
         recentlyPlayed: [],
         countries: [],
@@ -47,16 +48,39 @@ function initRadioBrowser($) {
     }
 
     /**
-     * Check if URL is in favorites (flexible matching)
+     * Normalize name for comparison (lowercase, trim whitespace)
      */
-    function isInFavorites(url) {
-        if (!url) return false;
-        var normalizedUrl = normalizeUrl(url);
-        for (var i = 0; i < state.favorites.length; i++) {
-            if (normalizeUrl(state.favorites[i]) === normalizedUrl) {
-                return true;
+    function normalizeName(name) {
+        if (!name) return '';
+        return name.toLowerCase().trim();
+    }
+
+    /**
+     * Check if station is in favorites (by URL or name)
+     */
+    function isInFavorites(url, name) {
+        if (!url && !name) return false;
+
+        // Check by URL first
+        if (url) {
+            var normalizedUrl = normalizeUrl(url);
+            for (var i = 0; i < state.favorites.length; i++) {
+                if (normalizeUrl(state.favorites[i]) === normalizedUrl) {
+                    return true;
+                }
             }
         }
+
+        // Also check by name (handles different URLs for same station)
+        if (name) {
+            var normalizedName = normalizeName(name);
+            for (var i = 0; i < state.favoriteNames.length; i++) {
+                if (normalizeName(state.favoriteNames[i]) === normalizedName) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
@@ -390,13 +414,17 @@ function initRadioBrowser($) {
                     state.favorites = data.favorites.map(function(f) {
                         return typeof f === 'string' ? f : f.url;
                     });
+                    // Store names for matching when URLs differ
+                    state.favoriteNames = data.favorites.map(function(f) {
+                        return typeof f === 'object' && f.name ? f.name : '';
+                    }).filter(function(n) { return n; });
                     // Create lookup map for faster checking
                     state.favoritesMap = {};
                     data.favorites.forEach(function(f) {
                         var url = typeof f === 'string' ? f : f.url;
                         state.favoritesMap[url] = f;
                     });
-                    console.log('Loaded favorites:', state.favorites.length);
+                    console.log('Loaded favorites:', state.favorites.length, 'names:', state.favoriteNames.length);
                 }
                 if (callback) callback();
             },
@@ -498,8 +526,8 @@ function initRadioBrowser($) {
             };
             state.recentStationData.push(stationData);
 
-            // Check if this station is in favorites
-            var isFavorite = isInFavorites(s.url);
+            // Check if this station is in favorites (by URL or name)
+            var isFavorite = isInFavorites(s.url, s.name);
             var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
             var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
@@ -676,7 +704,7 @@ function initRadioBrowser($) {
             state.stationData.push(stationData);
             var storeIndex = startIndex + index;
 
-            var isFavorite = isInFavorites(stationData.url);
+            var isFavorite = isInFavorites(stationData.url, stationData.name);
             var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
             var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
@@ -843,10 +871,15 @@ function initRadioBrowser($) {
      * This ensures both Recently Played and Search Results cards stay in sync
      */
     function updateFavoriteState(url, isFavorite, stationData) {
+        var name = stationData ? stationData.name : null;
+
         if (isFavorite) {
             // Add to state
-            if (!isInFavorites(url)) {
+            if (!isInFavorites(url, null)) {
                 state.favorites.push(url);
+            }
+            if (name && state.favoriteNames.indexOf(name) === -1) {
+                state.favoriteNames.push(name);
             }
             if (stationData) {
                 state.favoritesMap[url] = stationData;
@@ -856,6 +889,12 @@ function initRadioBrowser($) {
             var idx = state.favorites.indexOf(url);
             if (idx > -1) {
                 state.favorites.splice(idx, 1);
+            }
+            if (name) {
+                var nameIdx = state.favoriteNames.indexOf(name);
+                if (nameIdx > -1) {
+                    state.favoriteNames.splice(nameIdx, 1);
+                }
             }
             delete state.favoritesMap[url];
         }
