@@ -1518,9 +1518,14 @@ function initRadioBrowser($) {
             sendMpdCommand('next');
         });
 
+        // Debounced volume slider to prevent flooding API
+        var volumeTimeout = null;
         $('#rb-playbar-volume').on('input', function() {
             var vol = $(this).val();
-            sendMpdCommand('setvol', vol);
+            clearTimeout(volumeTimeout);
+            volumeTimeout = setTimeout(function() {
+                setMoodeVolume(vol);
+            }, 100);
         });
 
         // Start polling for playback status
@@ -1540,6 +1545,22 @@ function initRadioBrowser($) {
         }).done(function() {
             // Refresh status after command
             setTimeout(updatePlaybarStatus, 200);
+        });
+    }
+
+    function setMoodeVolume(level) {
+        // Use moOde's volume API (integrates with hardware volume, DSP, etc.)
+        $.ajax({
+            url: '/command/?cmd=vol&level=' + encodeURIComponent(level),
+            type: 'GET',
+            dataType: 'json',
+            timeout: 5000
+        }).done(function() {
+            playbarState.volume = parseInt(level);
+        }).fail(function() {
+            console.log('Volume set failed, trying alternative endpoint...');
+            // Fallback: try vol.php directly
+            $.post('/command/vol.php', { level: level });
         });
     }
 
