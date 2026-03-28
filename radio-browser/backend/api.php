@@ -508,7 +508,35 @@ function rb_api($endpoint, $params = [], $timeout = 10)
 $response = ['success' => false, 'message' => 'Unknown command'];
 
 switch ($cmd) {
-    // === Custom API Management ===
+    // === Download M3U File ===
+    case 'download_m3u':
+        $url = trim($_POST['url'] ?? $_GET['url'] ?? '');
+        $name = trim($_POST['name'] ?? $_GET['name'] ?? 'radio_stream');
+
+        if (empty($url)) {
+            $response = ['success' => false, 'message' => 'URL is required'];
+            break;
+        }
+
+        // Sanitize filename
+        $safeName = preg_replace('/[^a-zA-Z0-9\-_\s]/', '', $name);
+        $safeName = trim($safeName) ?: 'radio_stream';
+        $filename = $safeName . '.m3u';
+
+        // Build M3U content
+        $m3uContent = "#EXTM3U\r\n#EXTINF:-1," . $name . "\r\n" . $url . "\r\n";
+
+        // Send file download headers
+        header('Content-Type: audio/x-mpegurl');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen($m3uContent));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+
+        echo $m3uContent;
+        exit;
+
+        // === Custom API Management ===
     case 'custom_apis_list':
         $apis = rb_get_custom_apis();
         $response = ['success' => true, 'apis' => $apis];

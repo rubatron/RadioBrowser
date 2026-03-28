@@ -1,7 +1,8 @@
 <?php
+
 /**
  * RubaTron's Radio Browser Extension for moOde Audio Player
- * 
+ *
  * Standalone extension that works without modifying moOde system files.
  * Uses moOde's header.php and footer.min.php for consistent look and feel.
  *
@@ -57,6 +58,9 @@ echo '<link rel="stylesheet" href="' . $extAssetsPath . '/radio-browser.css">' .
 // Output extension-specific JavaScript (deferred loading)
 echo '<script src="' . $extAssetsPath . '/radio-browser.js" defer></script>' . "\n";
 
+// Modal fix - ensures Configure modal works on non-index pages
+echo '<script src="' . $extAssetsPath . '/radio-browser-modal-fix.js" defer></script>' . "\n";
+
 // Load and render template
 $templateFile = $extPath . '/templates/radio-browser.html';
 if (file_exists($templateFile)) {
@@ -71,4 +75,3 @@ if (file_exists($templateFile)) {
 
 // Include moOde footer (closes <body> and <html>)
 include('/var/www/footer.min.php');
-?>

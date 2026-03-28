@@ -26,5 +26,7 @@ $isApi = (
 );
 
 if (!$isApi) {
+  // Inject minimal CSS for menu styling (dividers, etc.)
+  echo '<style>.rb-mmenu-divider.divider{height:1px!important;background-color:rgba(128,128,128,.25)!important;border:none!important;margin:9px 1px!important;padding:0!important}</style>' . "\n";
   echo '<script src="/extensions/installed/radio-browser/assets/rb-menu-inject.js" defer></script>' . "\n";
 }

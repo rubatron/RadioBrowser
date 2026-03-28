@@ -361,6 +361,13 @@ function initRadioBrowser($) {
             e.preventDefault();
             addToRadio($(this).closest('.rb-station-card'));
         });
+
+        // Download stream as .m3u
+        $(document).on('click', '.rb-download-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            downloadStreamFromCard($(this).closest('.rb-station-card'));
+        });
     }
 
     function checkApiStatus() {
@@ -533,7 +540,7 @@ function initRadioBrowser($) {
             var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
 
             html.push(
-                '<div class="rb-station-card rb-recent-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '">' +
+                '<div class="rb-station-card rb-recent-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '" data-name="' + escapeHtml(s.name) + '">' +
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
@@ -542,6 +549,7 @@ function initRadioBrowser($) {
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
                         '<button class="' + addBtnClass + '" title="' + addBtnTitle + '">' + addBtnIcon + '</button>' +
+                        '<button class="btn rb-download-btn" title="Download .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
                     '</div>' +
                 '</div>'
             );
@@ -710,7 +718,7 @@ function initRadioBrowser($) {
             var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
 
             html.push(
-                '<div class="rb-station-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(stationData.url) + '">' +
+                '<div class="rb-station-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(stationData.url) + '" data-name="' + escapeHtml(s.name) + '">' +
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
@@ -719,6 +727,7 @@ function initRadioBrowser($) {
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
                         '<button class="' + addBtnClass + '" title="' + addBtnTitle + '">' + addBtnIcon + '</button>' +
+                        '<button class="btn rb-download-btn" title="Download .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
                     '</div>' +
                 '</div>'
             );
@@ -1229,62 +1238,126 @@ function initRadioBrowser($) {
     }
 
     // ============================================================================
-    // STREAM DOWNLOAD (Simple - just get the URL/playlist)
+    // LOCAL DISPLAY SETTINGS (localStorage - mini playbar & logo visibility)
     // ============================================================================
 
-    function downloadStream() {
-        var btn = $('#rb-download-stream');
-        var statusEl = $('#rb-download-status');
-        var infoEl = $('#rb-stream-info');
+    var localSettings = {
+        playbar: true,
+        logo: true
+    };
 
-        // Check if there's a currently playing station
-        if (!state.currentPlaying) {
-            notify('Error', 'No station currently playing', 'error');
-            statusEl.text('No station playing').css('color', '#e74c3c');
+    function loadLocalSettings() {
+        try {
+            var stored = localStorage.getItem('rb-local-settings');
+            if (stored) {
+                var parsed = JSON.parse(stored);
+                localSettings.playbar = parsed.playbar !== false;
+                localSettings.logo = parsed.logo !== false;
+            }
+        } catch (e) {
+            console.log('Radio Browser: Error loading local settings', e);
+        }
+        applyLocalSettings();
+        renderLocalToggles();
+    }
+
+    function saveLocalSettings() {
+        try {
+            localStorage.setItem('rb-local-settings', JSON.stringify(localSettings));
+        } catch (e) {
+            console.log('Radio Browser: Error saving local settings', e);
+        }
+    }
+
+    function applyLocalSettings() {
+        // Mini playbar visibility
+        var $playbar = $('#rb-playbar');
+        if ($playbar.length) {
+            if (localSettings.playbar) {
+                $playbar.removeClass('rb-hidden');
+                $('#container').css('padding-bottom', '70px');
+            } else {
+                $playbar.addClass('rb-hidden');
+                $('#container').css('padding-bottom', '0');
+            }
+        }
+
+        // Index.php playbar logo visibility (affects all pages with playbar)
+        // The logo is in #playbar-cover on index.php
+        var $playbarCover = $('#playbar-cover');
+        if ($playbarCover.length) {
+            $playbarCover.css('display', localSettings.logo ? '' : 'none');
+        }
+    }
+
+    function renderLocalToggles() {
+        applyLocalToggleState($('#rb-local-playbar-btn'), $('#rb-local-playbar-state'), localSettings.playbar);
+        applyLocalToggleState($('#rb-local-logo-btn'), $('#rb-local-logo-state'), localSettings.logo);
+    }
+
+    function applyLocalToggleState($toggle, $stateEl, visible) {
+        if (!$toggle.length) return;
+        $toggle.toggleClass('toggle-on', visible).toggleClass('toggle-off', !visible);
+        $toggle.find('input[value="On"]').prop('checked', visible);
+        $toggle.find('input[value="Off"]').prop('checked', !visible);
+        if ($stateEl.length) {
+            $stateEl.text(visible ? 'Visible' : 'Hidden');
+        }
+    }
+
+    function bindLocalToggleEvents() {
+        $('#rb-local-playbar-btn input[type="radio"]').on('change', function() {
+            if ($(this).prop('checked')) {
+                localSettings.playbar = $(this).val() === 'On';
+                saveLocalSettings();
+                applyLocalSettings();
+                renderLocalToggles();
+                notify('Updated', 'Mini playbar ' + (localSettings.playbar ? 'visible' : 'hidden'), 'success');
+            }
+        });
+
+        $('#rb-local-logo-btn input[type="radio"]').on('change', function() {
+            if ($(this).prop('checked')) {
+                localSettings.logo = $(this).val() === 'On';
+                saveLocalSettings();
+                applyLocalSettings();
+                renderLocalToggles();
+                notify('Updated', 'Playbar logo ' + (localSettings.logo ? 'visible' : 'hidden'), 'success');
+            }
+        });
+    }
+
+    // ============================================================================
+    // STREAM DOWNLOAD (Download .m3u from card via backend)
+    // ============================================================================
+
+    function downloadStreamFromCard(card) {
+        // Use attr() instead of data() for reliable extraction
+        var streamUrl = card.attr('data-url');
+        var stationName = card.attr('data-name') || card.find('.rb-name').text() || 'radio_stream';
+
+        console.log('Download: URL=' + streamUrl + ', Name=' + stationName);
+
+        if (!streamUrl) {
+            notify('Error', 'No stream URL found', 'error');
             return;
         }
 
-        btn.prop('disabled', true);
-        btn.find('i').removeClass('fa-download').addClass('fa-spinner fa-spin');
-        statusEl.text('Getting stream info...').css('color', '#d35400');
+        // Build download URL - use backend to serve file with proper headers
+        var downloadUrl = API_URL + '?cmd=download_m3u&url=' + encodeURIComponent(streamUrl) + '&name=' + encodeURIComponent(stationName);
 
-        // Get station name from currently playing card
-        var currentCard = $('.rb-station-card.playing').first();
-        var stationName = currentCard.find('.rb-name').text() || 'radio_stream';
-        var streamUrl = state.currentPlaying;
+        // Open in hidden iframe to trigger download without navigation
+        var iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = downloadUrl;
+        document.body.appendChild(iframe);
 
-        // Show stream info
-        $('#rb-stream-name').text(stationName);
-        $('#rb-stream-url').text(streamUrl);
-        infoEl.show();
+        // Cleanup after delay
+        setTimeout(function() {
+            document.body.removeChild(iframe);
+        }, 5000);
 
-        // Create a simple .m3u playlist file for download
-        var m3uContent = '#EXTM3U\n#EXTINF:-1,' + stationName + '\n' + streamUrl + '\n';
-        var blob = new Blob([m3uContent], { type: 'audio/x-mpegurl' });
-        var url = URL.createObjectURL(blob);
-
-        // Create download link
         var safeName = stationName.replace(/[^a-zA-Z0-9\-_\s]/g, '').trim() || 'radio_stream';
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = safeName + '.m3u';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        btn.prop('disabled', false);
-        btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-download');
-        statusEl.html('<i class="fa-solid fa-sharp fa-check"></i> Downloaded: ' + safeName + '.m3u')
-            .css('color', '#2ecc71');
-        notify('Downloaded', 'Playlist file downloaded', 'success');
-    }
-
-    function bindDownloadEvents() {
-        $('#rb-download-stream').on('click', function(e) {
-            e.stopPropagation();
-            downloadStream();
-        });
     }
 
     // Initialize visibility and download features when settings tab is opened
@@ -1292,9 +1365,116 @@ function initRadioBrowser($) {
         loadSettings();
     });
 
+    // ============================================================================
+    // MINI PLAYBAR CONTROLLER
+    // ============================================================================
+
+    var playbarState = {
+        playing: false,
+        volume: 50,
+        pollInterval: null
+    };
+
+    function initMiniPlaybar() {
+        // Bind controls
+        $('#rb-playbar-play').on('click', function() {
+            sendMpdCommand(playbarState.playing ? 'pause' : 'play');
+        });
+
+        $('#rb-playbar-stop').on('click', function() {
+            sendMpdCommand('stop');
+        });
+
+        $('#rb-playbar-prev').on('click', function() {
+            sendMpdCommand('previous');
+        });
+
+        $('#rb-playbar-next').on('click', function() {
+            sendMpdCommand('next');
+        });
+
+        $('#rb-playbar-volume').on('input', function() {
+            var vol = $(this).val();
+            sendMpdCommand('setvol', vol);
+        });
+
+        // Start polling for playback status
+        updatePlaybarStatus();
+        playbarState.pollInterval = setInterval(updatePlaybarStatus, 3000);
+    }
+
+    function sendMpdCommand(cmd, arg) {
+        var data = { cmd: cmd };
+        if (arg !== undefined) data.arg = arg;
+
+        $.ajax({
+            url: '/command/?cmd=' + cmd + (arg !== undefined ? '&arg=' + arg : ''),
+            type: 'GET',
+            dataType: 'json',
+            timeout: 5000
+        }).done(function() {
+            // Refresh status after command
+            setTimeout(updatePlaybarStatus, 200);
+        });
+    }
+
+    function updatePlaybarStatus() {
+        $.ajax({
+            url: '/engine-mpd.php',
+            type: 'POST',
+            data: { cmd: 'get_currentsong' },
+            dataType: 'json',
+            timeout: 5000
+        }).done(function(data) {
+            if (data) {
+                var title = data.title || data.file || 'Not playing';
+                var artist = data.artist || data.album || '';
+                var coverUrl = data.coverurl || '/images/default-cover-v6.svg';
+
+                // Check if it's a radio station
+                if (data.file && data.file.indexOf('http') === 0) {
+                    // It's a stream - use station name if available
+                    if (data.name) {
+                        artist = title;
+                        title = data.name;
+                    }
+                }
+
+                $('#rb-playbar-title').text(title);
+                $('#rb-playbar-artist').text(artist);
+                $('#rb-playbar-cover-img').attr('src', coverUrl);
+
+                // Update play/pause state
+                playbarState.playing = (data.state === 'play');
+                var playBtn = $('#rb-playbar-play');
+                if (playbarState.playing) {
+                    playBtn.addClass('playing');
+                    playBtn.find('i').removeClass('fa-play').addClass('fa-pause');
+                } else {
+                    playBtn.removeClass('playing');
+                    playBtn.find('i').removeClass('fa-pause').addClass('fa-play');
+                }
+            }
+        });
+
+        // Get volume
+        $.ajax({
+            url: '/command/?cmd=get_vol',
+            type: 'GET',
+            dataType: 'text',
+            timeout: 5000
+        }).done(function(vol) {
+            var volume = parseInt(vol) || 0;
+            playbarState.volume = volume;
+            $('#rb-playbar-volume').val(volume);
+        });
+    }
+
     // Bind events on document ready
     $(document).ready(function() {
         bindVisibilityEvents();
-        bindDownloadEvents();
+        bindLocalToggleEvents();
+        loadLocalSettings();
+        initMiniPlaybar();
     });
 }

@@ -12,6 +12,42 @@
  ********************************************************************************/
 
 /* ============================================
+   Modal z-index fix for Radio Browser page
+   Ensure moOde modals work correctly when opened from this page
+   ============================================ */
+
+/* No custom modal styling needed - use moOde's native modal styles */
+
+/* ============================================
+   M-Menu Divider (injected by rb-menu-inject.js)
+   ============================================ */
+
+.rb-mmenu-divider.divider {
+    height: 1px !important;
+    background-color: rgba(128, 128, 128, 0.25) !important;
+    border: none !important;
+    margin: 9px 1px !important;
+    padding: 0 !important;
+}
+
+/* ============================================
+   Playbar Radio Browser Icon
+   ============================================ */
+
+#rb-playbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    font-size: 1.1rem;
+}
+
+#rb-playbar-btn:hover {
+    color: #c55a11 !important;
+    opacity: 1 !important;
+}
+
+/* ============================================
    Radio Browser Header
    ============================================ */
 
@@ -174,7 +210,8 @@
 }
 
 .rb-play-btn,
-.rb-add-btn {
+.rb-add-btn,
+.rb-download-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -208,17 +245,25 @@
     background: #c95800;
 }
 
-.rb-add-btn {
+.rb-add-btn,
+.rb-download-btn {
     background: #333;
     color: #888;
     border: 1px solid rgba(128, 128, 128, 0.3);
 }
 
-.rb-add-btn:hover {
+.rb-add-btn:hover,
+.rb-download-btn:hover {
     background: rgba(51, 51, 51, 0.8);
     color: #ddd;
     transform: scale(1.05);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.rb-download-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
 }
 
 .rb-add-btn.added {
@@ -445,7 +490,8 @@
     }
 
     .rb-play-btn,
-    .rb-add-btn {
+    .rb-add-btn,
+    .rb-download-btn {
         flex: 1;
         width: 100%;
         height: 36px;
@@ -792,4 +838,164 @@
 
 .rb-stream-info .rb-info-item:last-child {
     margin-bottom: 0;
+}
+
+/* ============================================
+   Mini Playbar (Fixed Footer)
+   ============================================ */
+
+.rb-playbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    /* Glass morphism effect */
+    background: linear-gradient(180deg,
+            rgba(26, 26, 26, 0.85) 0%,
+            rgba(13, 13, 13, 0.9) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    gap: 1rem;
+    z-index: 1000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Hidden state for playbar toggle */
+.rb-playbar.rb-hidden {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.rb-playbar-cover {
+    width: 44px;
+    height: 44px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #333;
+}
+
+.rb-playbar-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rb-playbar-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.rb-playbar-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rb-playbar-artist {
+    font-size: 0.8rem;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rb-playbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.rb-playbar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #aaa;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.rb-playbar-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.rb-playbar-btn.rb-playbar-play {
+    width: 44px;
+    height: 44px;
+    background: #c55a11;
+    color: #fff;
+    font-size: 1.1rem;
+}
+
+.rb-playbar-btn.rb-playbar-play:hover {
+    background: #d35400;
+    transform: scale(1.05);
+}
+
+.rb-playbar-btn.rb-playbar-play.playing i::before {
+    content: "\f04c";
+    /* pause icon */
+}
+
+.rb-playbar-volume {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #888;
+}
+
+.rb-playbar-volume input[type="range"] {
+    width: 80px;
+    height: 4px;
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.rb-playbar-volume input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #c55a11;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* Add padding to container to prevent content being hidden behind playbar */
+#container {
+    padding-bottom: 70px;
+}
+
+@media (max-width: 600px) {
+    .rb-playbar {
+        padding: 0 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .rb-playbar-volume {
+        display: none;
+    }
+
+    .rb-playbar-info {
+        flex: 1;
+    }
 }
