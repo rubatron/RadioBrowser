@@ -10,16 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### System Backup & Restore
+
 - **moOde File Backup** - Original moOde system files (header.php, moode-locations.conf) are now backed up to `sys/sources/moode/` before patching
 - **Source Archive Preservation** - Bootstrap installer saves the extension tarball to `sys/sources/` for future repairs
 - **Clean Restore on Uninstall** - moOde files are restored from backups during uninstall
 
 #### Troubleshooting UI Enhancements
+
 - **Service Status Indicators** - Real-time status dots for nginx and PHP-FPM in the Configure modal
 - **Repair Installation Button** - One-click fix for symlinks, patches, and permissions
 - **Uninstall Extension Button** - UI-based uninstall with double confirmation and redirect to moOde home
 
 #### API Endpoints
+
 - `service_status` - Check nginx and PHP-FPM service status
 - `repair` - Repair installation (symlinks, patches, permissions)
 - `uninstall` - Uninstall extension and restore moOde files
