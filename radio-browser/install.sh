@@ -379,6 +379,12 @@ set_permissions() {
     chmod 777 "${CACHE_DIR}"
     chmod 777 "${IMAGE_CACHE_DIR}"
 
+    # Create symlink for imagesw (moOde stores images in /var/local/www/imagesw)
+    if [[ ! -L "/var/www/imagesw" ]]; then
+        ln -sf /var/local/www/imagesw /var/www/imagesw 2>/dev/null || true
+        echo -e "  ${GREEN}✓${NC} Symlink: /var/www/imagesw -> /var/local/www/imagesw"
+    fi
+
     # Make moOde radio-logos directory writable for thumbnail creation
     chmod 777 /var/local/www/imagesw/radio-logos 2>/dev/null || true
     chmod 777 /var/local/www/imagesw/radio-logos/thumbs 2>/dev/null || true

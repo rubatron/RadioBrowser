@@ -34,7 +34,7 @@
             e.preventDefault();
             e.stopPropagation();
             console.log('[RB Modal Fix] Opening modal via Bootstrap');
-            
+
             // Force modal visibility - Bootstrap 2.x sometimes needs help
             $modal.removeClass('hide').addClass('in').css({
                 'display': 'block',
@@ -42,19 +42,19 @@
                 'top': '10%',
                 'margin-top': '0'
             });
-            
+
             // Add backdrop if not present
             if (!$('.modal-backdrop').length) {
                 $('<div class="modal-backdrop fade in"></div>').appendTo('body');
             }
-            
+
             // Also trigger Bootstrap's show for proper event handling
             $modal.modal('show');
-            
+
             // Ensure modal content is visible
             $modal.find('.modal-body').css('display', 'block');
             $modal.find('#configure').css('display', 'block');
-            
+
             console.log('[RB Modal Fix] Modal forced visible');
             return false;
         });
