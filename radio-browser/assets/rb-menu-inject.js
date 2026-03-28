@@ -339,6 +339,45 @@
     }
 
     /**
+     * Radio logo fallback - replace missing logos with moOde default
+     * Handles 404 errors for radio-logos thumbnails
+     */
+    var FALLBACK_IMAGE = '/images/radio.png';
+    var processedImages = new WeakSet();
+
+    function setupRadioLogoFallback() {
+        // Event delegation for img error events
+        document.addEventListener('error', function(e) {
+            var img = e.target;
+            if (img.tagName !== 'IMG') return;
+
+            // Only handle radio-logos images
+            var src = img.src || '';
+            if (src.indexOf('radio-logos') === -1) return;
+
+            // Prevent infinite loop
+            if (processedImages.has(img)) return;
+            processedImages.add(img);
+
+            // Replace with fallback
+            img.src = FALLBACK_IMAGE;
+        }, true); // Use capture phase to catch error before it bubbles
+
+        // Also handle existing images that may have already failed
+        setTimeout(function() {
+            var imgs = document.querySelectorAll('img[src*="radio-logos"]');
+            imgs.forEach(function(img) {
+                if (!img.complete || img.naturalWidth === 0) {
+                    if (!processedImages.has(img)) {
+                        processedImages.add(img);
+                        img.src = FALLBACK_IMAGE;
+                    }
+                }
+            });
+        }, 500);
+    }
+
+    /**
      * Main render function - refresh all menu injections
      */
     function renderAll() {
@@ -359,6 +398,9 @@
     function init() {
         // Initial render (once)
         renderAll();
+
+        // Setup radio logo fallback for missing thumbnails
+        setupRadioLogoFallback();
 
         // Only listen for dropdown toggle clicks - no MutationObserver on body
         document.addEventListener('click', function(e) {
