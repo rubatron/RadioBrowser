@@ -522,6 +522,94 @@ cleanup_shell_bridge() {
 }
 
 # ============================================================================
+# NGINX LOGO FALLBACK (Handles missing radio logos gracefully)
+# ============================================================================
+# Patches nginx to serve a fallback image when radio logos are not found
+# This prevents 404 errors and shows moOde's default radio icon
+
+NGINX_CONF="/etc/nginx/moode-locations.conf"
+
+patch_nginx_logos() {
+    log "Patching nginx for logo fallback..."
+
+    # Check if nginx config exists
+    if [[ ! -f "$NGINX_CONF" ]]; then
+        warning "nginx config not found at $NGINX_CONF"
+        warning "Logo fallback skipped - you may see 404s for missing logos"
+        return 0
+    fi
+
+    # Check if already patched
+    if grep -q "RB_NGINX_LOGO_FALLBACK_START" "$NGINX_CONF" 2>/dev/null; then
+        info "Logo fallback already installed in nginx config"
+        return 0
+    fi
+
+    # Create backup
+    local backup_file="${NGINX_CONF}.rb-backup-$(date +%Y%m%d-%H%M%S)"
+    cp "$NGINX_CONF" "$backup_file"
+    echo -e "  ${GREEN}✓${NC} Backup created: $backup_file"
+
+    # The nginx location block to add
+    local logo_block="
+# RB_NGINX_LOGO_FALLBACK_START
+# Radio logos with fallback to moOde default radio icon
+# Added by Radio Browser extension
+location /imagesw/radio-logos/ {
+    alias /var/local/www/imagesw/radio-logos/;
+    try_files \$uri /images/radio.png;
+}
+# RB_NGINX_LOGO_FALLBACK_END"
+
+    # Append to the nginx config
+    echo "$logo_block" >> "$NGINX_CONF"
+
+    # Verify the patch was applied
+    if grep -q "RB_NGINX_LOGO_FALLBACK_START" "$NGINX_CONF"; then
+        success "Logo fallback installed in nginx"
+        echo -e "  ${CYAN}→${NC} Missing radio logos will show default icon instead of 404"
+        return 0
+    else
+        error "Failed to patch nginx config"
+        # Restore backup
+        cp "$backup_file" "$NGINX_CONF"
+        echo -e "  ${YELLOW}!${NC} Backup restored"
+        return 1
+    fi
+}
+
+cleanup_nginx_logos() {
+    log "Removing logo fallback from nginx..."
+
+    if [[ ! -f "$NGINX_CONF" ]]; then
+        info "nginx config not found, nothing to clean"
+        return 0
+    fi
+
+    # Check if our patch is installed
+    if ! grep -q "RB_NGINX_LOGO_FALLBACK_START" "$NGINX_CONF" 2>/dev/null; then
+        info "Logo fallback not found in nginx config"
+        return 0
+    fi
+
+    # Create backup before removal
+    local backup_file="${NGINX_CONF}.rb-cleanup-$(date +%Y%m%d-%H%M%S)"
+    cp "$NGINX_CONF" "$backup_file"
+
+    # Remove the logo fallback block (from START to END marker, inclusive)
+    sed -i '/RB_NGINX_LOGO_FALLBACK_START/,/RB_NGINX_LOGO_FALLBACK_END/d' "$NGINX_CONF"
+
+    # Verify removal
+    if ! grep -q "RB_NGINX_LOGO_FALLBACK_START" "$NGINX_CONF"; then
+        success "Logo fallback removed from nginx"
+        return 0
+    else
+        warning "Could not fully remove logo fallback"
+        return 1
+    fi
+}
+
+# ============================================================================
 # UNINSTALL FUNCTION
 # ============================================================================
 uninstall() {
@@ -550,6 +638,15 @@ uninstall() {
 
     # Remove menu integration from header.php
     cleanup_shell_bridge
+
+    # Remove nginx logo fallback
+    cleanup_nginx_logos
+
+    # Restart nginx to apply config removal
+    if systemctl is-active --quiet nginx 2>/dev/null; then
+        systemctl restart nginx
+        echo -e "  ${GREEN}✓${NC} Restarted nginx"
+    fi
 
     log "Removing files..."
 
@@ -582,44 +679,54 @@ auto_install() {
     local errors=0
 
     # Step 1: Check root
-    echo -e "${BOLD}Step 1/8: Checking permissions...${NC}"
+    echo -e "${BOLD}Step 1/9: Checking permissions...${NC}"
     check_root || { error "Must run as root"; return 1; }
     echo
 
     # Step 2: Check source files
-    echo -e "${BOLD}Step 2/8: Checking source files...${NC}"
+    echo -e "${BOLD}Step 2/9: Checking source files...${NC}"
     check_source_files || { error "Source files missing"; return 1; }
     echo
 
     # Step 3: Install dependencies
-    echo -e "${BOLD}Step 3/8: Installing dependencies...${NC}"
+    echo -e "${BOLD}Step 3/9: Installing dependencies...${NC}"
     install_curl || warning "cURL installation issue"
     install_php_curl || warning "PHP cURL installation issue"
     echo
 
     # Step 4: Create backup
-    echo -e "${BOLD}Step 4/8: Creating backup...${NC}"
+    echo -e "${BOLD}Step 4/9: Creating backup...${NC}"
     create_backup || warning "Backup creation issue"
     echo
 
     # Step 5: Create folders
-    echo -e "${BOLD}Step 5/8: Creating folders...${NC}"
+    echo -e "${BOLD}Step 5/9: Creating folders...${NC}"
     create_folders || { error "Failed to create folders"; ((errors++)); }
     echo
 
     # Step 6: Copy files
-    echo -e "${BOLD}Step 6/8: Copying files...${NC}"
+    echo -e "${BOLD}Step 6/9: Copying files...${NC}"
     copy_files || { error "Failed to copy files"; ((errors++)); }
     echo
 
     # Step 7: Set permissions
-    echo -e "${BOLD}Step 7/8: Setting permissions...${NC}"
+    echo -e "${BOLD}Step 7/9: Setting permissions...${NC}"
     set_permissions || { error "Failed to set permissions"; ((errors++)); }
     echo
 
     # Step 8: Install menu integration
-    echo -e "${BOLD}Step 8/8: Installing menu integration...${NC}"
+    echo -e "${BOLD}Step 8/9: Installing menu integration...${NC}"
     patch_moode_header || warning "Menu integration issue"
+    echo
+
+    # Step 9: Patch nginx for logo fallback
+    echo -e "${BOLD}Step 9/9: Patching nginx for logo fallback...${NC}"
+    patch_nginx_logos || warning "Nginx logo fallback issue"
+    # Restart nginx to apply the config change
+    if systemctl is-active --quiet nginx 2>/dev/null; then
+        systemctl restart nginx
+        echo -e "  ${GREEN}✓${NC} Restarted nginx"
+    fi
     echo
 
     # Summary

@@ -1,6 +1,6 @@
 {
     "name": "RubaTron's Radio Browser Extension",
-    "version": "3.1.0",
+    "version": "3.1.1",
     "author": "RubaTron",
     "license": "GPL-3.0-or-later",
     "description": "Browse and play internet radio stations from radio-browser.info",
@@ -10,6 +10,7 @@
         "Add favorites to moOde Radio library",
         "Recently played history at top",
         "Logo caching and display",
+        "Nginx logo fallback (no more 404s)",
         "Custom API server support",
         "Troubleshooting tools",
         "API status monitoring",

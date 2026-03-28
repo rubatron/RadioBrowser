@@ -340,125 +340,169 @@
 
     /**
      * Radio logo fallback - replace missing logos with moOde default
-     * Handles 404 errors for radio-logos thumbnails
-     * 
-     * Optimizations:
-     * - Cache failed URLs to prevent repeated 404 requests
-     * - Use MutationObserver to intercept new img tags before they load
-     * - Persist failed URLs in sessionStorage (clears on tab close)
+     *
+     * Strategy: Block by STATION PREFIX, not exact URL.
+     * When "SLAM!.jpg" 404s, block all "SLAM!*.jpg" variations.
+     * This handles dynamic titles like "SLAM! Housuh In De Pauzuh"
      */
     var FALLBACK_IMAGE = '/images/radio.png';
-    var STORAGE_KEY = 'rb_failed_logos';
-    var failedUrls = new Set();
+    var STORAGE_KEY = 'rb_blocked_prefixes';
+    var blockedPrefixes = [];  // Array of lowercase prefixes
+    var patchApplied = false;
 
-    // Restore failed URLs from sessionStorage
-    function loadFailedUrls() {
-        try {
-            var stored = sessionStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                JSON.parse(stored).forEach(function(url) {
-                    failedUrls.add(url);
-                });
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    // Save failed URLs to sessionStorage
-    function saveFailedUrls() {
-        try {
-            // Limit to 100 entries to prevent storage bloat
-            var urls = Array.from(failedUrls).slice(-100);
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(urls));
-        } catch (e) { /* ignore */ }
-    }
-
-    // Normalize URL for comparison (strip query strings, decode)
-    function normalizeLogoUrl(src) {
+    // Extract filename from path (without extension)
+    function extractFilename(src) {
+        if (!src) return '';
         try {
             var url = new URL(src, window.location.origin);
-            return url.origin + url.pathname;
+            var path = decodeURIComponent(url.pathname).toLowerCase();
+            // Get filename from path
+            var filename = path.split('/').pop() || '';
+            // Remove extension
+            return filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
         } catch (e) {
-            return src;
+            return '';
         }
     }
 
-    // Check if img should use fallback and apply it
-    function applyFallbackIfNeeded(img) {
-        var src = img.src || img.getAttribute('src') || '';
-        if (src.indexOf('radio-logos') === -1) return false;
-        if (src === FALLBACK_IMAGE) return false;
+    // Extract station prefix from filename
+    // E.g., "slam! housuh in de pauzuh_sm" -> "slam!"
+    function extractStationPrefix(filename) {
+        if (!filename) return '';
+        // Remove _sm suffix
+        filename = filename.replace(/_sm$/, '');
+        // Try to find separator and take first part
+        var separators = [' - ', ' – ', ' — ', ': '];
+        for (var i = 0; i < separators.length; i++) {
+            var idx = filename.indexOf(separators[i]);
+            if (idx > 2) {
+                return filename.substring(0, idx).trim();
+            }
+        }
+        // No separator found - use first 20 chars or until space after 10 chars
+        if (filename.length > 20) {
+            // Find a natural break point
+            var spaceIdx = filename.indexOf(' ', 10);
+            if (spaceIdx > 0 && spaceIdx < 30) {
+                return filename.substring(0, spaceIdx).trim();
+            }
+            return filename.substring(0, 20).trim();
+        }
+        return filename.trim();
+    }
 
-        var normalized = normalizeLogoUrl(src);
-        if (failedUrls.has(normalized)) {
-            img.src = FALLBACK_IMAGE;
-            return true;
+    // Check if filename matches any blocked prefix
+    function isBlockedByPrefix(src) {
+        if (!src || src.indexOf('radio-logos') === -1) return false;
+        var filename = extractFilename(src);
+        if (!filename) return false;
+
+        for (var i = 0; i < blockedPrefixes.length; i++) {
+            if (filename.indexOf(blockedPrefixes[i]) === 0 ||
+                filename === blockedPrefixes[i]) {
+                return true;
+            }
         }
         return false;
     }
 
-    function setupRadioLogoFallback() {
-        // Load cached failed URLs
-        loadFailedUrls();
+    // Add prefix to blocklist
+    function blockPrefix(src) {
+        var filename = extractFilename(src);
+        var prefix = extractStationPrefix(filename);
+        if (prefix && blockedPrefixes.indexOf(prefix) === -1) {
+            blockedPrefixes.push(prefix);
+            saveBlocklist();
+            console.log('[RB Logo] Blocked prefix:', prefix, '(from:', filename, ')');
+        }
+    }
 
-        // Event delegation for img error events (capture phase)
+    // Load blocklist from sessionStorage
+    function loadBlocklist() {
+        try {
+            var stored = sessionStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                blockedPrefixes = JSON.parse(stored);
+            }
+        } catch (e) { blockedPrefixes = []; }
+        if (blockedPrefixes.length > 0) {
+            console.log('[RB Logo] Loaded', blockedPrefixes.length, 'blocked prefixes:', blockedPrefixes.join(', '));
+        }
+    }
+
+    // Save blocklist to sessionStorage
+    function saveBlocklist() {
+        try {
+            // Limit to 50 prefixes
+            if (blockedPrefixes.length > 50) {
+                blockedPrefixes = blockedPrefixes.slice(-50);
+            }
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(blockedPrefixes));
+        } catch (e) { /* ignore */ }
+    }
+
+    // Monkey-patch img.src setter to intercept blocked URLs
+    function patchImageSrc() {
+        if (patchApplied) return;
+        patchApplied = true;
+
+        var originalDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+        if (!originalDescriptor) return;
+
+        Object.defineProperty(HTMLImageElement.prototype, 'src', {
+            get: function() {
+                return originalDescriptor.get.call(this);
+            },
+            set: function(value) {
+                // Check if this URL matches a blocked prefix
+                if (value && value.indexOf('radio-logos') !== -1 && isBlockedByPrefix(value)) {
+                    // Use fallback instead - no network request!
+                    originalDescriptor.set.call(this, FALLBACK_IMAGE);
+                    return;
+                }
+                // Normal behavior
+                originalDescriptor.set.call(this, value);
+            },
+            enumerable: originalDescriptor.enumerable,
+            configurable: true
+        });
+
+        console.log('[RB Logo] Patched img.src setter (prefix-based)');
+    }
+
+    function setupRadioLogoFallback() {
+        // Load blocklist first
+        loadBlocklist();
+
+        // Apply the src patch to intercept future requests
+        patchImageSrc();
+
+        // Handle 404 errors - add prefix to blocklist
         document.addEventListener('error', function(e) {
             var img = e.target;
             if (img.tagName !== 'IMG') return;
 
             var src = img.src || '';
             if (src.indexOf('radio-logos') === -1) return;
-            if (src === FALLBACK_IMAGE) return;
+            if (src.indexOf(FALLBACK_IMAGE) !== -1) return;
 
-            // Cache this URL as failed
-            var normalized = normalizeLogoUrl(src);
-            if (!failedUrls.has(normalized)) {
-                failedUrls.add(normalized);
-                saveFailedUrls();
-            }
+            // Block this prefix for future requests
+            blockPrefix(src);
 
-            // Replace with fallback
+            // Set fallback on this img
             img.src = FALLBACK_IMAGE;
         }, true);
 
-        // MutationObserver to intercept new img tags BEFORE they load
-        var observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType !== 1) return; // Element nodes only
-                    
-                    if (node.tagName === 'IMG') {
-                        applyFallbackIfNeeded(node);
-                    } else if (node.querySelectorAll) {
-                        var imgs = node.querySelectorAll('img[src*="radio-logos"]');
-                        imgs.forEach(applyFallbackIfNeeded);
-                    }
-                });
-            });
-        });
-
-        // Observe playqueue and content areas (not entire body for efficiency)
-        var targets = ['cv-playqueue', 'playqueue-list', 'container-playqueue', 'content'];
-        targets.forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) {
-                observer.observe(el, { childList: true, subtree: true });
-            }
-        });
-
-        // Fallback: observe body if no specific targets found
-        if (!document.getElementById('cv-playqueue')) {
-            observer.observe(document.body, { childList: true, subtree: true });
-        }
-
-        // Handle existing images that may have already failed
+        // Handle existing broken images on page
         setTimeout(function() {
-            var imgs = document.querySelectorAll('img[src*="radio-logos"]');
-            imgs.forEach(function(img) {
+            document.querySelectorAll('img[src*="radio-logos"]').forEach(function(img) {
                 if (!img.complete || img.naturalWidth === 0) {
-                    applyFallbackIfNeeded(img);
+                    if (isBlockedByPrefix(img.src)) {
+                        img.src = FALLBACK_IMAGE;
+                    }
                 }
             });
-        }, 500);
+        }, 300);
     }
 
     /**
