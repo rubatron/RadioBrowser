@@ -42,6 +42,33 @@ if [[ $EUID -ne 0 ]]; then
 fi
 echo -e "${GREEN}[✓] Running as root${NC}"
 
+# Check if Radio Browser is already installed
+EXT_DIR="/var/www/extensions/installed/radio-browser"
+SYMLINK="/var/www/radio-browser.php"
+
+if [[ -d "$EXT_DIR" ]] || [[ -L "$SYMLINK" ]]; then
+    echo ""
+    echo -e "${YELLOW}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║  ⚠  Radio Browser is already installed!                      ║${NC}"
+    echo -e "${YELLOW}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    if [[ -d "$EXT_DIR" ]]; then
+        CURRENT_VERSION=$(cat "$EXT_DIR/version.txt" 2>/dev/null || echo "unknown")
+        echo -e "  Current version: ${BOLD}${CURRENT_VERSION}${NC}"
+    fi
+    echo ""
+    echo -e "  Continuing will ${BOLD}reinstall/upgrade${NC} the extension."
+    echo -e "  Your settings and favorites will be preserved."
+    echo ""
+    read -p "  Do you want to proceed? [y/N] " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}[*] Installation cancelled.${NC}"
+        exit 0
+    fi
+    echo -e "${GREEN}[✓] Proceeding with reinstall/upgrade...${NC}"
+fi
+
 # Clean up any previous install attempt
 rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
