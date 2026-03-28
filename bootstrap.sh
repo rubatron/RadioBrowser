@@ -27,7 +27,119 @@ BRANCH="develop"  # UAT: test from develop, change to main for production
 ARCHIVE_URL="${REPO_URL}/archive/refs/heads/${BRANCH}.tar.gz"
 INSTALL_DIR="/tmp/radio-browser-install"
 LOG_FILE="/tmp/radio-browser-bootstrap-$(date +%Y%m%d-%H%M%S).log"
+EXT_DIR="/var/www/extensions/installed/radio-browser"
+SYMLINK="/var/www/radio-browser.php"
+TARGET="${EXT_DIR}/radio-browser.php"
 
+# ============================================================================
+# UNINSTALL FUNCTION
+# ============================================================================
+do_uninstall() {
+    echo -e "${CYAN}"
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║     RubaTron's Radio Browser - Uninstaller                   ║"
+    echo "║                    for moOde Audio Player                    ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+
+    # Check root
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}[✗] This script must be run as root (use sudo)${NC}"
+        exit 1
+    fi
+
+    # Check if installed
+    if [[ ! -d "$EXT_DIR" ]] && [[ ! -L "$SYMLINK" ]]; then
+        echo -e "${YELLOW}[!] Radio Browser is not installed.${NC}"
+        exit 0
+    fi
+
+    if [[ -d "$EXT_DIR" ]]; then
+        CURRENT_VERSION=$(cat "$EXT_DIR/version.txt" 2>/dev/null || echo "unknown")
+        echo -e "  Current version: ${BOLD}${CURRENT_VERSION}${NC}"
+    fi
+
+    echo ""
+    echo -e "${YELLOW}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║  ⚠  WARNING: This will completely remove Radio Browser!      ║${NC}"
+    echo -e "${YELLOW}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "  The following will be removed:"
+    echo -e "    • Extension files in ${EXT_DIR}"
+    echo -e "    • Symlink ${SYMLINK}"
+    echo -e "    • Menu patches (will be restored to original)"
+    echo ""
+    echo -e "  ${GREEN}Your moOde Radio favorites will NOT be affected.${NC}"
+    echo ""
+    
+    read -p "  Are you sure you want to uninstall? [y/N] " -n 1 -r </dev/tty
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}[*] Uninstall cancelled.${NC}"
+        exit 0
+    fi
+
+    echo ""
+    echo -e "${BLUE}[*] Removing symlink...${NC}"
+    rm -f "$SYMLINK" 2>/dev/null || true
+    echo -e "${GREEN}[✓] Symlink removed${NC}"
+
+    echo -e "${BLUE}[*] Removing extension files...${NC}"
+    rm -rf "$EXT_DIR" 2>/dev/null || true
+    echo -e "${GREEN}[✓] Extension files removed${NC}"
+
+    # Restore original files if backups exist
+    BACKUP_DIR="/var/www/extensions/installed/radio-browser/sys/backups"
+    if [[ -d "$BACKUP_DIR" ]]; then
+        echo -e "${BLUE}[*] Restoring original moOde files from backups...${NC}"
+        for backup in "$BACKUP_DIR"/*.bak; do
+            if [[ -f "$backup" ]]; then
+                original=$(basename "$backup" .bak)
+                # Try to find the original location
+                if [[ "$original" == "footer.min.php" ]]; then
+                    cp "$backup" "/var/www/footer.min.php" 2>/dev/null || true
+                fi
+            fi
+        done
+        echo -e "${GREEN}[✓] Original files restored${NC}"
+    fi
+
+    echo ""
+    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║              Uninstall Complete!                             ║${NC}"
+    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${CYAN}Radio Browser has been removed from your system.${NC}"
+    echo -e "${CYAN}Your moOde Radio favorites are still available.${NC}"
+    echo ""
+    exit 0
+}
+
+# ============================================================================
+# PARSE ARGUMENTS
+# ============================================================================
+case "${1:-}" in
+    --uninstall|-u|uninstall)
+        do_uninstall
+        ;;
+    --help|-h|help)
+        echo "Usage: $0 [OPTION]"
+        echo ""
+        echo "Options:"
+        echo "  (none)        Install or upgrade Radio Browser"
+        echo "  --uninstall   Remove Radio Browser completely"
+        echo "  --help        Show this help message"
+        echo ""
+        echo "Examples:"
+        echo "  curl -fsSL .../bootstrap.sh | sudo bash           # Install"
+        echo "  curl -fsSL .../bootstrap.sh | sudo bash -s -- -u  # Uninstall"
+        exit 0
+        ;;
+esac
+
+# ============================================================================
+# INSTALL / UPGRADE
+# ============================================================================
 echo -e "${CYAN}"
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║     RubaTron's Radio Browser - Bootstrap Installer           ║"
@@ -43,9 +155,6 @@ fi
 echo -e "${GREEN}[✓] Running as root${NC}"
 
 # Check if Radio Browser is already installed
-EXT_DIR="/var/www/extensions/installed/radio-browser"
-SYMLINK="/var/www/radio-browser.php"
-
 if [[ -d "$EXT_DIR" ]] || [[ -L "$SYMLINK" ]]; then
     echo ""
     echo -e "${YELLOW}╔══════════════════════════════════════════════════════════════╗${NC}"
@@ -126,9 +235,6 @@ fi
 # Verify symlink works
 echo ""
 echo -e "${BLUE}[*] Verifying installation...${NC}"
-
-SYMLINK="/var/www/radio-browser.php"
-TARGET="/var/www/extensions/installed/radio-browser/radio-browser.php"
 
 if [[ ! -L "$SYMLINK" ]] || [[ ! -e "$SYMLINK" ]]; then
     echo -e "${YELLOW}[!] Symlink missing or broken, recreating...${NC}"
