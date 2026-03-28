@@ -40,10 +40,18 @@ declare -A SOURCE_FILES=(
     ["manifest.json"]="${SCRIPT_DIR}/manifest.json"
     ["radio-browser.php"]="${SCRIPT_DIR}/radio-browser.php"
     ["backend/api.php"]="${SCRIPT_DIR}/backend/api.php"
-    ["assets/radio-browser.js"]="${SCRIPT_DIR}/assets/radio-browser.js"
     ["assets/radio-browser.css"]="${SCRIPT_DIR}/assets/radio-browser.css"
+    ["assets/rb-core.js"]="${SCRIPT_DIR}/assets/rb-core.js"
+    ["assets/rb-search.js"]="${SCRIPT_DIR}/assets/rb-search.js"
+    ["assets/rb-player.js"]="${SCRIPT_DIR}/assets/rb-player.js"
+    ["assets/rb-favorites.js"]="${SCRIPT_DIR}/assets/rb-favorites.js"
+    ["assets/rb-settings.js"]="${SCRIPT_DIR}/assets/rb-settings.js"
+    ["assets/rb-playbar.js"]="${SCRIPT_DIR}/assets/rb-playbar.js"
+    ["assets/rb-recents.js"]="${SCRIPT_DIR}/assets/rb-recents.js"
+    ["assets/rb-main.js"]="${SCRIPT_DIR}/assets/rb-main.js"
     ["assets/coverart-fix.js"]="${SCRIPT_DIR}/assets/coverart-fix.js"
     ["assets/rb-menu-inject.js"]="${SCRIPT_DIR}/assets/rb-menu-inject.js"
+    ["assets/radio-browser-modal-fix.js"]="${SCRIPT_DIR}/assets/radio-browser-modal-fix.js"
     ["rb-shell-bridge.php"]="${SCRIPT_DIR}/rb-shell-bridge.php"
     ["templates/radio-browser.html"]="${SCRIPT_DIR}/templates/radio-browser.html"
     ["scripts/fix-permissions.sh"]="${SCRIPT_DIR}/scripts/fix-permissions.sh"
@@ -326,8 +334,39 @@ create_folders() {
     return 0
 }
 
+cleanup_old_files() {
+    # Remove deprecated files from previous versions
+    log "Cleaning up old files from previous versions..."
+    
+    local OLD_FILES=(
+        "${EXT_BASE}/assets/radio-browser.js"  # Replaced by modular rb-*.js files in v3.4.0
+    )
+    
+    local cleaned=0
+    for old_file in "${OLD_FILES[@]}"; do
+        if [[ -f "$old_file" ]]; then
+            if rm -f "$old_file"; then
+                echo -e "  ${GREEN}✓${NC} Removed deprecated: $(basename "$old_file")"
+                ((cleaned++))
+            else
+                echo -e "  ${YELLOW}!${NC} Could not remove: $(basename "$old_file")"
+            fi
+        fi
+    done
+    
+    if [[ $cleaned -gt 0 ]]; then
+        success "Cleaned up $cleaned old file(s)"
+    else
+        echo -e "  ${CYAN}No old files to clean up${NC}"
+    fi
+    return 0
+}
+
 copy_files() {
     log "Copying extension files..."
+    
+    # First clean up any deprecated files from previous versions
+    cleanup_old_files
 
     local copied=0
     local failed=0

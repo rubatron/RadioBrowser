@@ -71,7 +71,7 @@ do_uninstall() {
     echo ""
     echo -e "  ${GREEN}Your moOde Radio favorites will NOT be affected.${NC}"
     echo ""
-    
+
     read -p "  Are you sure you want to uninstall? [y/N] " -n 1 -r </dev/tty
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -118,11 +118,24 @@ do_uninstall() {
 # ============================================================================
 # PARSE ARGUMENTS
 # ============================================================================
-case "${1:-}" in
-    --uninstall|-u|uninstall)
+# Handle arguments robustly (works with sudo bash -s -- --uninstall)
+ACTION="install"
+for arg in "$@"; do
+    case "$arg" in
+        --uninstall|-u|uninstall)
+            ACTION="uninstall"
+            ;;
+        --help|-h|help)
+            ACTION="help"
+            ;;
+    esac
+done
+
+case "$ACTION" in
+    uninstall)
         do_uninstall
         ;;
-    --help|-h|help)
+    help)
         echo "Usage: $0 [OPTION]"
         echo ""
         echo "Options:"
