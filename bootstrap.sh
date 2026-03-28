@@ -152,6 +152,36 @@ echo -e "${BLUE}[*] Cleaning up temporary files...${NC}"
 cd /
 rm -rf "$INSTALL_DIR"
 
+# Service Status Report
+echo ""
+echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║                    Service Status                            ║${NC}"
+echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Check nginx
+if systemctl is-active --quiet nginx; then
+    echo -e "  nginx            ${GREEN}● running${NC}"
+else
+    echo -e "  nginx            ${RED}● stopped${NC}"
+fi
+
+# Check PHP-FPM (detect version)
+PHP_FPM=$(systemctl list-units --type=service --state=running | grep -o 'php[0-9.]*-fpm' | head -1)
+if [[ -n "$PHP_FPM" ]]; then
+    echo -e "  $PHP_FPM        ${GREEN}● running${NC}"
+else
+    echo -e "  php-fpm          ${RED}● stopped${NC}"
+fi
+
+# Check Radio Browser accessibility
+RB_URL="http://localhost/radio-browser.php"
+if curl -s -o /dev/null -w "%{http_code}" "$RB_URL" | grep -q "200"; then
+    echo -e "  Radio Browser    ${GREEN}● accessible${NC}"
+else
+    echo -e "  Radio Browser    ${YELLOW}● check manually${NC}"
+fi
+
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║              Installation Complete!                          ║${NC}"
