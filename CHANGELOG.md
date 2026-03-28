@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.1.0] - 2026-03-28
 
 ### Added
+
 - **Standalone Menu Integration** - Radio Browser now appears in Library dropdown and M-menu without requiring ext-mgr
 - **Shell Bridge Architecture** - Non-invasive integration via `rb-shell-bridge.php` injected into moOde header
 - **Automatic Thumbnail Creation** - Station logos automatically saved for moOde playbar display
@@ -18,18 +19,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **imagesw Symlink** - Automatic creation of symlink for thumbnail accessibility
 
 ### Fixed
+
 - **GD imagecolorallocate Bug** - Fixed color allocation for thumbnail/small images (was reusing destroyed image's color)
 - **Modal Backdrop Issue** - Configure modal now properly displays on non-index pages
 - **Thumbnail Permissions** - Installer sets correct 777 permissions on radio-logos directories
 - **Menu Injection** - Reliable menu item addition without page refresh issues
 
 ### Changed
+
 - Updated minimum moOde version to 9.0.0
 - Updated minimum PHP version to 8.4
 - Improved error handling in API endpoints
 - Enhanced debug logging for troubleshooting
 
 ### Technical
+
 - New files: `rb-shell-bridge.php`, `rb-menu-inject.js`, `radio-browser-modal-fix.js`
 - Header.php patch adds single line include for shell bridge
 - Settings stored in `/var/www/extensions/installed/radio-browser/data/settings.json`
@@ -37,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.0.0] - 2026-01-15
 
 ### Added
+
 - Complete rewrite with modern architecture
 - Top stations feature
 - Popular stations by country
@@ -52,11 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backup/restore functionality in installer
 
 ### Fixed
+
 - API redundancy with automatic failover
 - Image loading reliability
 - Favorite management
 
 ### Changed
+
 - Moved from simple list to card-based UI
 - Enhanced search capabilities
 - Improved station information display
@@ -64,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.0] - 2025-12-xx
 
 ### Added
+
 - Automatic redundant API server selection
 - API status indicator
 - Custom API configuration
@@ -73,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.0] - 2025-11-xx
 
 ### Added
+
 - Initial public release
 - Radio station search
 - Country filtering
@@ -85,13 +94,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Upgrade Path
 
 ### From 3.0.0 to 3.1.0
+
 Run the one-liner installer to upgrade:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/bootstrap.sh | sudo bash
 ```
 
 ### From 2.x to 3.x
+
 Full reinstallation recommended:
+
 1. Uninstall old version via installer
 2. Run fresh install with bootstrap script
 

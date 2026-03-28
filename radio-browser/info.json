@@ -29,6 +29,10 @@
     },
     "requirements": {
         "moode_min_version": "9.0.0",
-        "php_extensions": ["curl", "gd", "json"]
+        "php_extensions": [
+            "curl",
+            "gd",
+            "json"
+        ]
     }
 }
