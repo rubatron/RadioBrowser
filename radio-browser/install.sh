@@ -40,18 +40,10 @@ declare -A SOURCE_FILES=(
     ["manifest.json"]="${SCRIPT_DIR}/manifest.json"
     ["radio-browser.php"]="${SCRIPT_DIR}/radio-browser.php"
     ["backend/api.php"]="${SCRIPT_DIR}/backend/api.php"
+    ["assets/radio-browser.js"]="${SCRIPT_DIR}/assets/radio-browser.js"
     ["assets/radio-browser.css"]="${SCRIPT_DIR}/assets/radio-browser.css"
-    ["assets/rb-core.js"]="${SCRIPT_DIR}/assets/rb-core.js"
-    ["assets/rb-search.js"]="${SCRIPT_DIR}/assets/rb-search.js"
-    ["assets/rb-player.js"]="${SCRIPT_DIR}/assets/rb-player.js"
-    ["assets/rb-favorites.js"]="${SCRIPT_DIR}/assets/rb-favorites.js"
-    ["assets/rb-settings.js"]="${SCRIPT_DIR}/assets/rb-settings.js"
-    ["assets/rb-playbar.js"]="${SCRIPT_DIR}/assets/rb-playbar.js"
-    ["assets/rb-recents.js"]="${SCRIPT_DIR}/assets/rb-recents.js"
-    ["assets/rb-main.js"]="${SCRIPT_DIR}/assets/rb-main.js"
     ["assets/coverart-fix.js"]="${SCRIPT_DIR}/assets/coverart-fix.js"
     ["assets/rb-menu-inject.js"]="${SCRIPT_DIR}/assets/rb-menu-inject.js"
-    ["assets/radio-browser-modal-fix.js"]="${SCRIPT_DIR}/assets/radio-browser-modal-fix.js"
     ["rb-shell-bridge.php"]="${SCRIPT_DIR}/rb-shell-bridge.php"
     ["templates/radio-browser.html"]="${SCRIPT_DIR}/templates/radio-browser.html"
     ["scripts/fix-permissions.sh"]="${SCRIPT_DIR}/scripts/fix-permissions.sh"
@@ -95,7 +87,7 @@ info() {
 }
 
 success() {
-    local msg="[✓] $1"
+    local msg="[Γ£ô] $1"
     echo -e "${GREEN}${msg}${NC}"
     echo "$msg" >> "$LOG_FILE"
 }
@@ -107,7 +99,7 @@ warning() {
 }
 
 error() {
-    local msg="[✗] $1"
+    local msg="[Γ£ù] $1"
     echo -e "${RED}${msg}${NC}" >&2
     echo "$msg" >> "$LOG_FILE"
 }
@@ -164,9 +156,9 @@ check_source_files() {
     for file in "${!SOURCE_FILES[@]}"; do
         local path="${SOURCE_FILES[$file]}"
         if [[ -f "$path" ]]; then
-            echo -e "  ${GREEN}✓${NC} $file"
+            echo -e "  ${GREEN}Γ£ô${NC} $file"
         else
-            echo -e "  ${RED}✗${NC} $file (missing: $path)"
+            echo -e "  ${RED}Γ£ù${NC} $file (missing: $path)"
             ((missing++))
         fi
     done
@@ -219,9 +211,9 @@ check_installation() {
         local dest="${EXT_BASE}/${file}"
         if [[ -f "$dest" ]]; then
             ((installed++))
-            echo -e "  ${GREEN}✓${NC} $dest"
+            echo -e "  ${GREEN}Γ£ô${NC} $dest"
         else
-            echo -e "  ${YELLOW}○${NC} $dest (not installed)"
+            echo -e "  ${YELLOW}Γùï${NC} $dest (not installed)"
         fi
     done
 
@@ -326,7 +318,7 @@ create_folders() {
             mkdir -p "$folder"
             echo -e "  ${GREEN}+${NC} Created: $folder"
         else
-            echo -e "  ${BLUE}○${NC} Exists: $folder"
+            echo -e "  ${BLUE}Γùï${NC} Exists: $folder"
         fi
     done
 
@@ -334,39 +326,8 @@ create_folders() {
     return 0
 }
 
-cleanup_old_files() {
-    # Remove deprecated files from previous versions
-    log "Cleaning up old files from previous versions..."
-    
-    local OLD_FILES=(
-        "${EXT_BASE}/assets/radio-browser.js"  # Replaced by modular rb-*.js files in v3.4.0
-    )
-    
-    local cleaned=0
-    for old_file in "${OLD_FILES[@]}"; do
-        if [[ -f "$old_file" ]]; then
-            if rm -f "$old_file"; then
-                echo -e "  ${GREEN}✓${NC} Removed deprecated: $(basename "$old_file")"
-                ((cleaned++))
-            else
-                echo -e "  ${YELLOW}!${NC} Could not remove: $(basename "$old_file")"
-            fi
-        fi
-    done
-    
-    if [[ $cleaned -gt 0 ]]; then
-        success "Cleaned up $cleaned old file(s)"
-    else
-        echo -e "  ${CYAN}No old files to clean up${NC}"
-    fi
-    return 0
-}
-
 copy_files() {
     log "Copying extension files..."
-    
-    # First clean up any deprecated files from previous versions
-    cleanup_old_files
 
     local copied=0
     local failed=0
@@ -380,10 +341,10 @@ copy_files() {
             mkdir -p "$(dirname "$dest")"
 
             if cp "$src" "$dest"; then
-                echo -e "  ${GREEN}✓${NC} Copied: $file"
+                echo -e "  ${GREEN}Γ£ô${NC} Copied: $file"
                 ((copied++))
             else
-                echo -e "  ${RED}✗${NC} Failed: $file"
+                echo -e "  ${RED}Γ£ù${NC} Failed: $file"
                 ((failed++))
             fi
         else
@@ -396,7 +357,7 @@ copy_files() {
     log "Creating symlink..."
     ln -sf "${EXT_BASE}/radio-browser.php" "${WEB_ROOT}/radio-browser.php"
     if [[ -L "${WEB_ROOT}/radio-browser.php" ]]; then
-        echo -e "  ${GREEN}✓${NC} Symlink: /var/www/radio-browser.php -> ${EXT_BASE}/radio-browser.php"
+        echo -e "  ${GREEN}Γ£ô${NC} Symlink: /var/www/radio-browser.php -> ${EXT_BASE}/radio-browser.php"
     fi
 
     if [[ $failed -eq 0 ]]; then
@@ -428,7 +389,7 @@ set_permissions() {
     # Create symlink for imagesw (moOde stores images in /var/local/www/imagesw)
     if [[ ! -L "/var/www/imagesw" ]]; then
         ln -sf /var/local/www/imagesw /var/www/imagesw 2>/dev/null || true
-        echo -e "  ${GREEN}✓${NC} Symlink: /var/www/imagesw -> /var/local/www/imagesw"
+        echo -e "  ${GREEN}Γ£ô${NC} Symlink: /var/www/imagesw -> /var/local/www/imagesw"
     fi
 
     # Make moOde radio-logos directory writable for thumbnail creation
@@ -468,13 +429,13 @@ restart_services() {
     # Restart PHP-FPM
     if systemctl is-active --quiet "php${php_version}-fpm" 2>/dev/null; then
         systemctl restart "php${php_version}-fpm"
-        echo -e "  ${GREEN}✓${NC} Restarted php${php_version}-fpm"
+        echo -e "  ${GREEN}Γ£ô${NC} Restarted php${php_version}-fpm"
     fi
 
     # Restart nginx
     if systemctl is-active --quiet nginx 2>/dev/null; then
         systemctl restart nginx
-        echo -e "  ${GREEN}✓${NC} Restarted nginx"
+        echo -e "  ${GREEN}Γ£ô${NC} Restarted nginx"
     fi
 
     success "Services restarted"
@@ -492,17 +453,17 @@ backup_moode_files() {
     # Backup header.php if not already backed up
     if [[ -f "$HEADER_FILE" ]] && [[ ! -f "${SYS_MOODE_DIR}/header.php.orig" ]]; then
         cp "$HEADER_FILE" "${SYS_MOODE_DIR}/header.php.orig"
-        echo -e "  ${GREEN}✓${NC} Backed up: header.php"
+        echo -e "  ${GREEN}Γ£ô${NC} Backed up: header.php"
     elif [[ -f "${SYS_MOODE_DIR}/header.php.orig" ]]; then
-        echo -e "  ${BLUE}○${NC} Already backed up: header.php"
+        echo -e "  ${BLUE}Γùï${NC} Already backed up: header.php"
     fi
 
     # Backup nginx config if not already backed up
     if [[ -f "$NGINX_CONF" ]] && [[ ! -f "${SYS_MOODE_DIR}/moode-locations.conf.orig" ]]; then
         cp "$NGINX_CONF" "${SYS_MOODE_DIR}/moode-locations.conf.orig"
-        echo -e "  ${GREEN}✓${NC} Backed up: moode-locations.conf"
+        echo -e "  ${GREEN}Γ£ô${NC} Backed up: moode-locations.conf"
     elif [[ -f "${SYS_MOODE_DIR}/moode-locations.conf.orig" ]]; then
-        echo -e "  ${BLUE}○${NC} Already backed up: moode-locations.conf"
+        echo -e "  ${BLUE}Γùï${NC} Already backed up: moode-locations.conf"
     fi
 
     success "moOde files backed up to ${SYS_MOODE_DIR}/"
@@ -534,7 +495,7 @@ patch_moode_header() {
     # Create backup
     local backup_file="${HEADER_FILE}.rb-backup-$(date +%Y%m%d-%H%M%S)"
     cp "$HEADER_FILE" "$backup_file"
-    echo -e "  ${GREEN}✓${NC} Backup created: $backup_file"
+    echo -e "  ${GREEN}Γ£ô${NC} Backup created: $backup_file"
 
     # The include code to inject (before </head>)
     local bridge_include='<?php /* RB_SHELL_BRIDGE_START */ if (file_exists("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php")) { include_once("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php"); } /* RB_SHELL_BRIDGE_END */ ?>'
@@ -553,7 +514,7 @@ patch_moode_header() {
     # Verify the patch was applied
     if grep -q "RB_SHELL_BRIDGE_START" "$HEADER_FILE"; then
         success "Shell bridge installed in header.php"
-        echo -e "  ${CYAN}→${NC} Radio Browser will appear in menus based on visibility settings"
+        echo -e "  ${CYAN}ΓåÆ${NC} Radio Browser will appear in menus based on visibility settings"
         return 0
     else
         error "Failed to patch header.php"
@@ -620,7 +581,7 @@ patch_nginx_logos() {
     # Create backup
     local backup_file="${NGINX_CONF}.rb-backup-$(date +%Y%m%d-%H%M%S)"
     cp "$NGINX_CONF" "$backup_file"
-    echo -e "  ${GREEN}✓${NC} Backup created: $backup_file"
+    echo -e "  ${GREEN}Γ£ô${NC} Backup created: $backup_file"
 
     # The nginx location block to add
     local logo_block="
@@ -639,7 +600,7 @@ location /imagesw/radio-logos/ {
     # Verify the patch was applied
     if grep -q "RB_NGINX_LOGO_FALLBACK_START" "$NGINX_CONF"; then
         success "Logo fallback installed in nginx"
-        echo -e "  ${CYAN}→${NC} Missing radio logos will show default icon instead of 404"
+        echo -e "  ${CYAN}ΓåÆ${NC} Missing radio logos will show default icon instead of 404"
         return 0
     else
         error "Failed to patch nginx config"
@@ -695,7 +656,7 @@ restore_moode_files() {
     if [[ -f "${SYS_MOODE_DIR}/header.php.orig" ]]; then
         cp "${SYS_MOODE_DIR}/header.php.orig" "$HEADER_FILE"
         chown www-data:www-data "$HEADER_FILE"
-        echo -e "  ${GREEN}✓${NC} Restored: header.php"
+        echo -e "  ${GREEN}Γ£ô${NC} Restored: header.php"
         ((restored++))
     else
         # Fallback to marker-based cleanup
@@ -705,7 +666,7 @@ restore_moode_files() {
     # Restore nginx config if backup exists
     if [[ -f "${SYS_MOODE_DIR}/moode-locations.conf.orig" ]]; then
         cp "${SYS_MOODE_DIR}/moode-locations.conf.orig" "$NGINX_CONF"
-        echo -e "  ${GREEN}✓${NC} Restored: moode-locations.conf"
+        echo -e "  ${GREEN}Γ£ô${NC} Restored: moode-locations.conf"
         ((restored++))
     else
         # Fallback to marker-based cleanup
@@ -724,16 +685,16 @@ restore_moode_files() {
 # ============================================================================
 uninstall() {
     echo
-    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${RED}║                    UNINSTALL RADIO BROWSER                   ║${NC}"
-    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${RED}ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù${NC}"
+    echo -e "${RED}Γòæ                    UNINSTALL RADIO BROWSER                   Γòæ${NC}"
+    echo -e "${RED}ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥${NC}"
     echo
 
     warning "This will remove all Radio Browser extension files!"
     echo "The following will be removed:"
-    echo "  • ${EXT_BASE}/"
-    echo "  • ${WEB_ROOT}/radio-browser.php"
-    echo "  • Menu integration from header.php"
+    echo "  ΓÇó ${EXT_BASE}/"
+    echo "  ΓÇó ${WEB_ROOT}/radio-browser.php"
+    echo "  ΓÇó Menu integration from header.php"
     echo
 
     if ! confirm "Are you sure you want to uninstall?" "n"; then
@@ -752,13 +713,13 @@ uninstall() {
     # Restart services to apply changes
     if systemctl is-active --quiet nginx 2>/dev/null; then
         systemctl restart nginx
-        echo -e "  ${GREEN}✓${NC} Restarted nginx"
+        echo -e "  ${GREEN}Γ£ô${NC} Restarted nginx"
     fi
 
     local php_version=$(php -v 2>/dev/null | head -1 | cut -d' ' -f2 | cut -d'.' -f1,2)
     if systemctl is-active --quiet "php${php_version}-fpm" 2>/dev/null; then
         systemctl restart "php${php_version}-fpm"
-        echo -e "  ${GREEN}✓${NC} Restarted php${php_version}-fpm"
+        echo -e "  ${GREEN}Γ£ô${NC} Restarted php${php_version}-fpm"
     fi
 
     log "Removing files..."
@@ -766,17 +727,17 @@ uninstall() {
     # Remove symlink
     if [[ -L "${WEB_ROOT}/radio-browser.php" ]]; then
         rm "${WEB_ROOT}/radio-browser.php"
-        echo -e "  ${GREEN}✓${NC} Removed symlink"
+        echo -e "  ${GREEN}Γ£ô${NC} Removed symlink"
     fi
 
     # Remove extension directory
     if [[ -d "${EXT_BASE}" ]]; then
         rm -rf "${EXT_BASE}"
-        echo -e "  ${GREEN}✓${NC} Removed extension directory"
+        echo -e "  ${GREEN}Γ£ô${NC} Removed extension directory"
     fi
 
     success "Radio Browser extension uninstalled"
-    echo -e "  ${CYAN}→${NC} moOde has been restored to its original state"
+    echo -e "  ${CYAN}ΓåÆ${NC} moOde has been restored to its original state"
     return 0
 }
 
@@ -785,9 +746,9 @@ uninstall() {
 # ============================================================================
 auto_install() {
     echo
-    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║               AUTOMATIC INSTALLATION                         ║${NC}"
-    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${GREEN}ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù${NC}"
+    echo -e "${GREEN}Γòæ               AUTOMATIC INSTALLATION                         Γòæ${NC}"
+    echo -e "${GREEN}ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥${NC}"
     echo
 
     local errors=0
@@ -844,28 +805,28 @@ auto_install() {
     # Restart nginx to apply the config change
     if systemctl is-active --quiet nginx 2>/dev/null; then
         systemctl restart nginx
-        echo -e "  ${GREEN}✓${NC} Restarted nginx"
+        echo -e "  ${GREEN}Γ£ô${NC} Restarted nginx"
     fi
     echo
 
     # Summary
     if [[ $errors -eq 0 ]]; then
         echo
-        echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${GREEN}║         ✓ INSTALLATION COMPLETED SUCCESSFULLY               ║${NC}"
-        echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${GREEN}ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù${NC}"
+        echo -e "${GREEN}Γòæ         Γ£ô INSTALLATION COMPLETED SUCCESSFULLY               Γòæ${NC}"
+        echo -e "${GREEN}ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥${NC}"
         echo
         echo "Access Radio Browser at:"
         echo "  http://$(hostname)/radio-browser.php"
         echo
-        echo "Or via moOde menu: Menu → Extensions → Radio Browser"
+        echo "Or via moOde menu: Menu ΓåÆ Extensions ΓåÆ Radio Browser"
         echo
         echo "Log file: $LOG_FILE"
     else
         echo
-        echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${RED}║         ✗ INSTALLATION COMPLETED WITH ERRORS                ║${NC}"
-        echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${RED}ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù${NC}"
+        echo -e "${RED}Γòæ         Γ£ù INSTALLATION COMPLETED WITH ERRORS                Γòæ${NC}"
+        echo -e "${RED}ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥${NC}"
         echo
         echo "$errors error(s) occurred. Check log file: $LOG_FILE"
     fi
@@ -878,9 +839,9 @@ auto_install() {
 # ============================================================================
 show_help() {
     echo
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║                    HELP & TROUBLESHOOTING                    ║${NC}"
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${CYAN}ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù${NC}"
+    echo -e "${CYAN}Γòæ                    HELP & TROUBLESHOOTING                    Γòæ${NC}"
+    echo -e "${CYAN}ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥${NC}"
     echo
     echo -e "${BOLD}About Radio Browser Extension:${NC}"
     echo "  The Radio Browser extension for moOde allows you to search and"
@@ -888,9 +849,9 @@ show_help() {
     echo "  containing over 30,000 stations worldwide."
     echo
     echo -e "${BOLD}Requirements:${NC}"
-    echo "  • moOde Audio Player (8.x or higher)"
-    echo "  • PHP 8.x with cURL extension"
-    echo "  • Root access for installation"
+    echo "  ΓÇó moOde Audio Player (8.x or higher)"
+    echo "  ΓÇó PHP 8.x with cURL extension"
+    echo "  ΓÇó Root access for installation"
     echo
     echo -e "${BOLD}Installation:${NC}"
     echo "  1. Copy the extension files to your moOde device"
@@ -956,9 +917,9 @@ show_status() {
 
 show_menu() {
     clear
-    echo -e "${MAGENTA}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${MAGENTA}║       🎵 RADIO BROWSER EXTENSION INSTALLER v${SCRIPT_VERSION}            ║${NC}"
-    echo -e "${MAGENTA}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${MAGENTA}ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù${NC}"
+    echo -e "${MAGENTA}Γòæ       ≡ƒÄ╡ RADIO BROWSER EXTENSION INSTALLER v${SCRIPT_VERSION}            Γòæ${NC}"
+    echo -e "${MAGENTA}ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥${NC}"
 
     show_status
 
