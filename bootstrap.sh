@@ -60,7 +60,7 @@ if [[ -d "$EXT_DIR" ]] || [[ -L "$SYMLINK" ]]; then
     echo -e "  Continuing will ${BOLD}reinstall/upgrade${NC} the extension."
     echo -e "  Your settings and favorites will be preserved."
     echo ""
-    read -p "  Do you want to proceed? [y/N] " -n 1 -r
+    read -p "  Do you want to proceed? [y/N] " -n 1 -r </dev/tty
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${BLUE}[*] Installation cancelled.${NC}"
