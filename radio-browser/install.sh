@@ -30,6 +30,9 @@ EXT_BASE="/var/www/extensions/installed/radio-browser"
 CACHE_DIR="${EXT_BASE}/cache"
 DATA_DIR="${EXT_BASE}/data"
 IMAGE_CACHE_DIR="${CACHE_DIR}/images"
+SYS_DIR="${EXT_BASE}/sys"
+SYS_SOURCES_DIR="${SYS_DIR}/sources"
+SYS_MOODE_DIR="${SYS_DIR}/sources/moode"
 WEB_ROOT="/var/www"
 
 # Source files (relative to script directory)
