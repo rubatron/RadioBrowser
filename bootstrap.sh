@@ -24,7 +24,7 @@ NC='\033[0m'
 # Configuration
 REPO_URL="https://github.com/rubatron/RadioBrowser"
 BRANCH="develop"  # UAT: test from develop, change to main for production
-ZIP_URL="${REPO_URL}/raw/refs/heads/${BRANCH}/radio-browser.zip"
+ARCHIVE_URL="${REPO_URL}/archive/refs/heads/${BRANCH}.tar.gz"
 INSTALL_DIR="/tmp/radio-browser-install"
 LOG_FILE="/tmp/radio-browser-bootstrap-$(date +%Y%m%d-%H%M%S).log"
 
@@ -77,15 +77,15 @@ cd "$INSTALL_DIR"
 # Download the package
 echo -e "${BLUE}[*] Downloading Radio Browser package...${NC}"
 if command -v wget &> /dev/null; then
-    wget -q --show-progress -O radio-browser.zip "$ZIP_URL" 2>&1 | tee -a "$LOG_FILE"
+    wget -q --show-progress -O radio-browser.tar.gz "$ARCHIVE_URL" 2>&1 | tee -a "$LOG_FILE"
 elif command -v curl &> /dev/null; then
-    curl -fSL -o radio-browser.zip "$ZIP_URL" 2>&1 | tee -a "$LOG_FILE"
+    curl -fSL -o radio-browser.tar.gz "$ARCHIVE_URL" 2>&1 | tee -a "$LOG_FILE"
 else
     echo -e "${RED}[✗] Neither wget nor curl found. Please install one of them.${NC}"
     exit 1
 fi
 
-if [[ ! -f "radio-browser.zip" ]]; then
+if [[ ! -f "radio-browser.tar.gz" ]]; then
     echo -e "${RED}[✗] Failed to download package${NC}"
     exit 1
 fi
@@ -93,20 +93,18 @@ echo -e "${GREEN}[✓] Package downloaded${NC}"
 
 # Extract
 echo -e "${BLUE}[*] Extracting package...${NC}"
-unzip -q radio-browser.zip
-if [[ ! -d "radio-browser" ]]; then
+tar -xzf radio-browser.tar.gz
+# GitHub archives extract to RadioBrowser-{branch}/ folder
+EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "RadioBrowser-*" | head -1)
+if [[ ! -d "$EXTRACTED_DIR/radio-browser" ]]; then
     echo -e "${RED}[✗] Extraction failed - radio-browser folder not found${NC}"
     exit 1
 fi
 echo -e "${GREEN}[✓] Package extracted${NC}"
 
 # Make installer executable and run it
-cd radio-browser
-chmod +x install.sh
-
-# Fix line endings (in case zip has CRLF from Windows)
-sed -i 's/\r$//' install.sh
-sed -i 's/\r$//' scripts/*.sh 2>/dev/null || true
+cd "$EXTRACTED_DIR/radio-browser"
+chmod +x install.sh scripts/*.sh 2>/dev/null || true
 
 echo -e "${BLUE}[*] Running installer in auto mode...${NC}"
 echo ""
@@ -120,8 +118,8 @@ echo -e "${BLUE}[*] Preserving source archive...${NC}"
 SYS_SOURCES="/var/www/extensions/installed/radio-browser/sys/sources"
 if [[ -d "$SYS_SOURCES" ]]; then
     VERSION=$(cat version.txt 2>/dev/null || echo "unknown")
-    cp "$INSTALL_DIR/radio-browser.zip" "$SYS_SOURCES/radio-browser-${VERSION}.zip" 2>/dev/null || true
-    chown www-data:www-data "$SYS_SOURCES/radio-browser-${VERSION}.zip" 2>/dev/null || true
+    cp "$INSTALL_DIR/radio-browser.tar.gz" "$SYS_SOURCES/radio-browser-${VERSION}.tar.gz" 2>/dev/null || true
+    chown www-data:www-data "$SYS_SOURCES/radio-browser-${VERSION}.tar.gz" 2>/dev/null || true
     echo -e "${GREEN}[✓] Source archive saved to sys/sources/${NC}"
 fi
 
