@@ -23,7 +23,8 @@ NC='\033[0m'
 
 # Configuration
 REPO_URL="https://github.com/rubatron/RadioBrowser"
-ZIP_URL="${REPO_URL}/raw/refs/heads/main/radio-browser.zip"
+BRANCH="develop"  # UAT: test from develop, change to main for production
+ZIP_URL="${REPO_URL}/raw/refs/heads/${BRANCH}/radio-browser.zip"
 INSTALL_DIR="/tmp/radio-browser-install"
 LOG_FILE="/tmp/radio-browser-bootstrap-$(date +%Y%m%d-%H%M%S).log"
 
