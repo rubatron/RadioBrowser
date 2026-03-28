@@ -737,7 +737,7 @@ auto_install() {
         echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
         echo
         echo "Access Radio Browser at:"
-        echo "  http://moode.local/radio-browser.php"
+        echo "  http://$(hostname)/radio-browser.php"
         echo
         echo "Or via moOde menu: Menu → Extensions → Radio Browser"
         echo

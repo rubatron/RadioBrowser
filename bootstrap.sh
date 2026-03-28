@@ -94,6 +94,6 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║              Installation Complete!                          ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "${CYAN}Access Radio Browser at: ${BOLD}http://<your-moode-ip>/radio-browser.php${NC}"
+echo -e "${CYAN}Access Radio Browser at: ${BOLD}http://$(hostname)/radio-browser.php${NC}"
 echo -e "${CYAN}Log file: ${LOG_FILE}${NC}"
 echo ""
