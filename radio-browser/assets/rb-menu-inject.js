@@ -301,6 +301,80 @@
     }
 
     /**
+     * Storage key for Radio Browser played URLs
+     */
+    var RB_PLAYED_KEY = 'rb_played_urls';
+    var rbPlayedUrls = [];
+
+    /**
+     * Load Radio Browser played URLs from localStorage
+     */
+    function loadRbPlayedUrls() {
+        try {
+            var stored = localStorage.getItem(RB_PLAYED_KEY);
+            if (stored) {
+                rbPlayedUrls = JSON.parse(stored);
+                // Keep only last 100 URLs to prevent unlimited growth
+                if (rbPlayedUrls.length > 100) {
+                    rbPlayedUrls = rbPlayedUrls.slice(-100);
+                }
+            }
+        } catch (e) {
+            rbPlayedUrls = [];
+        }
+    }
+
+    /**
+     * Check if a URL was played via Radio Browser
+     */
+    function isRadioBrowserStream(url) {
+        if (!url) return false;
+        var normalizedUrl = url.toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+        for (var i = 0; i < rbPlayedUrls.length; i++) {
+            var stored = rbPlayedUrls[i].toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+            if (stored === normalizedUrl) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Update glow state on playbar icon based on current stream
+     */
+    function updatePlaybarGlow() {
+        var btn = document.getElementById('rb-playbar-btn');
+        if (!btn) return;
+
+        // Fetch current song via moOde API
+        fetch('/engine-mpd.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'cmd=get_currentsong'
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.file && data.file.indexOf('http') === 0) {
+                // It's a stream - check if from Radio Browser
+                if (isRadioBrowserStream(data.file)) {
+                    btn.classList.add('rb-active');
+                    // Remove inline styles to let CSS handle it
+                    btn.style.color = '';
+                    btn.style.opacity = '';
+                } else {
+                    btn.classList.remove('rb-active');
+                }
+            } else {
+                // Not a stream
+                btn.classList.remove('rb-active');
+            }
+        })
+        .catch(function() {
+            btn.classList.remove('rb-active');
+        });
+    }
+
+    /**
      * Inject Radio Browser icon into playbar
      */
     function renderPlaybarIcon() {
@@ -318,16 +392,22 @@
         btn.setAttribute('aria-label', 'Radio Browser');
         btn.title = 'Radio Browser';
         btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
-        btn.style.cssText = 'color: var(--adapttext); opacity: 0.7; transition: opacity 0.2s;';
 
-        // Hover effect
+        // Initial style (will be overridden by CSS when .rb-active)
+        btn.style.cssText = 'color: var(--adapttext); opacity: 0.7; transition: all 0.3s ease;';
+
+        // Hover effect (only when not active)
         btn.addEventListener('mouseenter', function() {
-            this.style.opacity = '1';
-            this.style.color = '#c55a11';
+            if (!this.classList.contains('rb-active')) {
+                this.style.opacity = '1';
+                this.style.color = '#c55a11';
+            }
         });
         btn.addEventListener('mouseleave', function() {
-            this.style.opacity = '0.7';
-            this.style.color = 'var(--adapttext)';
+            if (!this.classList.contains('rb-active')) {
+                this.style.opacity = '0.7';
+                this.style.color = 'var(--adapttext)';
+            }
         });
 
         // Insert at the beginning of toggles
@@ -336,6 +416,9 @@
         } else {
             toggles.appendChild(btn);
         }
+
+        // Initial glow check
+        updatePlaybarGlow();
     }
 
     /**
@@ -524,11 +607,17 @@
      * Initialize and set up observers
      */
     function init() {
+        // Load Radio Browser played URLs
+        loadRbPlayedUrls();
+
         // Initial render (once)
         renderAll();
 
         // Setup radio logo fallback for missing thumbnails
         setupRadioLogoFallback();
+
+        // Start polling for playbar glow state (every 3 seconds)
+        setInterval(updatePlaybarGlow, 3000);
 
         // Only listen for dropdown toggle clicks - no MutationObserver on body
         document.addEventListener('click', function(e) {
@@ -541,6 +630,14 @@
 
         // Bootstrap dropdown events (if available)
         document.addEventListener('shown.bs.dropdown', renderAllDebounced);
+
+        // Listen for storage changes (from Radio Browser page)
+        window.addEventListener('storage', function(e) {
+            if (e.key === RB_PLAYED_KEY) {
+                loadRbPlayedUrls();
+                updatePlaybarGlow();
+            }
+        });
     }
 
     // Run when DOM is ready

@@ -23,6 +23,8 @@ function initRadioBrowser($) {
     'use strict';
 
     var API_URL = '/extensions/installed/radio-browser/backend/api.php';
+    var RB_PLAYED_KEY = 'rb_played_urls';  // Shared with rb-menu-inject.js
+
     var state = {
         offset: 0,
         limit: 30,
@@ -38,6 +40,36 @@ function initRadioBrowser($) {
         hasSearched: false,  // Track if user has searched (prevents init overwriting)
         initComplete: false  // Track if initial load is done
     };
+
+    /**
+     * Save URL to localStorage for playbar icon glow detection
+     * This allows rb-menu-inject.js to know when a Radio Browser stream is playing
+     */
+    function saveRadioBrowserPlayedUrl(url) {
+        if (!url) return;
+        try {
+            var stored = localStorage.getItem(RB_PLAYED_KEY);
+            var urls = stored ? JSON.parse(stored) : [];
+
+            // Remove if exists (to avoid duplicates)
+            var normalizedUrl = url.toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+            urls = urls.filter(function(u) {
+                return u.toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '') !== normalizedUrl;
+            });
+
+            // Add to end
+            urls.push(url);
+
+            // Keep only last 100 URLs
+            if (urls.length > 100) {
+                urls = urls.slice(-100);
+            }
+
+            localStorage.setItem(RB_PLAYED_KEY, JSON.stringify(urls));
+        } catch (e) {
+            console.log('Radio Browser: Failed to save played URL to localStorage', e);
+        }
+    }
 
     /**
      * Normalize URL for comparison (handles http/https, trailing slashes)
@@ -795,6 +827,10 @@ function initRadioBrowser($) {
                     });
 
                     state.currentPlaying = stationData.url;
+
+                    // Save URL to localStorage for playbar icon glow detection
+                    saveRadioBrowserPlayedUrl(stationData.url);
+
                     notify('Playing', stationData.name, 'success');
 
                     // Refresh recently played to show new order
@@ -1518,19 +1554,49 @@ function initRadioBrowser($) {
             sendMpdCommand('next');
         });
 
-        // Debounced volume slider to prevent flooding API
+        // Initialize jQuery Knob for volume (moOde already loads this library)
         var volumeTimeout = null;
-        $('#rb-playbar-volume').on('input', function() {
-            var vol = $(this).val();
-            clearTimeout(volumeTimeout);
-            volumeTimeout = setTimeout(function() {
-                setMoodeVolume(vol);
-            }, 100);
+        if ($.fn.knob) {
+            $('#rb-playbar-volume').knob({
+                'release': function(v) {
+                    clearTimeout(volumeTimeout);
+                    volumeTimeout = setTimeout(function() {
+                        setMoodeVolume(Math.round(v));
+                        $('#rb-vol-level').text(Math.round(v));
+                    }, 50);
+                },
+                'change': function(v) {
+                    $('#rb-vol-level').text(Math.round(v));
+                }
+            });
+        }
+
+        // Volume +/- buttons
+        $('#rb-volumeup').on('click', function() {
+            var current = playbarState.volume || 50;
+            var newVol = Math.min(100, current + 5);
+            setMoodeVolume(newVol);
+            updateVolumeDisplay(newVol);
+        });
+
+        $('#rb-volumedn').on('click', function() {
+            var current = playbarState.volume || 50;
+            var newVol = Math.max(0, current - 5);
+            setMoodeVolume(newVol);
+            updateVolumeDisplay(newVol);
         });
 
         // Start polling for playback status
         updatePlaybarStatus();
         playbarState.pollInterval = setInterval(updatePlaybarStatus, 3000);
+    }
+
+    function updateVolumeDisplay(vol) {
+        $('#rb-vol-level').text(vol);
+        if ($.fn.knob) {
+            $('#rb-playbar-volume').val(vol).trigger('change');
+        }
+        playbarState.volume = vol;
     }
 
     function sendMpdCommand(cmd, arg) {
@@ -1603,7 +1669,7 @@ function initRadioBrowser($) {
             }
         });
 
-        // Get volume
+        // Get volume and update knob
         $.ajax({
             url: '/command/?cmd=get_vol',
             type: 'GET',
@@ -1611,8 +1677,10 @@ function initRadioBrowser($) {
             timeout: 5000
         }).done(function(vol) {
             var volume = parseInt(vol) || 0;
-            playbarState.volume = volume;
-            $('#rb-playbar-volume').val(volume);
+            if (playbarState.volume !== volume) {
+                playbarState.volume = volume;
+                updateVolumeDisplay(volume);
+            }
         });
     }
 

@@ -491,7 +491,7 @@
     </div>
 </div>
 
-<!-- Mini Playbar (fixed footer) -->
+<!-- Mini Playbar (fixed footer) - moOde style -->
 <div id="rb-playbar" class="rb-playbar">
     <div class="rb-playbar-cover">
         <img id="rb-playbar-cover-img" src="/images/default-cover-v6.svg" alt="Cover">
@@ -501,21 +501,30 @@
         <div id="rb-playbar-artist" class="rb-playbar-artist"></div>
     </div>
     <div class="rb-playbar-controls">
-        <button id="rb-playbar-prev" class="btn rb-playbar-btn" aria-label="Previous">
+        <button id="rb-playbar-prev" class="btn btn-cmd rb-playbar-btn" aria-label="Previous">
             <i class="fa-solid fa-sharp fa-step-backward"></i>
         </button>
-        <button id="rb-playbar-play" class="btn rb-playbar-btn rb-playbar-play" aria-label="Play/Pause">
+        <button id="rb-playbar-play" class="btn btn-cmd rb-playbar-btn rb-playbar-play" aria-label="Play/Pause">
             <i class="fa-solid fa-sharp fa-play"></i>
         </button>
-        <button id="rb-playbar-stop" class="btn rb-playbar-btn" aria-label="Stop">
+        <button id="rb-playbar-stop" class="btn btn-cmd rb-playbar-btn" aria-label="Stop">
             <i class="fa-solid fa-sharp fa-stop"></i>
         </button>
-        <button id="rb-playbar-next" class="btn rb-playbar-btn" aria-label="Next">
+        <button id="rb-playbar-next" class="btn btn-cmd rb-playbar-btn" aria-label="Next">
             <i class="fa-solid fa-sharp fa-step-forward"></i>
         </button>
     </div>
     <div class="rb-playbar-volume">
-        <i class="fa-solid fa-sharp fa-volume-up"></i>
-        <input type="range" id="rb-playbar-volume" min="0" max="100" value="50">
+        <div class="rb-volknob">
+            <input aria-label="Volume" class="rb-volumeknob" id="rb-playbar-volume" data-min="0" data-max="100"
+                data-width="50" data-height="50" data-thickness=".18" data-bgColor="rgba(96,96,96,0.3)"
+                data-fgColor="var(--rp-accent, #c55a11)" data-displayInput="false" data-cursor="false"
+                data-angleArc="340" data-angleOffset="-170">
+        </div>
+        <div class="rb-volbtns">
+            <button aria-label="Volume Up" id="rb-volumeup" class="btn btn-cmd rb-vol-btn">+</button>
+            <div class="rb-volume-display"><span id="rb-vol-level">50</span></div>
+            <button aria-label="Volume Down" id="rb-volumedn" class="btn btn-cmd rb-vol-btn">−</button>
+        </div>
     </div>
 </div>

@@ -55,8 +55,16 @@ include('/var/www/header.php');
 // Output extension-specific CSS (after moOde's CSS so we can override)
 echo '<link rel="stylesheet" href="' . $extAssetsPath . '/radio-browser.css">' . "\n";
 
-// Output extension-specific JavaScript (deferred loading)
-echo '<script src="' . $extAssetsPath . '/radio-browser.js" defer></script>' . "\n";
+// Output extension-specific JavaScript modules (loaded in order)
+// Core must load first, then modules, then main entry point
+echo '<script src="' . $extAssetsPath . '/rb-core.js" defer></script>' . "\n";
+echo '<script src="' . $extAssetsPath . '/rb-favorites.js" defer></script>' . "\n";
+echo '<script src="' . $extAssetsPath . '/rb-player.js" defer></script>' . "\n";
+echo '<script src="' . $extAssetsPath . '/rb-recents.js" defer></script>' . "\n";
+echo '<script src="' . $extAssetsPath . '/rb-search.js" defer></script>' . "\n";
+echo '<script src="' . $extAssetsPath . '/rb-settings.js" defer></script>' . "\n";
+echo '<script src="' . $extAssetsPath . '/rb-playbar.js" defer></script>' . "\n";
+echo '<script src="' . $extAssetsPath . '/rb-main.js" defer></script>' . "\n";
 
 // Modal fix - ensures Configure modal works on non-index pages
 echo '<script src="' . $extAssetsPath . '/radio-browser-modal-fix.js" defer></script>' . "\n";

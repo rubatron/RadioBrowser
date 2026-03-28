@@ -40,11 +40,53 @@
     justify-content: center;
     padding: 0 0.5rem;
     font-size: 1.1rem;
+    transition: all 0.3s ease;
 }
 
 #rb-playbar-btn:hover {
     color: #c55a11 !important;
     opacity: 1 !important;
+}
+
+/* Glow effect when Radio Browser stream is playing */
+#rb-playbar-btn.rb-active {
+    color: #c55a11 !important;
+    opacity: 1 !important;
+    animation: rb-glow 2s ease-in-out infinite;
+}
+
+@keyframes rb-glow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 5px rgba(197, 90, 17, 0.5),
+            0 0 10px rgba(197, 90, 17, 0.3);
+        filter: drop-shadow(0 0 3px rgba(197, 90, 17, 0.4));
+    }
+
+    50% {
+        text-shadow: 0 0 10px rgba(197, 90, 17, 0.8),
+            0 0 20px rgba(197, 90, 17, 0.5),
+            0 0 30px rgba(197, 90, 17, 0.3);
+        filter: drop-shadow(0 0 8px rgba(197, 90, 17, 0.6));
+    }
+}
+
+/* Pulse animation for active state */
+#rb-playbar-btn.rb-active i {
+    animation: rb-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes rb-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 /* ============================================
@@ -849,20 +891,20 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
-    /* Glass morphism effect */
+    height: 70px;
+    /* moOde-style dark background */
     background: linear-gradient(180deg,
-            rgba(26, 26, 26, 0.85) 0%,
-            rgba(13, 13, 13, 0.9) 100%);
-    backdrop-filter: blur(12px);
+            rgba(42, 42, 42, 0.95) 0%,
+            rgba(26, 26, 26, 0.98) 100%);
     -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     padding: 0 1rem;
     gap: 1rem;
     z-index: 1000;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
@@ -874,12 +916,13 @@
 }
 
 .rb-playbar-cover {
-    width: 44px;
-    height: 44px;
+    width: 50px;
+    height: 50px;
     border-radius: 4px;
     overflow: hidden;
     flex-shrink: 0;
     background: #333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .rb-playbar-cover img {
@@ -905,7 +948,7 @@
 
 .rb-playbar-artist {
     font-size: 0.8rem;
-    color: #888;
+    color: rgba(255, 255, 255, 0.5);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -914,22 +957,23 @@
 .rb-playbar-controls {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.15rem;
 }
 
+/* moOde-style command buttons */
 .rb-playbar-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    border-radius: 3px;
     border: none;
     background: transparent;
-    color: #aaa;
+    color: rgba(255, 255, 255, 0.7);
     font-size: 1rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.15s ease;
 }
 
 .rb-playbar-btn:hover {
@@ -938,11 +982,13 @@
 }
 
 .rb-playbar-btn.rb-playbar-play {
-    width: 44px;
-    height: 44px;
-    background: #c55a11;
+    width: 46px;
+    height: 46px;
+    background: var(--rp-accent, #c55a11);
     color: #fff;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    border-radius: 50%;
+    margin: 0 0.25rem;
 }
 
 .rb-playbar-btn.rb-playbar-play:hover {
@@ -955,40 +1001,71 @@
     /* pause icon */
 }
 
+/* moOde-style volume knob section */
 .rb-playbar-volume {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: #888;
+    gap: 0.25rem;
 }
 
-.rb-playbar-volume input[type="range"] {
-    width: 80px;
-    height: 4px;
-    -webkit-appearance: none;
-    background: rgba(255, 255, 255, 0.2);
+.rb-volknob {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rb-volbtns {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.rb-vol-btn {
+    width: 22px;
+    height: 16px;
+    padding: 0;
+    font-size: 0.75rem;
+    font-weight: bold;
+    line-height: 1;
     border-radius: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
     cursor: pointer;
+    transition: all 0.15s ease;
 }
 
-.rb-playbar-volume input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: #c55a11;
-    border-radius: 50%;
-    cursor: pointer;
+.rb-vol-btn:hover {
+    background: var(--rp-accent, #c55a11);
+    color: #fff;
+}
+
+.rb-volume-display {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    min-width: 22px;
+}
+
+/* Hide old range slider */
+.rb-playbar-volume input[type="range"] {
+    display: none;
 }
 
 /* Add padding to container to prevent content being hidden behind playbar */
 #container {
-    padding-bottom: 70px;
+    padding-bottom: 80px;
 }
 
 @media (max-width: 600px) {
     .rb-playbar {
         padding: 0 0.5rem;
         gap: 0.5rem;
+        height: 60px;
     }
 
     .rb-playbar-volume {
@@ -997,5 +1074,15 @@
 
     .rb-playbar-info {
         flex: 1;
+    }
+
+    .rb-playbar-cover {
+        width: 44px;
+        height: 44px;
+    }
+
+    .rb-playbar-btn.rb-playbar-play {
+        width: 40px;
+        height: 40px;
     }
 }
