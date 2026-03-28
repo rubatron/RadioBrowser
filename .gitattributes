@@ -1,0 +1,10 @@
+# Force LF line endings for shell scripts (required for Linux execution)
+*.sh text eol=lf
+
+# Keep these as auto
+*.php text
+*.js text
+*.css text
+*.html text
+*.json text
+*.md text
