@@ -341,37 +341,121 @@
     /**
      * Radio logo fallback - replace missing logos with moOde default
      * Handles 404 errors for radio-logos thumbnails
+     * 
+     * Optimizations:
+     * - Cache failed URLs to prevent repeated 404 requests
+     * - Use MutationObserver to intercept new img tags before they load
+     * - Persist failed URLs in sessionStorage (clears on tab close)
      */
     var FALLBACK_IMAGE = '/images/radio.png';
-    var processedImages = new WeakSet();
+    var STORAGE_KEY = 'rb_failed_logos';
+    var failedUrls = new Set();
+
+    // Restore failed URLs from sessionStorage
+    function loadFailedUrls() {
+        try {
+            var stored = sessionStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                JSON.parse(stored).forEach(function(url) {
+                    failedUrls.add(url);
+                });
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    // Save failed URLs to sessionStorage
+    function saveFailedUrls() {
+        try {
+            // Limit to 100 entries to prevent storage bloat
+            var urls = Array.from(failedUrls).slice(-100);
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(urls));
+        } catch (e) { /* ignore */ }
+    }
+
+    // Normalize URL for comparison (strip query strings, decode)
+    function normalizeLogoUrl(src) {
+        try {
+            var url = new URL(src, window.location.origin);
+            return url.origin + url.pathname;
+        } catch (e) {
+            return src;
+        }
+    }
+
+    // Check if img should use fallback and apply it
+    function applyFallbackIfNeeded(img) {
+        var src = img.src || img.getAttribute('src') || '';
+        if (src.indexOf('radio-logos') === -1) return false;
+        if (src === FALLBACK_IMAGE) return false;
+
+        var normalized = normalizeLogoUrl(src);
+        if (failedUrls.has(normalized)) {
+            img.src = FALLBACK_IMAGE;
+            return true;
+        }
+        return false;
+    }
 
     function setupRadioLogoFallback() {
-        // Event delegation for img error events
+        // Load cached failed URLs
+        loadFailedUrls();
+
+        // Event delegation for img error events (capture phase)
         document.addEventListener('error', function(e) {
             var img = e.target;
             if (img.tagName !== 'IMG') return;
 
-            // Only handle radio-logos images
             var src = img.src || '';
             if (src.indexOf('radio-logos') === -1) return;
+            if (src === FALLBACK_IMAGE) return;
 
-            // Prevent infinite loop
-            if (processedImages.has(img)) return;
-            processedImages.add(img);
+            // Cache this URL as failed
+            var normalized = normalizeLogoUrl(src);
+            if (!failedUrls.has(normalized)) {
+                failedUrls.add(normalized);
+                saveFailedUrls();
+            }
 
             // Replace with fallback
             img.src = FALLBACK_IMAGE;
-        }, true); // Use capture phase to catch error before it bubbles
+        }, true);
 
-        // Also handle existing images that may have already failed
+        // MutationObserver to intercept new img tags BEFORE they load
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType !== 1) return; // Element nodes only
+                    
+                    if (node.tagName === 'IMG') {
+                        applyFallbackIfNeeded(node);
+                    } else if (node.querySelectorAll) {
+                        var imgs = node.querySelectorAll('img[src*="radio-logos"]');
+                        imgs.forEach(applyFallbackIfNeeded);
+                    }
+                });
+            });
+        });
+
+        // Observe playqueue and content areas (not entire body for efficiency)
+        var targets = ['cv-playqueue', 'playqueue-list', 'container-playqueue', 'content'];
+        targets.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                observer.observe(el, { childList: true, subtree: true });
+            }
+        });
+
+        // Fallback: observe body if no specific targets found
+        if (!document.getElementById('cv-playqueue')) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
+
+        // Handle existing images that may have already failed
         setTimeout(function() {
             var imgs = document.querySelectorAll('img[src*="radio-logos"]');
             imgs.forEach(function(img) {
                 if (!img.complete || img.naturalWidth === 0) {
-                    if (!processedImages.has(img)) {
-                        processedImages.add(img);
-                        img.src = FALLBACK_IMAGE;
-                    }
+                    applyFallbackIfNeeded(img);
                 }
             });
         }, 500);
