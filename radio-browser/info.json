@@ -1,6 +1,6 @@
 {
     "name": "RubaTron's Radio Browser Extension",
-    "version": "3.3.0",
+    "version": "3.2.0",
     "author": "RubaTron",
     "license": "GPL-3.0-or-later",
     "description": "Browse and play internet radio stations from radio-browser.info",
@@ -14,13 +14,11 @@
         "Custom API server support",
         "Troubleshooting tools",
         "API status monitoring",
-        "Radio icon in moOde player bar with glow effect",
+        "Radio icon in moOde player bar",
         "Player bar station thumbnails",
         "Flexible visibility in Library & M-menu",
         "Download radio streams (ffmpeg)",
-        "One-liner bootstrap installer",
-        "moOde-style circular volume knob",
-        "Modular JS architecture (moOde-style)"
+        "One-liner bootstrap installer"
     ],
     "repository": "https://github.com/rubatron/RadioBrowser",
     "help_url": "https://github.com/rubatron/RadioBrowser/wiki",
