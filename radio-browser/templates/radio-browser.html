@@ -434,6 +434,51 @@
                             </div>
                         </div>
 
+                        <!-- Service Status -->
+                        <div class="rb-service-status"
+                            style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #444;">
+                            <h5 style="margin-bottom: 0.75rem; color: #c55a11;"><i
+                                    class="fa-solid fa-sharp fa-server"></i> Service Status</h5>
+                            <div class="rb-status-grid" style="display: flex; gap: 1.5rem; margin-bottom: 1rem;">
+                                <div class="rb-status-item">
+                                    <span class="rb-status-dot" id="rb-nginx-status"
+                                        style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #666; margin-right: 0.5rem;"></span>
+                                    <span>nginx</span>
+                                </div>
+                                <div class="rb-status-item">
+                                    <span class="rb-status-dot" id="rb-phpfpm-status"
+                                        style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #666; margin-right: 0.5rem;"></span>
+                                    <span>PHP-FPM</span>
+                                </div>
+                            </div>
+                            <button type="button" id="rb-refresh-status" class="btn btn-small"
+                                style="margin-bottom: 0.5rem;">
+                                <i class="fa-solid fa-sharp fa-sync"></i> Refresh Status
+                            </button>
+                        </div>
+
+                        <!-- System Actions -->
+                        <div class="rb-system-actions"
+                            style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #444;">
+                            <h5 style="margin-bottom: 0.75rem; color: #c55a11;"><i
+                                    class="fa-solid fa-sharp fa-tools"></i> System Actions</h5>
+                            <div class="rb-troubleshoot-actions">
+                                <div class="rb-action-item">
+                                    <button type="button" id="rb-repair" class="btn btn-small">
+                                        <i class="fa-solid fa-sharp fa-screwdriver-wrench"></i> Repair Installation
+                                    </button>
+                                    <span class="rb-action-desc">Fix symlinks, patches and permissions</span>
+                                </div>
+
+                                <div class="rb-action-item rb-action-danger">
+                                    <button type="button" id="rb-uninstall" class="btn btn-small btn-danger">
+                                        <i class="fa-solid fa-sharp fa-trash"></i> Uninstall Extension
+                                    </button>
+                                    <span class="rb-action-desc">Remove Radio Browser and restore moOde files</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="rb-log-output" class="rb-log-output hide">
                             <pre></pre>
                         </div>

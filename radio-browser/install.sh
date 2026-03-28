@@ -54,6 +54,7 @@ declare -A SOURCE_FILES=(
 
 # moOde integration paths
 HEADER_FILE="/var/www/header.php"
+NGINX_CONF="/etc/nginx/moode-locations.conf"
 
 # ============================================================================
 # COLORS AND FORMATTING
@@ -304,6 +305,9 @@ create_folders() {
         "${CACHE_DIR}"
         "${IMAGE_CACHE_DIR}"
         "${DATA_DIR}"
+        "${SYS_DIR}"
+        "${SYS_SOURCES_DIR}"
+        "${SYS_MOODE_DIR}"
     )
 
     for folder in "${folders[@]}"; do
@@ -436,6 +440,34 @@ restart_services() {
 }
 
 # ============================================================================
+# BACKUP MOODE FILES (Before patching)
+# ============================================================================
+# Saves original moOde files to sys/sources/moode/ for restoration during uninstall
+
+backup_moode_files() {
+    log "Backing up original moOde files..."
+
+    # Backup header.php if not already backed up
+    if [[ -f "$HEADER_FILE" ]] && [[ ! -f "${SYS_MOODE_DIR}/header.php.orig" ]]; then
+        cp "$HEADER_FILE" "${SYS_MOODE_DIR}/header.php.orig"
+        echo -e "  ${GREEN}✓${NC} Backed up: header.php"
+    elif [[ -f "${SYS_MOODE_DIR}/header.php.orig" ]]; then
+        echo -e "  ${BLUE}○${NC} Already backed up: header.php"
+    fi
+
+    # Backup nginx config if not already backed up
+    if [[ -f "$NGINX_CONF" ]] && [[ ! -f "${SYS_MOODE_DIR}/moode-locations.conf.orig" ]]; then
+        cp "$NGINX_CONF" "${SYS_MOODE_DIR}/moode-locations.conf.orig"
+        echo -e "  ${GREEN}✓${NC} Backed up: moode-locations.conf"
+    elif [[ -f "${SYS_MOODE_DIR}/moode-locations.conf.orig" ]]; then
+        echo -e "  ${BLUE}○${NC} Already backed up: moode-locations.conf"
+    fi
+
+    success "moOde files backed up to ${SYS_MOODE_DIR}/"
+    return 0
+}
+
+# ============================================================================
 # SHELL-BRIDGE INTEGRATION (Menu Injection)
 # ============================================================================
 # Injects a PHP include into moOde's header.php to load our menu injection script
@@ -527,8 +559,6 @@ cleanup_shell_bridge() {
 # Patches nginx to serve a fallback image when radio logos are not found
 # This prevents 404 errors and shows moOde's default radio icon
 
-NGINX_CONF="/etc/nginx/moode-locations.conf"
-
 patch_nginx_logos() {
     log "Patching nginx for logo fallback..."
 
@@ -610,6 +640,44 @@ cleanup_nginx_logos() {
 }
 
 # ============================================================================
+# RESTORE MOODE FILES (From backup)
+# ============================================================================
+# Restores original moOde files from sys/sources/moode/ during uninstall
+
+restore_moode_files() {
+    log "Restoring original moOde files..."
+
+    local restored=0
+
+    # Restore header.php if backup exists
+    if [[ -f "${SYS_MOODE_DIR}/header.php.orig" ]]; then
+        cp "${SYS_MOODE_DIR}/header.php.orig" "$HEADER_FILE"
+        chown www-data:www-data "$HEADER_FILE"
+        echo -e "  ${GREEN}✓${NC} Restored: header.php"
+        ((restored++))
+    else
+        # Fallback to marker-based cleanup
+        cleanup_shell_bridge
+    fi
+
+    # Restore nginx config if backup exists
+    if [[ -f "${SYS_MOODE_DIR}/moode-locations.conf.orig" ]]; then
+        cp "${SYS_MOODE_DIR}/moode-locations.conf.orig" "$NGINX_CONF"
+        echo -e "  ${GREEN}✓${NC} Restored: moode-locations.conf"
+        ((restored++))
+    else
+        # Fallback to marker-based cleanup
+        cleanup_nginx_logos
+    fi
+
+    if [[ $restored -gt 0 ]]; then
+        success "Restored $restored moOde file(s) from backup"
+    fi
+
+    return 0
+}
+
+# ============================================================================
 # UNINSTALL FUNCTION
 # ============================================================================
 uninstall() {
@@ -636,16 +704,19 @@ uninstall() {
         create_backup
     fi
 
-    # Remove menu integration from header.php
-    cleanup_shell_bridge
+    # Restore original moOde files from backup
+    restore_moode_files
 
-    # Remove nginx logo fallback
-    cleanup_nginx_logos
-
-    # Restart nginx to apply config removal
+    # Restart services to apply changes
     if systemctl is-active --quiet nginx 2>/dev/null; then
         systemctl restart nginx
         echo -e "  ${GREEN}✓${NC} Restarted nginx"
+    fi
+
+    local php_version=$(php -v 2>/dev/null | head -1 | cut -d' ' -f2 | cut -d'.' -f1,2)
+    if systemctl is-active --quiet "php${php_version}-fpm" 2>/dev/null; then
+        systemctl restart "php${php_version}-fpm"
+        echo -e "  ${GREEN}✓${NC} Restarted php${php_version}-fpm"
     fi
 
     log "Removing files..."
@@ -663,6 +734,7 @@ uninstall() {
     fi
 
     success "Radio Browser extension uninstalled"
+    echo -e "  ${CYAN}→${NC} moOde has been restored to its original state"
     return 0
 }
 
@@ -679,48 +751,53 @@ auto_install() {
     local errors=0
 
     # Step 1: Check root
-    echo -e "${BOLD}Step 1/9: Checking permissions...${NC}"
+    echo -e "${BOLD}Step 1/10: Checking permissions...${NC}"
     check_root || { error "Must run as root"; return 1; }
     echo
 
     # Step 2: Check source files
-    echo -e "${BOLD}Step 2/9: Checking source files...${NC}"
+    echo -e "${BOLD}Step 2/10: Checking source files...${NC}"
     check_source_files || { error "Source files missing"; return 1; }
     echo
 
     # Step 3: Install dependencies
-    echo -e "${BOLD}Step 3/9: Installing dependencies...${NC}"
+    echo -e "${BOLD}Step 3/10: Installing dependencies...${NC}"
     install_curl || warning "cURL installation issue"
     install_php_curl || warning "PHP cURL installation issue"
     echo
 
     # Step 4: Create backup
-    echo -e "${BOLD}Step 4/9: Creating backup...${NC}"
+    echo -e "${BOLD}Step 4/10: Creating backup...${NC}"
     create_backup || warning "Backup creation issue"
     echo
 
     # Step 5: Create folders
-    echo -e "${BOLD}Step 5/9: Creating folders...${NC}"
+    echo -e "${BOLD}Step 5/10: Creating folders...${NC}"
     create_folders || { error "Failed to create folders"; ((errors++)); }
     echo
 
     # Step 6: Copy files
-    echo -e "${BOLD}Step 6/9: Copying files...${NC}"
+    echo -e "${BOLD}Step 6/10: Copying files...${NC}"
     copy_files || { error "Failed to copy files"; ((errors++)); }
     echo
 
     # Step 7: Set permissions
-    echo -e "${BOLD}Step 7/9: Setting permissions...${NC}"
+    echo -e "${BOLD}Step 7/10: Setting permissions...${NC}"
     set_permissions || { error "Failed to set permissions"; ((errors++)); }
     echo
 
-    # Step 8: Install menu integration
-    echo -e "${BOLD}Step 8/9: Installing menu integration...${NC}"
+    # Step 8: Backup original moOde files
+    echo -e "${BOLD}Step 8/10: Backing up moOde system files...${NC}"
+    backup_moode_files || warning "moOde backup issue"
+    echo
+
+    # Step 9: Install menu integration
+    echo -e "${BOLD}Step 9/10: Installing menu integration...${NC}"
     patch_moode_header || warning "Menu integration issue"
     echo
 
-    # Step 9: Patch nginx for logo fallback
-    echo -e "${BOLD}Step 9/9: Patching nginx for logo fallback...${NC}"
+    # Step 10: Patch nginx for logo fallback
+    echo -e "${BOLD}Step 10/10: Patching nginx for logo fallback...${NC}"
     patch_nginx_logos || warning "Nginx logo fallback issue"
     # Restart nginx to apply the config change
     if systemctl is-active --quiet nginx 2>/dev/null; then

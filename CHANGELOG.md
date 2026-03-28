@@ -5,6 +5,37 @@ All notable changes to Radio Browser will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-03-28
+
+### Added
+
+#### System Backup & Restore
+- **moOde File Backup** - Original moOde system files (header.php, moode-locations.conf) are now backed up to `sys/sources/moode/` before patching
+- **Source Archive Preservation** - Bootstrap installer saves the extension tarball to `sys/sources/` for future repairs
+- **Clean Restore on Uninstall** - moOde files are restored from backups during uninstall
+
+#### Troubleshooting UI Enhancements
+- **Service Status Indicators** - Real-time status dots for nginx and PHP-FPM in the Configure modal
+- **Repair Installation Button** - One-click fix for symlinks, patches, and permissions
+- **Uninstall Extension Button** - UI-based uninstall with double confirmation and redirect to moOde home
+
+#### API Endpoints
+- `service_status` - Check nginx and PHP-FPM service status
+- `repair` - Repair installation (symlinks, patches, permissions)
+- `uninstall` - Uninstall extension and restore moOde files
+
+### Changed
+
+- **Installer now 10 steps** - Added step 8 for backing up moOde system files
+- **Symlink Verification** - Bootstrap installer verifies symlink after installation and recreates if broken
+- **Dynamic Hostname** - Installer output now shows actual hostname instead of placeholder
+
+### Technical Improvements
+
+- New folder structure: `sys/sources/moode/` for original moOde file backups
+- Restore logic uses backups first, falls back to marker-based cleanup
+- Service restart after uninstall to apply restored configs
+
 ## [3.1.1] - 2026-03-28
 
 ### Technical Improvements

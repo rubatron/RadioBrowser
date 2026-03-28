@@ -83,6 +83,40 @@ echo ""
 # Run auto-install (non-interactive)
 ./install.sh --auto 2>&1 | tee -a "$LOG_FILE"
 
+# Copy source archive to sys/sources for future repairs
+echo ""
+echo -e "${BLUE}[*] Preserving source archive...${NC}"
+SYS_SOURCES="/var/www/extensions/installed/radio-browser/sys/sources"
+if [[ -d "$SYS_SOURCES" ]]; then
+    VERSION=$(cat version.txt 2>/dev/null || echo "unknown")
+    cp "$INSTALL_DIR/radio-browser.zip" "$SYS_SOURCES/radio-browser-${VERSION}.zip" 2>/dev/null || true
+    chown www-data:www-data "$SYS_SOURCES/radio-browser-${VERSION}.zip" 2>/dev/null || true
+    echo -e "${GREEN}[✓] Source archive saved to sys/sources/${NC}"
+fi
+
+# Verify symlink works
+echo ""
+echo -e "${BLUE}[*] Verifying installation...${NC}"
+
+SYMLINK="/var/www/radio-browser.php"
+TARGET="/var/www/extensions/installed/radio-browser/radio-browser.php"
+
+if [[ ! -L "$SYMLINK" ]] || [[ ! -e "$SYMLINK" ]]; then
+    echo -e "${YELLOW}[!] Symlink missing or broken, recreating...${NC}"
+    rm -f "$SYMLINK" 2>/dev/null
+    ln -sf "$TARGET" "$SYMLINK"
+    chown -h www-data:www-data "$SYMLINK" 2>/dev/null || true
+fi
+
+# Final verification
+if [[ -L "$SYMLINK" ]] && [[ -e "$SYMLINK" ]]; then
+    echo -e "${GREEN}[✓] Symlink verified: $SYMLINK${NC}"
+else
+    echo -e "${RED}[✗] Symlink verification failed!${NC}"
+    echo -e "${RED}    Please run manually: sudo ln -sf $TARGET $SYMLINK${NC}"
+    exit 1
+fi
+
 # Clean up
 echo ""
 echo -e "${BLUE}[*] Cleaning up temporary files...${NC}"

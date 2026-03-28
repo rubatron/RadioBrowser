@@ -1250,6 +1250,157 @@ switch ($cmd) {
         }
         break;
 
+    // ============================================================================
+    // SYSTEM MANAGEMENT API
+    // ============================================================================
+    case 'service_status':
+        // Check status of PHP-FPM and nginx
+        rb_debug_log('Service status check requested');
+
+        $phpVersion = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+        $phpFpmService = "php{$phpVersion}-fpm";
+
+        // Check nginx
+        $nginxActive = trim(shell_exec('systemctl is-active nginx 2>/dev/null')) === 'active';
+
+        // Check PHP-FPM
+        $phpFpmActive = trim(shell_exec("systemctl is-active {$phpFpmService} 2>/dev/null")) === 'active';
+
+        $response = [
+            'success' => true,
+            'services' => [
+                'nginx' => [
+                    'name' => 'nginx',
+                    'active' => $nginxActive,
+                    'status' => $nginxActive ? 'running' : 'stopped'
+                ],
+                'php_fpm' => [
+                    'name' => $phpFpmService,
+                    'active' => $phpFpmActive,
+                    'status' => $phpFpmActive ? 'running' : 'stopped'
+                ]
+            ]
+        ];
+        break;
+
+    case 'uninstall':
+        // Uninstall Radio Browser extension
+        rb_debug_log('Uninstall requested');
+
+        $installScript = dirname(__DIR__) . '/install.sh';
+
+        if (!file_exists($installScript)) {
+            $response = ['success' => false, 'message' => 'Install script not found'];
+            break;
+        }
+
+        // Send response before uninstall (connection will be lost)
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'message' => 'Uninstall initiated, redirecting...', 'redirect' => '/index.php']);
+
+        // Flush output to client
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            ob_end_flush();
+            flush();
+        }
+
+        // Small delay to ensure response is sent
+        usleep(200000); // 200ms
+
+        // Run uninstall with auto-confirm (non-interactive)
+        // Use 'yes' piped to handle any confirmation prompts
+        exec("yes | sudo /bin/bash {$installScript} --uninstall 2>&1", $output, $exitCode);
+
+        rb_debug_log('Uninstall completed, exit code: ' . $exitCode);
+        exit;
+        break;
+
+    case 'repair':
+        // Repair Radio Browser installation
+        rb_debug_log('Repair requested');
+
+        $errors = [];
+        $fixed = [];
+
+        $extBase = dirname(__DIR__);
+        $sysSourcesDir = $extBase . '/sys/sources';
+        $sysMoodeDir = $sysSourcesDir . '/moode';
+
+        // 1. Fix symlink
+        $symlink = '/var/www/radio-browser.php';
+        $target = $extBase . '/radio-browser.php';
+
+        if (!is_link($symlink) || !file_exists($symlink)) {
+            @unlink($symlink);
+            if (symlink($target, $symlink)) {
+                $fixed[] = 'Symlink recreated';
+            } else {
+                $errors[] = 'Failed to create symlink';
+            }
+        } else {
+            $fixed[] = 'Symlink OK';
+        }
+
+        // 2. Check/repair header.php patch
+        $headerFile = '/var/www/header.php';
+        if (file_exists($headerFile)) {
+            $headerContent = file_get_contents($headerFile);
+            if (strpos($headerContent, 'RB_SHELL_BRIDGE_START') === false) {
+                // Patch missing, re-apply
+                $bridgeInclude = '<?php /* RB_SHELL_BRIDGE_START */ if (file_exists("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php")) { include_once("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php"); } /* RB_SHELL_BRIDGE_END */ ?>';
+                $newContent = str_replace('</head>', $bridgeInclude . "\n</head>", $headerContent);
+                if (file_put_contents($headerFile, $newContent)) {
+                    $fixed[] = 'Shell bridge patch re-applied';
+                } else {
+                    $errors[] = 'Failed to patch header.php';
+                }
+            } else {
+                $fixed[] = 'Shell bridge patch OK';
+            }
+        }
+
+        // 3. Check/repair nginx logo fallback
+        $nginxConf = '/etc/nginx/moode-locations.conf';
+        if (file_exists($nginxConf)) {
+            $nginxContent = file_get_contents($nginxConf);
+            if (strpos($nginxContent, 'RB_NGINX_LOGO_FALLBACK_START') === false) {
+                // Patch missing, re-apply
+                $logoBlock = "\n# RB_NGINX_LOGO_FALLBACK_START\nlocation /imagesw/radio-logos/ {\n    alias /var/local/www/imagesw/radio-logos/;\n    try_files \$uri /images/radio.png;\n}\n# RB_NGINX_LOGO_FALLBACK_END\n";
+                if (file_put_contents($nginxConf, $nginxContent . $logoBlock)) {
+                    $fixed[] = 'Nginx logo fallback patch re-applied';
+                    // Restart nginx to apply
+                    exec('sudo /usr/bin/systemctl restart nginx 2>&1');
+                } else {
+                    $errors[] = 'Failed to patch nginx config';
+                }
+            } else {
+                $fixed[] = 'Nginx logo fallback OK';
+            }
+        }
+
+        // 4. Fix permissions
+        exec("sudo chown -R www-data:www-data {$extBase} 2>&1");
+        exec("sudo chmod 777 {$extBase}/cache 2>&1");
+        exec("sudo chmod 777 {$extBase}/cache/images 2>&1");
+        $fixed[] = 'Permissions fixed';
+
+        // 5. Restart services
+        exec('sudo /usr/bin/systemctl restart nginx 2>&1');
+        $phpVersion = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+        exec("sudo /usr/bin/systemctl restart php{$phpVersion}-fpm 2>&1");
+        $fixed[] = 'Services restarted';
+
+        if (empty($errors)) {
+            $response = ['success' => true, 'message' => 'Repair completed successfully', 'fixed' => $fixed];
+        } else {
+            $response = ['success' => false, 'message' => 'Repair completed with errors', 'fixed' => $fixed, 'errors' => $errors];
+        }
+
+        rb_debug_log('Repair completed: ' . json_encode($response));
+        break;
+
     default:
         $response = ['success' => false, 'message' => 'Unknown command'];
 }

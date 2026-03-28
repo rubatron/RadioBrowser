@@ -226,9 +226,10 @@ function initRadioBrowser($) {
             $('.rb-panel').addClass('hide');
             $('#rb-' + tab + '-panel').removeClass('hide');
 
-            // Check API status when Settings tab is opened
+            // Check API status and service status when Settings tab is opened
             if (tab === 'settings') {
                 checkApiStatus();
+                refreshServiceStatus();
             }
         });
 
@@ -269,6 +270,22 @@ function initRadioBrowser($) {
         $('#rb-reboot-system').on('click', function(e) {
             e.stopPropagation();
             rebootSystem();
+        });
+
+        // Service status and system actions
+        $('#rb-refresh-status').on('click', function(e) {
+            e.stopPropagation();
+            refreshServiceStatus();
+        });
+
+        $('#rb-repair').on('click', function(e) {
+            e.stopPropagation();
+            repairInstallation();
+        });
+
+        $('#rb-uninstall').on('click', function(e) {
+            e.stopPropagation();
+            uninstallExtension();
         });
     }
 
@@ -1108,6 +1125,114 @@ function initRadioBrowser($) {
             error: function() {
                 btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-power-off');
                 notify('Error', 'Failed to reboot system', 'error');
+            }
+        });
+    }
+
+    function refreshServiceStatus() {
+        var btn = $('#rb-refresh-status');
+        btn.prop('disabled', true).find('i').addClass('fa-spin');
+
+        $.ajax({
+            url: API_URL + '?cmd=service_status',
+            type: 'POST',
+            dataType: 'json',
+            timeout: 10000,
+            success: function(data) {
+                btn.prop('disabled', false).find('i').removeClass('fa-spin');
+                if (data.success && data.services) {
+                    // Update nginx status
+                    var nginxDot = $('#rb-nginx-status');
+                    nginxDot.css('background', data.services.nginx.active ? '#2ecc71' : '#e74c3c');
+
+                    // Update PHP-FPM status
+                    var phpfpmDot = $('#rb-phpfpm-status');
+                    phpfpmDot.css('background', data.services.php_fpm.active ? '#2ecc71' : '#e74c3c');
+                } else {
+                    notify('Error', data.message || 'Failed to get service status', 'error');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).find('i').removeClass('fa-spin');
+                notify('Error', 'Failed to get service status', 'error');
+            }
+        });
+    }
+
+    function repairInstallation() {
+        if (!confirm('This will repair the Radio Browser installation by fixing symlinks, patches and permissions. Continue?')) {
+            return;
+        }
+
+        var btn = $('#rb-repair');
+        btn.prop('disabled', true).find('i').removeClass('fa-screwdriver-wrench').addClass('fa-spinner fa-spin');
+
+        $.ajax({
+            url: API_URL + '?cmd=repair',
+            type: 'POST',
+            dataType: 'json',
+            timeout: 30000,
+            success: function(data) {
+                btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-screwdriver-wrench');
+                if (data.success) {
+                    var message = 'Repair completed successfully';
+                    if (data.fixed && data.fixed.length > 0) {
+                        message += ':\n• ' + data.fixed.join('\n• ');
+                    }
+                    notify('Repair Complete', message, 'success');
+                    // Refresh service status
+                    refreshServiceStatus();
+                } else {
+                    var errorMsg = data.message || 'Repair completed with errors';
+                    if (data.errors && data.errors.length > 0) {
+                        errorMsg += ':\n• ' + data.errors.join('\n• ');
+                    }
+                    notify('Repair Issues', errorMsg, 'warning');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-screwdriver-wrench');
+                notify('Error', 'Failed to repair installation', 'error');
+            }
+        });
+    }
+
+    function uninstallExtension() {
+        if (!confirm('WARNING: This will completely remove the Radio Browser extension and restore moOde to its original state.\n\nThis action cannot be undone!\n\nAre you sure you want to uninstall?')) {
+            return;
+        }
+
+        // Double confirmation
+        if (!confirm('FINAL CONFIRMATION: Press OK to uninstall Radio Browser now.')) {
+            return;
+        }
+
+        var btn = $('#rb-uninstall');
+        btn.prop('disabled', true).find('i').removeClass('fa-trash').addClass('fa-spinner fa-spin');
+
+        $.ajax({
+            url: API_URL + '?cmd=uninstall',
+            type: 'POST',
+            dataType: 'json',
+            timeout: 60000,
+            success: function(data) {
+                if (data.success) {
+                    notify('Uninstalling', data.message || 'Uninstall initiated, redirecting...', 'success');
+                    // Redirect to moOde home after a short delay
+                    setTimeout(function() {
+                        window.location.href = data.redirect || '/index.php';
+                    }, 2000);
+                } else {
+                    btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-trash');
+                    notify('Error', data.message || 'Failed to uninstall', 'error');
+                }
+            },
+            error: function() {
+                // Connection may have been lost during uninstall - redirect anyway
+                notify('Uninstalling', 'Uninstall in progress, redirecting...', 'success');
+                setTimeout(function() {
+                    window.location.href = '/index.php';
+                }, 2000);
             }
         });
     }
