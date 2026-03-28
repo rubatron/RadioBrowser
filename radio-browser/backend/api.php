@@ -369,7 +369,8 @@ function rb_save_permanent_logo($stationName, $imageData)
     // Save thumbnail (200x200)
     $thumbSize = 200;
     $thumbImage = imagecreatetruecolor($thumbSize, $thumbSize);
-    imagefill($thumbImage, 0, 0, $white);
+    $whiteThumb = imagecolorallocate($thumbImage, 255, 255, 255);
+    imagefill($thumbImage, 0, 0, $whiteThumb);
     $scale = min($thumbSize / $srcWidth, $thumbSize / $srcHeight);
     $newWidth = (int)($srcWidth * $scale);
     $newHeight = (int)($srcHeight * $scale);
@@ -383,7 +384,8 @@ function rb_save_permanent_logo($stationName, $imageData)
     // Save small thumbnail (80x80) - REQUIRED by moOde playbar
     $smallSize = 80;
     $smallImage = imagecreatetruecolor($smallSize, $smallSize);
-    imagefill($smallImage, 0, 0, $white);
+    $whiteSmall = imagecolorallocate($smallImage, 255, 255, 255);
+    imagefill($smallImage, 0, 0, $whiteSmall);
     $scale = min($smallSize / $srcWidth, $smallSize / $srcHeight);
     $newWidth = (int)($srcWidth * $scale);
     $newHeight = (int)($srcHeight * $scale);
