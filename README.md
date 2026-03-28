@@ -21,23 +21,28 @@
 ## What's New in v3.1.0
 
 ### Menu Visibility Options
+
 Fully customizable integration into moOde's interface:
+
 - **Radio Icon in Player Bar** - Quick shortcut to Radio Browser from the moOde playbar
 - **Library Menu Integration** - Access Radio Browser from the Library dropdown
 - **M-Menu Integration** - Access from the hamburger menu (M-menu)
 - **Flexible Visibility** - Enable/disable each menu location independently via Configure
 
 ### Radio Browser Player Bar
+
 - Station logos display in the moOde playbar when playing radio stations
 - Automatic thumbnail creation for all played stations
 - Fixed Radio Browser playlist thumbnails now show correctly
 
 ### Download Radio Streams
+
 - Download radio streams directly to your local device
 - Requires ffmpeg (optional)
 - Save recordings from your favorite stations
 
 ### Easier Installation
+
 - **One-liner bootstrap installer** - Single command installation
 - **Automatic shell bridge** - No manual moOde patching required
 - **Clean uninstall** - Fully reversible installation
@@ -47,6 +52,7 @@ Fully customizable integration into moOde's interface:
 ## Features
 
 ### Core Features
+
 | Feature | Description |
 |---------|-------------|
 | **30,000+ Stations** | Access the complete radio-browser.info database |
@@ -57,6 +63,7 @@ Fully customizable integration into moOde's interface:
 | **One-Click Play** | Instant streaming via MPD |
 
 ### v3.1.0 Features
+
 | Feature | Description |
 |---------|-------------|
 | **Player Bar Icon** | Radio shortcut in moOde's playbar |
@@ -66,6 +73,7 @@ Fully customizable integration into moOde's interface:
 | **Bootstrap Install** | One-command installation |
 
 ### Technical Features
+
 - **Redundant API Servers** - Automatic failover for reliability
 - **Image Caching** - Local cache for faster loading
 - **Debug Logging** - Built-in troubleshooting tools
@@ -84,11 +92,13 @@ curl -fsSL https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/boots
 ```
 
 Or with wget:
+
 ```bash
 wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/bootstrap.sh | sudo bash
 ```
 
 The installer will:
+
 1. Download the latest version
 2. Install all files to `/var/www/extensions/installed/radio-browser/`
 3. Set correct permissions
@@ -128,6 +138,7 @@ After installation, Radio Browser is accessible via:
 Access **Configure** from within Radio Browser to customize:
 
 ### Visibility Settings
+
 | Option | Description |
 |--------|-------------|
 | **Show in Library** | Toggle Radio Browser in Library dropdown |
@@ -135,6 +146,7 @@ Access **Configure** from within Radio Browser to customize:
 | **Player Bar Icon** | Toggle radio shortcut in moOde playbar |
 
 ### Other Settings
+
 - **Custom API** - Add alternative radio-browser.info servers
 - **Results per page** - 10 / 20 / 50 / 100 / 200
 - **Debug logging** - Enable for troubleshooting
@@ -157,6 +169,7 @@ Access **Configure** from within Radio Browser to customize:
 ## Usage
 
 ### Playing Stations
+
 1. Open Radio Browser from Library, M-menu, or playbar icon
 2. Search or browse stations by country/genre
 3. Click **Play** on any station card
@@ -164,11 +177,13 @@ Access **Configure** from within Radio Browser to customize:
 5. Station logo appears in moOde's playbar
 
 ### Adding to Favorites
+
 - Click the **heart icon** on any station card
 - Station is saved to moOde's Radio library (`/var/lib/mpd/music/RADIO/`)
 - Access favorites from moOde's standard Radio section
 
 ### Downloading Streams
+
 1. Click the **download icon** on a station card
 2. Select duration and format
 3. Stream is recorded and saved locally
@@ -178,7 +193,9 @@ Access **Configure** from within Radio Browser to customize:
 ## Troubleshooting
 
 ### Station logos not showing in playbar
+
 The installer sets permissions automatically. If logos still don't appear:
+
 ```bash
 sudo chmod 777 /var/local/www/imagesw/radio-logos/
 sudo chmod 777 /var/local/www/imagesw/radio-logos/thumbs/
