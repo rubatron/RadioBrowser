@@ -25,6 +25,7 @@ This release focuses on **moOde integration** and **user experience improvements
 - **Station Logo Thumbnails** - Logos display in moOde's Now Playing when streaming radio
 - **Automatic Thumbnail Creation** - Logos saved automatically for all played stations
 - **Fixed Playlist Thumbnails** - Radio Browser playlist thumbnails now display correctly
+- **Logo Fallback** - Stations without logos show moOde's radio icon instead of empty placeholder
 
 #### Download Radio Streams
 

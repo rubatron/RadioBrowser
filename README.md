@@ -34,6 +34,7 @@ Fully customizable integration into moOde's interface:
 - Station logos display in the moOde playbar when playing radio stations
 - Automatic thumbnail creation for all played stations
 - Fixed Radio Browser playlist thumbnails now show correctly
+- **Fallback for missing logos** - Shows moOde radio icon when station has no logo
 
 ### Download Radio Streams
 
