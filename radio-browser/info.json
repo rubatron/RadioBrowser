@@ -1,6 +1,6 @@
 {
     "name": "RubaTron's Radio Browser Extension",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "author": "RubaTron",
     "license": "GPL-3.0-or-later",
     "description": "Browse and play internet radio stations from radio-browser.info",
@@ -12,11 +12,15 @@
         "Logo caching and display",
         "Custom API server support",
         "Troubleshooting tools",
-        "API status monitoring"
+        "API status monitoring",
+        "Standalone menu integration",
+        "Stream download (ffmpeg)",
+        "Visibility settings"
     ],
     "repository": "https://github.com/rubatron/RadioBrowser",
     "help_url": "https://github.com/rubatron/RadioBrowser/wiki",
     "changelog": {
+        "3.1.0": "Standalone menu injection, shell bridge, thumbnail fixes, modal fixes, bootstrap installer",
         "3.0.0": "RubaTron ownership, custom API support, session fix for currentsong.txt",
         "2.0.0": "Rewritten template system, troubleshooting panel, API latency monitoring, memory leak fixes",
         "1.2.0": "Searchable dropdowns, improved settings UI, system info panel",

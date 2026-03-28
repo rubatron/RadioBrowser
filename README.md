@@ -1,122 +1,261 @@
-# RubaTron's Radio Browser Installer
+# RubaTron's Radio Browser Extension for moOde Audio
 
-![Radio Browser](https://img.shields.io/badge/Radio-Browser-blue?style=for-the-badge&logo=radio)
-![Moode Audio](https://img.shields.io/badge/Moode-Audio-red?style=for-the-badge)
-![PHP](https://img.shields.io/badge/PHP-8.4+-purple?style=for-the-badge)
-![Bash](https://img.shields.io/badge/Bash-Script-green?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+<p align="center">
+  <img src="https://img.shields.io/badge/Version-3.1.0-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/moOde-9.0+-orange?style=for-the-badge" alt="moOde">
+  <img src="https://img.shields.io/badge/PHP-8.4+-purple?style=for-the-badge" alt="PHP">
+  <img src="https://img.shields.io/badge/License-GPL--3.0-green?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/github/last-commit/rubatron/RadioBrowser?style=for-the-badge" alt="Last Commit">
+</p>
 
-## 🎵 About
+<p align="center">
+  <strong>Browse and play 30,000+ internet radio stations directly from your moOde Audio player</strong>
+</p>
 
-**RubaTron's Radio Browser Installer** is an installation package for the Radio Browser extension in Moode Audio. This extension allows you to browse and play thousands of internet radio stations directly from your Moode Audio interface built on the radio-info API.
-![RadioBrowser screenshot](https://i.postimg.cc/3rbVZCrF/image.png "RadioBrowser")
+<p align="center">
+  <img src="https://i.postimg.cc/3rbVZCrF/image.png" alt="Radio Browser Screenshot" width="800">
+</p>
 
-### Radio Browser Interface
+---
 
-*The Radio Browser interface provides an intuitive way to browse and play thousands of internet radio stations with advanced search and filtering capabilities.*
+## Features
 
-## ✨ Features
+### Core Features
 
-- 🔄 **Automatic Backup** before installation
-- ✅ **System Requirements Check** with detailed reporting
-- 🛠️ **One-Click Installation** with proper permissions
-- 🔄 **Restore Functionality** from backups
-- 🧹 **Clean Uninstall** option
-- 📊 **Installation Logging** for troubleshooting
-- 🌐 **Redundant API Integration** with Radio-Browser.info
-- 🎯 **Country Selection** including custom ISO codes
-- ⭐ **Top Stations** and search functionality
+- **Search 30,000+ Stations** - Access the radio-browser.info database
+- **Filter by Country, Genre, Name** - Find exactly what you want
+- **Recently Played History** - Quick access to your listening history
+- **Favorites Integration** - Save stations to moOde's Radio library
+- **Logo Display** - Station logos in search results and playbar
+- **One-Click Play** - Instant streaming with MPD integration
 
-## Experimental Features/ Work in progress
+### v3.1.0 New Features
 
-- **Custom API** not working flawlessly
+- **Standalone Menu Integration** - Radio Browser appears in Library and M-menu without ext-mgr
+- **Configure Modal Fix** - Full modal support on all pages
+- **Automatic Thumbnail Creation** - Logos saved for moOde playbar display
+- **Visibility Settings** - Control where Radio Browser appears in menus
+- **Shell Bridge Architecture** - Non-invasive moOde integration
 
-## 📋 Requirements
+### Technical Features
 
-- **Moode Audio** (Raspberry Pi based music player)
-- **PHP 8.4+** with cURL extension
-- **ffmpeg** (optional, for stream recording)
+- **Redundant API Servers** - Automatic failover for reliability
+- **Image Caching** - Local cache for faster loading
+- **Debug Logging** - Troubleshooting tools built-in
+- **Custom API Support** - Add your own radio-browser servers
+
+---
 
 ## Installation
 
-### One-Liner Install (Easiest)
+### Quick Install (Recommended)
 
-Run this command on your moOde system:
+Run this one-liner on your moOde system:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rubatron/RadioBrowser/main/bootstrap.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/bootstrap.sh | sudo bash
 ```
 
 Or with wget:
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/main/bootstrap.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/bootstrap.sh | sudo bash
 ```
 
-### Manual Install
-
-Download and run the installer directly:
+### Manual Installation
 
 ```bash
-wget https://github.com/rubatron/RadioBrowser/raw/refs/heads/main/radio-browser.zip
+# Download the package
+wget https://github.com/rubatron/RadioBrowser/raw/refs/heads/develop/radio-browser.zip
+
+# Extract and install
 unzip radio-browser.zip
 cd radio-browser/
 chmod +x install.sh
 sudo bash install.sh
 ```
 
-Then select option **1** (Auto-install) from the menu.
+Select option **1** (Auto-install) from the menu.
 
-### What the installer does
+### Post-Installation
 
-- Create folder structure (/var/www/extensions/installed/radio-browser/)
-- Copy all extension files
-- Set correct permissions
-- Verify PHP and cURL requirements
+After installation:
 
-## Folder Structure
+1. Radio Browser will appear in the **Library dropdown** menu
+2. Radio Browser will appear in the **M-menu** (hamburger menu)
+3. Access directly at `http://your-moode-ip/radio-browser.php`
 
-```
-radio-browser/
- assets/          # CSS, JavaScript, images
- backend/         # API PHP backend
- templates/       # HTML templates
- scripts/         # Maintenance shell scripts
- data/            # Persistent data (custom APIs)
- cache/           # Temporary cache (images, API responses)
-```
-
-## Custom API Management (IN DEVELOPMENT!!)
-
-Custom APIs are stored in `data/custom_apis.json` and survive cache flushes.
-
-**Add via UI:**
-
-1. Go to Settings  Custom API
-2. Enter Name, URL, and Type
-3. Click "Add Custom API"
-
-The API will immediately appear in the "Active API" dropdown and "Saved APIs" list.
+---
 
 ## Requirements
 
-- moOde Audio Player  8.0.0
-- PHP  7.4 with cURL extension
+| Requirement | Version |
+|-------------|---------|
+| moOde Audio | 9.0.0+ |
+| PHP | 8.4+ |
+| PHP Extensions | curl, gd, json |
+
+---
+
+## Usage
+
+### Playing Stations
+
+1. Open Radio Browser from the Library or M-menu
+2. Search or browse stations by country/genre
+3. Click **Play** on any station card
+4. The station plays immediately via MPD
+
+### Favorites
+
+- Click the **heart icon** on any station to add to moOde Favorites
+- Favorites are saved to `/var/lib/mpd/music/RADIO/`
+- Access favorites from moOde's standard Radio section
+
+### Settings
+
+- **Visibility** - Control menu appearance (Library, M-menu)
+- **Custom API** - Add alternative radio-browser servers
+- **Troubleshooting** - View API status and logs
+
+---
+
+## Architecture
+
+```
+/var/www/extensions/installed/radio-browser/
+├── assets/
+│   ├── radio-browser.css      # Extension styles
+│   ├── radio-browser.js       # Main JavaScript
+│   ├── rb-menu-inject.js      # Menu integration
+│   └── radio-browser-modal-fix.js
+├── backend/
+│   └── api.php                # API endpoints
+├── templates/
+│   └── radio-browser.html     # UI template
+├── cache/                     # Image and API cache
+├── data/                      # Persistent settings
+└── rb-shell-bridge.php        # moOde integration
+```
+
+### Menu Integration
+
+Radio Browser uses a **shell bridge** that injects into moOde's header:
+
+- Non-invasive: only adds one line to `header.php`
+- Removable: clean uninstall restores original state
+- Configurable: visibility controlled via settings
+
+---
+
+## Development
+
+### Branches
+
+- `main` - Stable release
+- `develop` - Latest features (UAT testing)
+
+### Testing from Develop
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/bootstrap.sh | sudo bash
+```
+
+### Debug Logging
+
+Logs are written to:
+
+```
+/var/www/extensions/installed/radio-browser/cache/radio-browser.log
+```
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for full version history.
+
+### v3.1.0 (2026-03-28)
+
+- Standalone menu injection (no ext-mgr dependency)
+- Configure modal fix for non-index pages
+- Thumbnail auto-creation for playbar
+- Shell bridge architecture
+- GD image processing fixes
+
+---
 
 ## Troubleshooting
 
-Built-in tools available in Settings  Troubleshooting:
+### Station logos not showing in playbar
 
-- **Flush Cache** - Clear API cache and images
-- **Restart NginX webservice and remove server caching**
-- **Fix Permissions** - Reset file/folder permissions
-- **Test API** - Verify Radio Browser API connectivity
-- **View/Clear Log** - Debug logging
+The installer sets permissions on `/var/local/www/imagesw/radio-logos/`. If logos still don't appear:
+
+```bash
+sudo chmod 777 /var/local/www/imagesw/radio-logos/
+sudo chmod 777 /var/local/www/imagesw/radio-logos/thumbs/
+```
+
+### Menu items not appearing
+
+Run the installer again to re-apply the shell bridge:
+
+```bash
+cd /var/www/extensions/installed/radio-browser
+sudo bash install.sh
+```
+
+Select option **8** (Patch header).
+
+### Configure modal shows backdrop only
+
+Clear browser cache with `Ctrl+Shift+R` after updating.
+
+---
+
+## Uninstall
+
+```bash
+cd /var/www/extensions/installed/radio-browser
+sudo bash install.sh
+```
+
+Select option **9** (Uninstall).
+
+This removes:
+
+- All extension files
+- Shell bridge from header.php
+- Symlink from /var/www/
+
+Favorites and cached logos are preserved.
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
 
 ## License
 
-GPL-3.0-or-later
+This project is licensed under the **GPL-3.0-or-later** License - see the [LICENSE](LICENSE) file for details.
 
-## Author
+---
 
-Rubatron (2026)
+## Credits
+
+- **RubaTron** - Current maintainer
+- **radio-browser.info** - Radio station database API
+- **moOde Audio** - Audio player platform
+
+---
+
+<p align="center">
+  Made with ❤️ for the moOde community
+</p>
