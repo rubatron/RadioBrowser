@@ -104,11 +104,15 @@ echo -e "${GREEN}[✓] Package extracted${NC}"
 cd radio-browser
 chmod +x install.sh
 
+# Fix line endings (in case zip has CRLF from Windows)
+sed -i 's/\r$//' install.sh
+sed -i 's/\r$//' scripts/*.sh 2>/dev/null || true
+
 echo -e "${BLUE}[*] Running installer in auto mode...${NC}"
 echo ""
 
 # Run auto-install (non-interactive)
-./install.sh --auto 2>&1 | tee -a "$LOG_FILE"
+bash install.sh --auto 2>&1 | tee -a "$LOG_FILE"
 
 # Copy source archive to sys/sources for future repairs
 echo ""
