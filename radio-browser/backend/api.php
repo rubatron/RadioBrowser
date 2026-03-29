@@ -131,7 +131,7 @@ function rb_get_default_settings()
         'visibility' => [
             'library' => true,
             'm' => true,
-            'system' => false,
+            'system' => true,
             'playbar' => true,
             'download' => true,
             'activityglow' => true
@@ -180,8 +180,8 @@ function rb_set_visibility($area, $visible)
     // Ensure all visibility keys exist
     foreach ($allowed as $key) {
         if (!array_key_exists($key, $settings['visibility'])) {
-            // playbar defaults to true, system defaults to false
-            $settings['visibility'][$key] = ($key === 'system') ? false : true;
+            // All visibility defaults to true
+            $settings['visibility'][$key] = true;
         }
     }
 

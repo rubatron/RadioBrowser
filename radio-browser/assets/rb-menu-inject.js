@@ -72,7 +72,7 @@
                 visibility: {
                     library: true,
                     m: true,
-                    system: false,
+                    system: true,
                     playbar: true,
                     activityglow: true
                 }
@@ -84,7 +84,7 @@
                 visibility: {
                     library: true,
                     m: true,
-                    system: false,
+                    system: true,
                     playbar: true,
                     activityglow: true
                 }
