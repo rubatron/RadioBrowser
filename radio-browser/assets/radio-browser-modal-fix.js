@@ -2,7 +2,7 @@
  * Radio Browser Modal Fix
  *
  * On the Radio Browser page, the Configure modal is not available.
- * This script hides Configure links since they only work on index.php.
+ * This script hides Configure links in dropdown menus since they only work on index.php.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
@@ -16,18 +16,22 @@
     }
 
     /**
-     * Hide Configure links that don't work on this page
+     * Hide Configure links inside dropdown menus only
      */
     function hideConfigureLinks() {
-        var links = document.querySelectorAll('a[href="#configure-modal"]');
-        links.forEach(function(link) {
-            // Hide the link or its parent list item
-            var li = link.closest('li');
-            if (li) {
-                li.style.display = 'none';
-            } else {
-                link.style.display = 'none';
-            }
+        // Only target Configure links inside dropdown menus
+        var dropdownMenus = document.querySelectorAll('.dropdown-menu');
+        dropdownMenus.forEach(function(menu) {
+            var links = menu.querySelectorAll('a[href="#configure-modal"]');
+            links.forEach(function(link) {
+                // Hide the parent list item if it exists
+                var li = link.closest('li');
+                if (li) {
+                    li.style.display = 'none';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
         });
     }
 
