@@ -24,14 +24,12 @@
 
 Fully customizable integration into moOde's interface:
 
-- **Radio Icon in Player Bar** - Quick shortcut to Radio Browser from the moOde playbar
 - **Library Menu Integration** - Access Radio Browser from the Library dropdown
 - **M-Menu Integration** - Access from the hamburger menu (M-menu)
 - **Flexible Visibility** - Enable/disable each menu location independently via Configure
 
-### Radio Browser Player Bar
+### Station Logo Support
 
-- Station logos display in the moOde playbar when playing radio stations
 - Automatic thumbnail creation for all played stations
 - Fixed Radio Browser playlist thumbnails now show correctly
 - **Fallback for missing logos** - Shows moOde radio icon when station has no logo
@@ -60,15 +58,13 @@ Fully customizable integration into moOde's interface:
 | **Smart Search** | Filter by country, genre, name, codec, bitrate |
 | **Recently Played** | Quick access to your listening history |
 | **Favorites** | Save stations to moOde's Radio library |
-| **Station Logos** | Display in search results and moOde playbar |
+| **Station Logos** | Display in search results and moOde player |
 | **One-Click Play** | Instant streaming via MPD |
 
 ### v3.1.0 Features
 
 | Feature | Description |
 |---------|-------------|
-| **Player Bar Icon** | Radio shortcut in moOde's playbar |
-| **Playbar Thumbnails** | Station logos in moOde's Now Playing |
 | **Stream Download** | Record streams to local device |
 | **Menu Visibility** | Configurable Library & M-menu presence |
 | **Bootstrap Install** | One-command installation |
@@ -104,7 +100,7 @@ The installer will:
 2. Install all files to `/var/www/extensions/installed/radio-browser/`
 3. Set correct permissions
 4. Patch moOde's header for menu integration
-5. Create symlinks for playbar thumbnails
+5. Create symlinks for radio station thumbnails
 
 ### Manual Installation
 
@@ -129,7 +125,7 @@ After installation, Radio Browser is accessible via:
 |----------|-------------|
 | **Library Menu** | Click Library → Radio Browser |
 | **M-Menu** | Click hamburger menu → Radio Browser |
-| **Player Bar** | Radio icon shortcut (if enabled) |
+
 | **Direct URL** | `http://your-moode-ip/radio-browser.php` |
 
 ---
@@ -144,7 +140,6 @@ Access **Configure** from within Radio Browser to customize:
 |--------|-------------|
 | **Show in Library** | Toggle Radio Browser in Library dropdown |
 | **Show in M-Menu** | Toggle Radio Browser in hamburger menu |
-| **Player Bar Icon** | Toggle radio shortcut in moOde playbar |
 
 ### Other Settings
 
@@ -171,11 +166,10 @@ Access **Configure** from within Radio Browser to customize:
 
 ### Playing Stations
 
-1. Open Radio Browser from Library, M-menu, or playbar icon
+1. Open Radio Browser from Library or M-menu
 2. Search or browse stations by country/genre
 3. Click **Play** on any station card
 4. The station plays immediately via MPD
-5. Station logo appears in moOde's playbar
 
 ### Adding to Favorites
 
@@ -193,7 +187,7 @@ Access **Configure** from within Radio Browser to customize:
 
 ## Troubleshooting
 
-### Station logos not showing in playbar
+### Station logos not showing
 
 The installer sets permissions automatically. If logos still don't appear:
 

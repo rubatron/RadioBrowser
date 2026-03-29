@@ -56,14 +56,13 @@ This release focuses on **moOde integration** and **user experience improvements
 
 #### Menu Visibility Options
 
-- **Radio Icon in Player Bar** - Quick shortcut to Radio Browser from moOde's playbar
 - **Flexible Library Menu Integration** - Toggle Radio Browser in Library dropdown
 - **Flexible M-Menu Integration** - Toggle Radio Browser in hamburger menu
 - **Configure Panel** - Easy visibility management via settings
 
-#### Radio Browser Player Bar Integration
+#### Station Logo Support
 
-- **Station Logo Thumbnails** - Logos display in moOde's Now Playing when streaming radio
+- **Station Logo Thumbnails** - Logos display when streaming radio
 - **Automatic Thumbnail Creation** - Logos saved automatically for all played stations
 - **Fixed Playlist Thumbnails** - Radio Browser playlist thumbnails now display correctly
 - **Logo Fallback** - Stations without logos show moOde's radio icon instead of empty placeholder

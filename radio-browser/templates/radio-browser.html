@@ -337,49 +337,6 @@
                             </div>
                         </div>
 
-                        <!-- Local Display Settings (stored in browser) -->
-                        <p class="rb-help-text"
-                            style="margin: 1.5rem 0 1rem 0; color: #888; border-top: 1px solid rgba(128,128,128,0.2); padding-top: 1rem;">
-                            Local display preferences (stored in your browser)
-                        </p>
-
-                        <div class="rb-visibility-grid" role="group" aria-label="Local display options">
-                            <div class="rb-visibility-row">
-                                <span class="rb-visibility-label">
-                                    <i class="fa-solid fa-sharp fa-play-circle"
-                                        style="margin-right: 0.5rem; opacity: 0.7;"></i>
-                                    Mini Playbar
-                                </span>
-                                <div class="rb-visibility-control">
-                                    <div id="rb-local-playbar-btn" class="toggle toggle-on" data-local="playbar">
-                                        <label class="toggle-radio" for="rb-local-playbar-off">ON</label>
-                                        <input type="radio" id="rb-local-playbar-on" name="rb-local-playbar" value="On"
-                                            checked>
-                                        <label class="toggle-radio" for="rb-local-playbar-on">OFF</label>
-                                        <input type="radio" id="rb-local-playbar-off" name="rb-local-playbar"
-                                            value="Off">
-                                    </div>
-                                    <span id="rb-local-playbar-state" class="rb-visibility-state">Visible</span>
-                                </div>
-                            </div>
-                            <div class="rb-visibility-row">
-                                <span class="rb-visibility-label rb-visibility-label-m">
-                                    <span class="rb-mbrand-badge" aria-hidden="true">m</span>
-                                    <span class="rb-mbrand-text">Playbar Logo</span>
-                                </span>
-                                <div class="rb-visibility-control">
-                                    <div id="rb-local-logo-btn" class="toggle toggle-on" data-local="logo">
-                                        <label class="toggle-radio" for="rb-local-logo-off">ON</label>
-                                        <input type="radio" id="rb-local-logo-on" name="rb-local-logo" value="On"
-                                            checked>
-                                        <label class="toggle-radio" for="rb-local-logo-on">OFF</label>
-                                        <input type="radio" id="rb-local-logo-off" name="rb-local-logo" value="Off">
-                                    </div>
-                                    <span id="rb-local-logo-state" class="rb-visibility-state">Visible</span>
-                                </div>
-                            </div>
-                        </div>
-
                         <div id="rb-visibility-note" class="rb-settings-note">Changes apply on next menu render and page
                             refresh.</div>
                     </div>
@@ -443,34 +400,5 @@
 
         </div><!-- end rb-settings-panel -->
 
-    </div>
-</div>
-
-<!-- Mini Playbar (fixed footer) -->
-<div id="rb-playbar" class="rb-playbar">
-    <div class="rb-playbar-cover">
-        <img id="rb-playbar-cover-img" src="/images/default-cover-v6.svg" alt="Cover">
-    </div>
-    <div class="rb-playbar-info">
-        <div id="rb-playbar-title" class="rb-playbar-title">Not playing</div>
-        <div id="rb-playbar-artist" class="rb-playbar-artist"></div>
-    </div>
-    <div class="rb-playbar-controls">
-        <button id="rb-playbar-prev" class="btn rb-playbar-btn" aria-label="Previous">
-            <i class="fa-solid fa-sharp fa-step-backward"></i>
-        </button>
-        <button id="rb-playbar-play" class="btn rb-playbar-btn rb-playbar-play" aria-label="Play/Pause">
-            <i class="fa-solid fa-sharp fa-play"></i>
-        </button>
-        <button id="rb-playbar-stop" class="btn rb-playbar-btn" aria-label="Stop">
-            <i class="fa-solid fa-sharp fa-stop"></i>
-        </button>
-        <button id="rb-playbar-next" class="btn rb-playbar-btn" aria-label="Next">
-            <i class="fa-solid fa-sharp fa-step-forward"></i>
-        </button>
-    </div>
-    <div class="rb-playbar-volume">
-        <i class="fa-solid fa-sharp fa-volume-up"></i>
-        <input type="range" id="rb-playbar-volume" min="0" max="100" value="50">
     </div>
 </div>

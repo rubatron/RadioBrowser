@@ -301,44 +301,6 @@
     }
 
     /**
-     * Inject Radio Browser icon into playbar
-     */
-    function renderPlaybarIcon() {
-        var toggles = document.getElementById('playbar-toggles');
-        if (!toggles) return;
-
-        // Check if already exists
-        if (document.getElementById('rb-playbar-btn')) return;
-
-        // Create Radio Browser button
-        var btn = document.createElement('a');
-        btn.id = 'rb-playbar-btn';
-        btn.href = '/radio-browser.php';
-        btn.className = 'btn';
-        btn.setAttribute('aria-label', 'Radio Browser');
-        btn.title = 'Radio Browser';
-        btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
-        btn.style.cssText = 'color: var(--adapttext); opacity: 0.7; transition: opacity 0.2s;';
-
-        // Hover effect
-        btn.addEventListener('mouseenter', function() {
-            this.style.opacity = '1';
-            this.style.color = '#c55a11';
-        });
-        btn.addEventListener('mouseleave', function() {
-            this.style.opacity = '0.7';
-            this.style.color = 'var(--adapttext)';
-        });
-
-        // Insert at the beginning of toggles
-        if (toggles.firstChild) {
-            toggles.insertBefore(btn, toggles.firstChild);
-        } else {
-            toggles.appendChild(btn);
-        }
-    }
-
-    /**
      * Radio logo fallback - replace missing logos with moOde default
      * Handles 404 errors for radio-logos thumbnails
      */
@@ -385,7 +347,6 @@
             renderLibraryMenu(settings);
             renderMMenu(settings);
             renderHeaderButton(settings);
-            renderPlaybarIcon();
         });
     }
 
