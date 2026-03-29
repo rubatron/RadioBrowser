@@ -1280,7 +1280,6 @@ function initRadioBrowser($) {
     var visibilityState = {
         library: true,
         m: true,
-        system: true,
         playbar: true,
         download: true,
         activityglow: true
@@ -1328,14 +1327,12 @@ function initRadioBrowser($) {
         var v = visibility || {};
         visibilityState.library = v.library !== false;
         visibilityState.m = v.m !== false;
-        visibilityState.system = v.system !== false;
         visibilityState.playbar = v.playbar !== false;
         visibilityState.download = v.download !== false;
         visibilityState.activityglow = v.activityglow !== false;
 
         applyVisibilityButtonState($('#rb-visibility-library-btn'), $('#rb-visibility-library-state'), 'library', visibilityState.library);
         applyVisibilityButtonState($('#rb-visibility-m-btn'), $('#rb-visibility-m-state'), 'm', visibilityState.m);
-        applyVisibilityButtonState($('#rb-visibility-system-btn'), $('#rb-visibility-system-state'), 'system', visibilityState.system);
         applyVisibilityButtonState($('#rb-visibility-playbar-btn'), $('#rb-visibility-playbar-state'), 'playbar', visibilityState.playbar);
         applyVisibilityButtonState($('#rb-visibility-download-btn'), $('#rb-visibility-download-state'), 'download', visibilityState.download);
         applyVisibilityButtonState($('#rb-visibility-activityglow-btn'), null, 'activityglow', visibilityState.activityglow);
@@ -1401,7 +1398,6 @@ function initRadioBrowser($) {
         var areas = [
             ['rb-visibility-library-btn', 'library'],
             ['rb-visibility-m-btn', 'm'],
-            ['rb-visibility-system-btn', 'system'],
             ['rb-visibility-playbar-btn', 'playbar'],
             ['rb-visibility-download-btn', 'download'],
             ['rb-visibility-activityglow-btn', 'activityglow']

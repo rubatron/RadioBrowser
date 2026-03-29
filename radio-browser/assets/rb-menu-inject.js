@@ -464,21 +464,16 @@
 
     /**
      * Inject Radio Browser tile into Configure modal
+     * Always shows - no toggle needed (core moOde requirement)
      */
-    function renderConfigureTile(settings) {
+    function renderConfigureTile() {
         var list = findConfigureTileList();
         if (!list) return;
-
-        var visibility = (settings && settings.visibility) || {};
-        var showTile = visibility.system === true;
 
         // Always remove existing first
         removeExistingConfigureTile(list);
 
-        // Only add if visibility.system is true
-        if (!showTile) return;
-
-        // Create tile entry (copy moOde's structure)
+        // Always add the tile (no visibility toggle)
         var li = document.createElement('li');
         li.className = 'rb-configure-entry';
 
@@ -502,7 +497,7 @@
             renderMMenu(settings);
             renderPlaybarIcon(settings);
             renderCoverartIcon(settings);
-            renderConfigureTile(settings);
+            renderConfigureTile(); // No settings needed - always shows
         });
     }
 
@@ -528,9 +523,7 @@
             var configureLink = e.target.closest('a[href="#configure-modal"]');
             if (configureLink) {
                 // Small delay to ensure modal is opening
-                setTimeout(function() {
-                    fetchSettings().then(renderConfigureTile);
-                }, 100);
+                setTimeout(renderConfigureTile, 100);
             }
         });
 
@@ -540,7 +533,7 @@
         // Bootstrap modal shown event - render configure tile when modal opens
         if (window.jQuery) {
             window.jQuery(document).on('shown.bs.modal', '#configure-modal', function() {
-                fetchSettings().then(renderConfigureTile);
+                renderConfigureTile();
             });
         }
 
