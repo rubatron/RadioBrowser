@@ -80,27 +80,27 @@
 /* ============================================
    Modal z-index fix for Radio Browser page
    Ensure moOde modals work correctly when opened from this page
-   Bootstrap 2.x toggles between .hide and .in classes
+   Bootstrap 2.x structure: .modal > .modal-header/.modal-body/.modal-footer
+   (No .modal-dialog or .modal-content wrapper in Bootstrap 2.x!)
    ============================================ */
 
-/* Force modals to display correctly on radio-browser page */
-#configure-modal.in,
-#about-modal.in,
-#audioinfo-modal.in,
-#sysinfo-modal.in,
-#quickhelp-modal.in,
-#power-modal.in {
+/* Force modals to display correctly - Bootstrap 2.x removes .hide and adds .in */
+.modal.in {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+    top: 10% !important;
+    left: 50% !important;
+    margin-left: -280px !important;
+    width: 560px !important;
+    background: var(--themebg, #1a1a1a) !important;
+    border-radius: 6px !important;
 }
 
-/* Ensure modal content is visible */
-.modal.in .modal-dialog,
-.modal.in .modal-content,
-.modal.in .modal-body,
-.modal.in .modal-header,
-.modal.in .modal-footer,
+/* Ensure modal content sections are visible (Bootstrap 2.x structure) */
+.modal.in > .modal-header,
+.modal.in > .modal-body,
+.modal.in > .modal-footer,
 .modal.in #configure,
 .modal.in #configure ul,
 .modal.in #configure ul li {
@@ -113,6 +113,15 @@
 .modal.in #configure ul {
     display: flex !important;
     flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    margin: 0 !important;
+    list-style: none !important;
+}
+
+.modal.in #configure ul li {
+    display: block !important;
 }
 
 .modal-backdrop.in {
