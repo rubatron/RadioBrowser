@@ -80,25 +80,39 @@
 /* ============================================
    Modal z-index fix for Radio Browser page
    Ensure moOde modals work correctly when opened from this page
+   Bootstrap 2.x toggles between .hide and .in classes
    ============================================ */
 
-/* Explicitly ensure modals display correctly - prevent .hide conflicts */
-.modal {
-    /* Don't override display - let Bootstrap handle it */
-}
-
-.modal.in {
+/* Force modals to display correctly on radio-browser page */
+#configure-modal.in,
+#about-modal.in,
+#audioinfo-modal.in,
+#sysinfo-modal.in,
+#quickhelp-modal.in,
+#power-modal.in {
     display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
+/* Ensure modal content is visible */
 .modal.in .modal-dialog,
 .modal.in .modal-content,
 .modal.in .modal-body,
 .modal.in .modal-header,
-.modal.in .modal-footer {
+.modal.in .modal-footer,
+.modal.in #configure,
+.modal.in #configure ul,
+.modal.in #configure ul li {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+}
+
+/* Configure modal tile list needs flex */
+.modal.in #configure ul {
+    display: flex !important;
+    flex-wrap: wrap !important;
 }
 
 .modal-backdrop.in {
@@ -898,26 +912,6 @@
     color: #c55a11;
     font-size: 0.5rem;
     text-shadow: 0 0 6px rgba(197, 90, 17, 0.8);
-}
-
-.rb-settings-note {
-    margin-top: 1rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-    color: #888;
-    background: transparent;
-    border-radius: 4px;
-    border-left: 3px solid #d35400;
-}
-
-.rb-settings-note.ok {
-    border-left-color: #2ecc71;
-    color: #2ecc71;
-}
-
-.rb-settings-note.error {
-    border-left-color: #e74c3c;
-    color: #e74c3c;
 }
 
 /* Legacy visibility styles (for old settings panel) */

@@ -1363,19 +1363,14 @@ function initRadioBrowser($) {
 
                 if (data.success && data.data && data.data.visibility) {
                     renderVisibility(data.data.visibility);
-                    $('#rb-visibility-note').text('Visibility updated for ' + visibilityAreaName(area) + '.')
-                        .removeClass('error').addClass('ok');
                     notify('Updated', visibilityAreaName(area) + ' visibility updated', 'success');
                 } else {
-                    $('#rb-visibility-note').text(data.message || 'Failed to update visibility')
-                        .removeClass('ok').addClass('error');
                     notify('Error', data.message || 'Failed to update visibility', 'error');
                 }
             },
             error: function() {
                 radios.prop('disabled', false);
                 toggleEl.css('pointer-events', '');
-                $('#rb-visibility-note').text('Failed to update visibility').removeClass('ok').addClass('error');
                 notify('Error', 'Failed to update visibility', 'error');
             }
         });
