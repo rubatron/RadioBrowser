@@ -2,7 +2,8 @@
  * Radio Browser Modal Fix
  *
  * On non-index pages, the Configure modal content is not initialized.
- * This script redirects to index.php to open the configure modal there.
+ * This script sets a localStorage flag and redirects to index.php.
+ * rb-menu-inject.js (loaded on all pages) will detect this and open the modal.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
@@ -18,13 +19,20 @@
 
         console.log('[RB Modal Fix] Initializing on Radio Browser page');
 
-        // Handle Configure link clicks - redirect to index.php with hash
+        // Handle Configure link clicks - set flag and redirect to index.php
         $(document).on('click.rbModal', 'a[href="#configure-modal"]', function (e) {
             e.preventDefault();
-            console.log('[RB Modal Fix] Redirecting to index.php for Configure');
+            console.log('[RB Modal Fix] Setting flag and redirecting to index.php');
             
-            // Redirect to index.php - moOde will open the configure modal via hash
-            window.location.href = '/index.php#configure-modal';
+            // Set localStorage flag so rb-menu-inject.js can open the modal
+            try {
+                localStorage.setItem('rb_open_configure_modal', 'true');
+            } catch (err) {
+                console.log('[RB Modal Fix] localStorage not available');
+            }
+            
+            // Redirect to index.php (rb-menu-inject.js will handle opening the modal)
+            window.location.href = '/index.php';
             return false;
         });
 

@@ -393,6 +393,50 @@
     var renderAllDebounced = debounce(renderAll, 300);
 
     /**
+     * Check if we need to open the configure modal after redirect from radio-browser.php
+     */
+    function checkAndOpenConfigureModal() {
+        // Only on index.php
+        if (window.location.pathname !== '/' && window.location.pathname !== '/index.php') {
+            return;
+        }
+        
+        try {
+            var shouldOpen = localStorage.getItem('rb_open_configure_modal');
+            if (shouldOpen === 'true') {
+                // Clear the flag immediately
+                localStorage.removeItem('rb_open_configure_modal');
+                
+                console.log('[RB Menu] Opening configure modal after redirect');
+                
+                // Wait for jQuery and Bootstrap modal
+                var attempts = 0;
+                var tryOpenModal = function() {
+                    attempts++;
+                    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                        var $modal = window.jQuery('#configure-modal');
+                        if ($modal.length) {
+                            // Small delay to ensure page is fully rendered
+                            setTimeout(function() {
+                                $modal.modal('show');
+                                console.log('[RB Menu] Configure modal opened');
+                            }, 300);
+                            return;
+                        }
+                    }
+                    // Retry up to 20 times (2 seconds)
+                    if (attempts < 20) {
+                        setTimeout(tryOpenModal, 100);
+                    }
+                };
+                tryOpenModal();
+            }
+        } catch (err) {
+            // localStorage not available
+        }
+    }
+
+    /**
      * Initialize and set up observers
      */
     function init() {
@@ -401,6 +445,9 @@
 
         // Setup radio logo fallback for missing thumbnails
         setupRadioLogoFallback();
+        
+        // Check if we need to open configure modal (after redirect from radio-browser.php)
+        checkAndOpenConfigureModal();
 
         // Only listen for dropdown toggle clicks - no MutationObserver on body
         document.addEventListener('click', function(e) {
