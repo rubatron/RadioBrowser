@@ -16,7 +16,7 @@
 # - Help and troubleshooting
 # ============================================================================
 
-set -e  # Exit on any error (disabled for menu mode)
+# set -e  # Exit on any error (disabled for menu mode)
 
 # ============================================================================
 # CONFIGURATION
@@ -82,7 +82,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     printf "  %-45s" "$file"
     if curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" 2>/dev/null; then
         echo "✓"
-        ((FILE_COUNT++))
+        FILE_COUNT=$((FILE_COUNT + 1))
     else
         echo "✗"
         echo "ERROR: Failed to download ${file}"
@@ -231,7 +231,7 @@ check_source_files() {
             echo -e "  ${GREEN}✓${NC} $file"
         else
             echo -e "  ${RED}✗${NC} $file (missing: $path)"
-            ((missing++))
+            missing=$((missing + 1))
         fi
     done
 
@@ -279,10 +279,10 @@ check_installation() {
     local total=0
 
     for file in "${!SOURCE_FILES[@]}"; do
-        ((total++))
+        total=$((total + 1))
         local dest="${EXT_BASE}/${file}"
         if [[ -f "$dest" ]]; then
-            ((installed++))
+            installed=$((installed + 1))
             echo -e "  ${GREEN}✓${NC} $dest"
         else
             echo -e "  ${YELLOW}○${NC} $dest (not installed)"
@@ -411,14 +411,14 @@ copy_files() {
 
             if cp "$src" "$dest"; then
                 echo -e "  ${GREEN}✓${NC} Copied: $file"
-                ((copied++))
+                copied=$((copied + 1))
             else
                 echo -e "  ${RED}✗${NC} Failed: $file"
-                ((failed++))
+                failed=$((failed + 1))
             fi
         else
             echo -e "  ${YELLOW}!${NC} Source not found: $src"
-            ((failed++))
+            failed=$((failed + 1))
         fi
     done
 
@@ -684,17 +684,17 @@ auto_install() {
 
     # Step 5: Create folders
     echo -e "${BOLD}Step 5/8: Creating folders...${NC}"
-    create_folders || { error "Failed to create folders"; ((errors++)); }
+    create_folders || { error "Failed to create folders"; errors=$((errors + 1)); }
     echo
 
     # Step 6: Copy files
     echo -e "${BOLD}Step 6/8: Copying files...${NC}"
-    copy_files || { error "Failed to copy files"; ((errors++)); }
+    copy_files || { error "Failed to copy files"; errors=$((errors + 1)); }
     echo
 
     # Step 7: Set permissions
     echo -e "${BOLD}Step 7/8: Setting permissions...${NC}"
-    set_permissions || { error "Failed to set permissions"; ((errors++)); }
+    set_permissions || { error "Failed to set permissions"; errors=$((errors + 1)); }
     echo
 
     # Step 8: Install menu integration
