@@ -26,80 +26,66 @@ GITHUB_REPO="rubatron/RadioBrowser"
 GITHUB_BRANCH="develop"  # Change to "main" for releases
 GITHUB_RAW="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/radio-browser"
 
-# Determine SCRIPT_DIR - either local or we need to download
-if [[ -n "${BASH_SOURCE[0]}" && -f "${BASH_SOURCE[0]}" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-else
-    # Running via pipe (curl | bash) - set temp directory
-    SCRIPT_DIR="/tmp/radio-browser-install"
+
+# Always use a unique temp dir for downloads (prevents race conditions)
+SCRIPT_DIR="/tmp/radio-browser-source-$$$RANDOM"
+rm -rf "$SCRIPT_DIR"
+mkdir -p "$SCRIPT_DIR"
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║       📥 DOWNLOADING SOURCE FILES FROM GITHUB               ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+echo "  Repository: ${GITHUB_REPO}"
+echo "  Branch:     ${GITHUB_BRANCH}"
+echo "  Source:     ${GITHUB_RAW}"
+echo ""
+
+# Download file manifest first
+printf "  Fetching file manifest (files.txt)... "
+MANIFEST_URL="${GITHUB_RAW}/files.txt"
+if ! curl -sL "$MANIFEST_URL" -o "${SCRIPT_DIR}/files.txt" 2>/dev/null; then
+    echo "✗"
+    echo "ERROR: Could not download file manifest from ${MANIFEST_URL}"
+    exit 1
 fi
+echo "✓"
+echo ""
+echo "  Files to download:"
+echo "  ─────────────────────────────────────────────────────────────"
 
-# Check if we need to download source files
-NEED_DOWNLOAD=false
-if [[ ! -f "${SCRIPT_DIR}/manifest.json" ]]; then
-    NEED_DOWNLOAD=true
-fi
+# Parse manifest and download files
+FILE_COUNT=0
+while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip empty lines and comments
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
 
-if [[ "$NEED_DOWNLOAD" == "true" ]]; then
-    SCRIPT_DIR="/tmp/radio-browser-install"
-    rm -rf "$SCRIPT_DIR"
-    mkdir -p "$SCRIPT_DIR"
+    # Trim whitespace
+    file=$(echo "$line" | xargs)
+    [[ -z "$file" ]] && continue
 
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║       📥 DOWNLOADING SOURCE FILES FROM GITHUB               ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
-    echo ""
-    echo "  Repository: ${GITHUB_REPO}"
-    echo "  Branch:     ${GITHUB_BRANCH}"
-    echo "  Source:     ${GITHUB_RAW}"
-    echo ""
+    # Create subdirectory if needed
+    filedir=$(dirname "$file")
+    if [[ "$filedir" != "." ]]; then
+        mkdir -p "${SCRIPT_DIR}/${filedir}"
+    fi
 
-    # Download file manifest first
-    printf "  Fetching file manifest (files.txt)... "
-    MANIFEST_URL="${GITHUB_RAW}/files.txt"
-    if ! curl -sL "$MANIFEST_URL" -o "${SCRIPT_DIR}/files.txt" 2>/dev/null; then
+    # Download file
+    printf "  %-45s" "$file"
+    if curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" 2>/dev/null; then
+        echo "✓"
+        ((FILE_COUNT++))
+    else
         echo "✗"
-        echo "ERROR: Could not download file manifest from ${MANIFEST_URL}"
+        echo "ERROR: Failed to download ${file}"
         exit 1
     fi
-    echo "✓"
-    echo ""
-    echo "  Files to download:"
-    echo "  ─────────────────────────────────────────────────────────────"
+done < "${SCRIPT_DIR}/files.txt"
 
-    # Parse manifest and download files
-    FILE_COUNT=0
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        # Skip empty lines and comments
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-
-        # Trim whitespace
-        file=$(echo "$line" | xargs)
-        [[ -z "$file" ]] && continue
-
-        # Create subdirectory if needed
-        filedir=$(dirname "$file")
-        if [[ "$filedir" != "." ]]; then
-            mkdir -p "${SCRIPT_DIR}/${filedir}"
-        fi
-
-        # Download file
-        printf "  %-45s" "$file"
-        if curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" 2>/dev/null; then
-            echo "✓"
-            ((FILE_COUNT++))
-        else
-            echo "✗"
-            echo "ERROR: Failed to download ${file}"
-            exit 1
-        fi
-    done < "${SCRIPT_DIR}/files.txt"
-
-    echo "  ─────────────────────────────────────────────────────────────"
-    echo "  Downloaded ${FILE_COUNT} files to ${SCRIPT_DIR}"
-    echo ""
-fi
+echo "  ─────────────────────────────────────────────────────────────"
+echo "  Downloaded ${FILE_COUNT} files to ${SCRIPT_DIR}"
+echo ""
 
 # Auto-run mode detection (for curl | bash)
 AUTO_RUN=false
@@ -669,9 +655,13 @@ auto_install() {
     check_root || { error "Must run as root"; return 1; }
     echo
 
-    # Step 2: Check source files
-    echo -e "${BOLD}Step 2/8: Checking source files...${NC}"
-    check_source_files || { error "Source files missing"; return 1; }
+
+    # Step 2: Download and check source files
+    echo -e "${BOLD}Step 2/8: Downloading and checking source files...${NC}"
+    if ! check_source_files; then
+        error "Source files missing after download";
+        return 1;
+    fi
     echo
 
     # Step 3: Install dependencies
