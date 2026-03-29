@@ -1277,7 +1277,8 @@ function initRadioBrowser($) {
         m: true,
         system: true,
         playbar: true,
-        download: true
+        download: true,
+        activityglow: true
     };
 
     function visibilityAreaName(area) {
@@ -1285,6 +1286,7 @@ function initRadioBrowser($) {
             : area === 'm' ? 'M Menu'
             : area === 'system' ? 'M Configuration Tile'
             : area === 'download' ? 'Download Button'
+            : area === 'activityglow' ? 'Activity Glow'
             : 'Playbar Icon';
     }
 
@@ -1315,12 +1317,14 @@ function initRadioBrowser($) {
         visibilityState.system = v.system !== false;
         visibilityState.playbar = v.playbar !== false;
         visibilityState.download = v.download !== false;
+        visibilityState.activityglow = v.activityglow !== false;
 
         applyVisibilityButtonState($('#rb-visibility-library-btn'), $('#rb-visibility-library-state'), 'library', visibilityState.library);
         applyVisibilityButtonState($('#rb-visibility-m-btn'), $('#rb-visibility-m-state'), 'm', visibilityState.m);
         applyVisibilityButtonState($('#rb-visibility-system-btn'), $('#rb-visibility-system-state'), 'system', visibilityState.system);
         applyVisibilityButtonState($('#rb-visibility-playbar-btn'), $('#rb-visibility-playbar-state'), 'playbar', visibilityState.playbar);
         applyVisibilityButtonState($('#rb-visibility-download-btn'), $('#rb-visibility-download-state'), 'download', visibilityState.download);
+        applyVisibilityButtonState($('#rb-visibility-activityglow-btn'), null, 'activityglow', visibilityState.activityglow);
 
         // Apply download button visibility to existing cards
         if (visibilityState.download) {
