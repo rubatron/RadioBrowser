@@ -131,6 +131,7 @@ function rb_get_default_settings()
         'visibility' => [
             'library' => true,
             'm' => true,
+            'system' => true,
             'playbar' => true,
             'download' => true,
             'activityglow' => true
@@ -164,9 +165,9 @@ function rb_save_settings($settings)
 
 function rb_set_visibility($area, $visible)
 {
-    $allowed = ['library', 'm', 'playbar', 'download', 'activityglow'];
+    $allowed = ['library', 'm', 'system', 'playbar', 'download', 'activityglow'];
     if (!in_array($area, $allowed, true)) {
-        return ['success' => false, 'error' => 'Invalid area. Use library, m, playbar, download, or activityglow.'];
+        return ['success' => false, 'error' => 'Invalid area. Use library, m, system, playbar, download, or activityglow.'];
     }
 
     $settings = rb_get_settings();
