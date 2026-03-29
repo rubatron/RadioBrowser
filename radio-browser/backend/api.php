@@ -20,15 +20,14 @@ require_once '/var/www/inc/session.php';
 require_once '/var/www/inc/sql.php';
 
 // --- CONFIG ---
-define('RB_DISCOVERY', 'https://all.api.radio-browser.info/json/servers');
+// Primary API: DNS load-balanced (auto-routes to nearest mirror: de1, nl1, etc.)
+define('RB_API_PRIMARY', 'all.api.radio-browser.info');
+// Fallback servers if DNS fails (rare but possible)
 define('RB_FALLBACK', [
-    'fi1.api.radio-browser.info',   // Finland - most reliable
     'de2.api.radio-browser.info',   // Germany
     'nl1.api.radio-browser.info',   // Netherlands
+    'fi1.api.radio-browser.info',   // Finland
     'at1.api.radio-browser.info',   // Austria
-    'gb1.api.radio-browser.info',   // UK
-    'us1.api.radio-browser.info',   // USA
-    'ru1.api.radio-browser.info'    // Russia - often blocked
 ]);
 define('RB_CACHE', __DIR__ . '/../cache');
 define('RB_IMAGE_CACHE', __DIR__ . '/../cache/images');
@@ -36,7 +35,6 @@ define('RB_LOG', __DIR__ . '/../cache/radio-browser.log');
 define('RB_UA', 'moode-radio-browser/1.0');
 define('RB_CACHE_TTL', 1800);
 define('RB_CACHE_TTL_STATIC', 86400);
-define('RB_SERVERS_TTL', 3600);
 define('RB_IMAGE_CACHE_SIZE_MB', 1); // 1MB cache size limit
 
 // Define moOde constants if not already defined (for logo handling)
@@ -462,39 +460,26 @@ function rb_cleanup_image_cache()
     }
 }
 
+/**
+ * Get list of API servers for status checking
+ */
 function rb_get_servers()
 {
-    $cache = rb_cache_get('servers', RB_SERVERS_TTL);
-    if ($cache && is_array($cache)) return $cache;
-    $servers = [];
-    $ch = curl_init(RB_DISCOVERY);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 5,
-        CURLOPT_USERAGENT => RB_UA
-    ]);
-    $resp = curl_exec($ch);
-    curl_close($ch);
-    if ($resp) {
-        $arr = json_decode($resp, true);
-        if (is_array($arr)) {
-            foreach ($arr as $srv) {
-                if (!empty($srv['name'])) $servers[] = $srv['name'];
-            }
-        }
-    }
-    if (empty($servers)) $servers = RB_FALLBACK;
-    // Deduplicate servers (API can return same server multiple times)
-    $servers = array_unique($servers);
-    shuffle($servers);
-    rb_cache_set('servers', $servers);
-    return $servers;
+    return array_merge([RB_API_PRIMARY], RB_FALLBACK);
 }
 
+/**
+ * Make API request with automatic failover
+ * Primary: all.api.radio-browser.info (DNS load-balanced to nearest mirror)
+ * Fallback: specific mirrors if DNS fails
+ */
 function rb_api($endpoint, $params = [], $timeout = 10)
 {
-    $servers = rb_get_servers();
     $query = http_build_query($params);
+
+    // Try primary DNS load-balanced endpoint first
+    $servers = array_merge([RB_API_PRIMARY], RB_FALLBACK);
+
     foreach ($servers as $srv) {
         $url = 'https://' . $srv . $endpoint . ($query ? '?' . $query : '');
         $ch = curl_init($url);
@@ -504,18 +489,23 @@ function rb_api($endpoint, $params = [], $timeout = 10)
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_USERAGENT => RB_UA,
             CURLOPT_HTTPHEADER => ['Accept: application/json'],
-            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4  // Force IPv4 for better compatibility
+            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3
         ]);
         $resp = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
         curl_close($ch);
-        rb_log("API $url [$code] $err");
+
+        rb_log("API $url [$code] " . ($err ?: 'OK'));
+
         if ($code === 200 && $resp) {
             $data = json_decode($resp, true);
             if ($data !== null) return $data;
-            rb_log("Invalid JSON: $resp");
+            rb_log("Invalid JSON from $srv");
         }
+        // Continue to next server on failure
     }
     return false;
 }
@@ -1358,19 +1348,19 @@ switch ($cmd) {
     case 'set_limit':
         $type = strtolower(trim($_POST['type'] ?? $_GET['type'] ?? ''));
         $value = (int)($_POST['value'] ?? $_GET['value'] ?? 0);
-        
+
         $allowed = ['recentlyPlayed', 'favorites'];
         if (!in_array($type, $allowed, true)) {
             $response = ['success' => false, 'message' => 'Invalid type'];
             break;
         }
-        
+
         $settings = rb_get_settings();
         if (!isset($settings['limits'])) {
             $settings['limits'] = ['recentlyPlayed' => 0, 'favorites' => 0];
         }
         $settings['limits'][$type] = max(0, min(30, $value));  // 0-30 range
-        
+
         if (rb_save_settings($settings)) {
             rb_debug_log('Limit updated: ' . $type . ' = ' . $value);
             $response = ['success' => true, 'type' => $type, 'value' => $settings['limits'][$type]];

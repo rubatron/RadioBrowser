@@ -424,10 +424,11 @@ function initRadioBrowser($) {
                     var html = '';
                     data.servers.forEach(function(server) {
                         var statusClass = server.online ? 'online' : 'offline';
-                        var latencyClass = server.latency < 500 ? 'fast' : 'slow';
+                        var itemClass = server.online ? '' : ' offline';
+                        var latencyClass = server.online ? (server.latency < 500 ? 'fast' : 'slow') : 'offline';
                         var latencyText = server.online ? server.latency + 'ms' : 'offline';
 
-                        html += '<div class="rb-status-item">' +
+                        html += '<div class="rb-status-item' + itemClass + '">' +
                             '<div class="rb-status-indicator ' + statusClass + '"></div>' +
                             '<span class="rb-status-name">' + escapeHtml(server.name) + '</span>' +
                             '<span class="rb-status-latency ' + latencyClass + '">' + latencyText + '</span>' +
@@ -514,7 +515,7 @@ function initRadioBrowser($) {
         var limit = limitsState.recentlyPlayed || 0;
         var url = API_URL + '?cmd=recently_played';
         if (limit > 0) url += '&limit=' + limit;
-        
+
         $.ajax({
             url: url,
             type: 'GET',

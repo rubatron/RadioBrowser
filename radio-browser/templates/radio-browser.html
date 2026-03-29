@@ -224,22 +224,23 @@
                         <p class="rb-visibility-desc">Download .m3u stream files to your device</p>
                     </div>
 
-                    <!-- Display Limits -->
-                    <div class="rb-visibility-item" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <!-- Max Station Card View -->
+                    <div class="rb-visibility-item">
                         <div class="rb-visibility-header">
-                            <span class="rb-visibility-label">Display Limits</span>
-                        </div>
-                        <p class="rb-visibility-desc" style="margin-bottom: 0.75rem;">Limit the number of station cards shown. Use 0 or empty for no limit.</p>
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 140px;">
-                                <label for="rb-limit-recently" style="font-size: 0.85rem; color: #888; display: block; margin-bottom: 0.25rem;">Recently Played</label>
-                                <input type="number" id="rb-limit-recently" min="0" max="30" placeholder="0" style="width: 100%; padding: 0.35rem 0.5rem; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; color: #fff;">
+                            <span class="rb-visibility-label">Max Station Card View</span>
+                            <div class="rb-limit-inputs">
+                                <div class="rb-limit-field">
+                                    <label for="rb-limit-recently">Recently Played</label>
+                                    <input type="number" id="rb-limit-recently" min="0" max="30" placeholder="0">
+                                </div>
+                                <div class="rb-limit-field">
+                                    <label for="rb-limit-favorites">Favorites</label>
+                                    <input type="number" id="rb-limit-favorites" min="0" max="30" placeholder="0">
+                                </div>
                             </div>
-                            <div style="flex: 1; min-width: 140px;">
-                                <label for="rb-limit-favorites" style="font-size: 0.85rem; color: #888; display: block; margin-bottom: 0.25rem;">Favorites</label>
-                                <input type="number" id="rb-limit-favorites" min="0" max="30" placeholder="0" style="width: 100%; padding: 0.35rem 0.5rem; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; color: #fff;">
-                            </div>
                         </div>
+                        <p class="rb-visibility-desc">Limit the number of station cards shown. Use 0 or empty for no
+                            limit.</p>
                     </div>
                 </div>
             </div>
@@ -256,8 +257,11 @@
                             <div class="rb-status-loading"><i class="fa-solid fa-sharp fa-spinner fa-spin"></i>
                                 Checking API status...</div>
                         </div>
-                        <button type="button" id="rb-refresh-status" class="btn btn-small"
-                            style="margin-top: 0.5rem;"><i class="fa-solid fa-sharp fa-sync"></i> Refresh</button>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                            <button type="button" id="rb-refresh-status" class="btn btn-small"><i
+                                    class="fa-solid fa-sharp fa-sync"></i> Refresh</button>
+                            <a href="https://api.radio-browser.info/net" target="_blank" rel="noopener" class="btn btn-small">View Radio-Browser.info Status</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -460,7 +464,8 @@
                         </div>
 
                         <!-- Debugging subsection -->
-                        <details class="rb-debug-section" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <details class="rb-debug-section"
+                            style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
                             <summary style="cursor: pointer; color: #888; font-size: 0.9rem; padding: 0.5rem 0;">
                                 <i class="fa-solid fa-sharp fa-bug" style="margin-right: 0.5rem;"></i>Debugging
                             </summary>
@@ -470,7 +475,9 @@
                                     <input type="checkbox" id="rb-debug-mode" style="width: auto; margin: 0;">
                                     <span>Enable Debug Mode</span>
                                 </label>
-                                <span class="rb-action-desc" style="color: #c55a11; font-weight: 500; display: block; margin-top: 0.5rem;">⚠️ Resource
+                                <span class="rb-action-desc"
+                                    style="color: #c55a11; font-weight: 500; display: block; margin-top: 0.5rem;">⚠️
+                                    Resource
                                     intensive! Check browser console (F12) for [RB DEBUG] messages. Disable when
                                     done.</span>
                             </div>
