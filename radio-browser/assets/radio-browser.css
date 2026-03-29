@@ -855,7 +855,6 @@
 
 .rb-playbar-mockup.rb-active {
     color: #c55a11;
-    filter: drop-shadow(0 0 4px rgba(197, 90, 17, 0.6));
 }
 
 .rb-playbar-options {

@@ -161,11 +161,10 @@
         var style = document.createElement('style');
         style.id = 'rb-activity-light-styles';
         style.textContent = [
-            '/* Radio Browser Activity Light - subtle orange indicator */',
+            '/* Radio Browser Activity Light - orange when playing */',
             '#rb-playbar-btn.rb-active i,',
             '#rb-coverview-btn.rb-active i {',
             '  color: #c55a11 !important;',
-            '  filter: drop-shadow(0 0 4px rgba(197, 90, 17, 0.6));',
             '}',
             '#rb-playbar-btn {',
             '  margin-right: 8px;',

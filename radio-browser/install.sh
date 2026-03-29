@@ -44,7 +44,7 @@ if [[ "$NEED_DOWNLOAD" == "true" ]]; then
     SCRIPT_DIR="/tmp/radio-browser-install"
     rm -rf "$SCRIPT_DIR"
     mkdir -p "$SCRIPT_DIR"
-    
+
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
     echo "║       📥 DOWNLOADING SOURCE FILES FROM GITHUB               ║"
@@ -54,7 +54,7 @@ if [[ "$NEED_DOWNLOAD" == "true" ]]; then
     echo "  Branch:     ${GITHUB_BRANCH}"
     echo "  Source:     ${GITHUB_RAW}"
     echo ""
-    
+
     # Download file manifest first
     printf "  Fetching file manifest (files.txt)... "
     MANIFEST_URL="${GITHUB_RAW}/files.txt"
@@ -67,23 +67,23 @@ if [[ "$NEED_DOWNLOAD" == "true" ]]; then
     echo ""
     echo "  Files to download:"
     echo "  ─────────────────────────────────────────────────────────────"
-    
+
     # Parse manifest and download files
     FILE_COUNT=0
     while IFS= read -r line || [[ -n "$line" ]]; do
         # Skip empty lines and comments
         [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
-        
+
         # Trim whitespace
         file=$(echo "$line" | xargs)
         [[ -z "$file" ]] && continue
-        
+
         # Create subdirectory if needed
         filedir=$(dirname "$file")
         if [[ "$filedir" != "." ]]; then
             mkdir -p "${SCRIPT_DIR}/${filedir}"
         fi
-        
+
         # Download file
         printf "  %-45s" "$file"
         if curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" 2>/dev/null; then
@@ -95,7 +95,7 @@ if [[ "$NEED_DOWNLOAD" == "true" ]]; then
             exit 1
         fi
     done < "${SCRIPT_DIR}/files.txt"
-    
+
     echo "  ─────────────────────────────────────────────────────────────"
     echo "  Downloaded ${FILE_COUNT} files to ${SCRIPT_DIR}"
     echo ""
