@@ -30,9 +30,9 @@ GITHUB_RAW="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/ra
 if [ ! -t 0 ]; then
     SCRIPT_DIR="/tmp/radio-browser-source-$$"
     mkdir -p "$SCRIPT_DIR"/{assets,backend,scripts,templates}
-    
+
     echo "Downloading source files from GitHub..."
-    
+
     # List of files to download
     FILES=(
         "manifest.json"
@@ -51,7 +51,7 @@ if [ ! -t 0 ]; then
         "scripts/flush-cache.sh"
         "scripts/clear-recently-played.sh"
     )
-    
+
     for file in "${FILES[@]}"; do
         curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" || {
             echo "Failed to download ${file}"
