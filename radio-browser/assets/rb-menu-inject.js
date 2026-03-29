@@ -70,7 +70,6 @@
             // Return defaults if API fails
             return {
                 visibility: {
-                    header: true,
                     library: true,
                     m: true,
                     system: false,
@@ -82,7 +81,6 @@
             // Return defaults on error
             return {
                 visibility: {
-                    header: true,
                     library: true,
                     m: true,
                     system: false,
@@ -253,45 +251,6 @@
     }
 
     /**
-     * Inject Radio Browser into header tabs
-     */
-    function renderHeaderButton(settings) {
-        var visibility = (settings && settings.visibility) || {};
-        var showInHeader = visibility.header !== false;
-
-        var tabs = document.getElementById('config-tabs');
-        if (!tabs) return;
-
-        var existing = document.getElementById('rb-header-btn');
-
-        if (!showInHeader) {
-            if (existing) existing.style.display = 'none';
-            return;
-        }
-
-        if (existing) {
-            existing.style.display = '';
-            return;
-        }
-
-        // Create header button
-        var btn = document.createElement('a');
-        btn.id = 'rb-header-btn';
-        btn.className = 'btn rb-header-entry';
-        btn.href = '/radio-browser.php';
-        btn.innerHTML = '<span>Radio</span><i class="fa-solid fa-sharp fa-radio"></i>';
-        btn.style.cssText = 'margin-left: 4px;';
-
-        // Insert after per-config-btn if exists
-        var marker = document.getElementById('per-config-btn');
-        if (marker && marker.parentNode === tabs && marker.nextSibling) {
-            tabs.insertBefore(btn, marker.nextSibling);
-        } else {
-            tabs.appendChild(btn);
-        }
-    }
-
-    /**
      * Debounce helper - prevents excessive calls
      */
     var debounceTimer = null;
@@ -409,7 +368,6 @@
         fetchSettings().then(function(settings) {
             renderLibraryMenu(settings);
             renderMMenu(settings);
-            renderHeaderButton(settings);
             renderPlaybarIcon(settings);
         });
     }

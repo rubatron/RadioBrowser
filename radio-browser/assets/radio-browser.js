@@ -1192,7 +1192,6 @@ function initRadioBrowser($) {
     // ============================================================================
 
     var visibilityState = {
-        header: true,
         library: true,
         m: true,
         system: true,
@@ -1200,8 +1199,7 @@ function initRadioBrowser($) {
     };
 
     function visibilityAreaName(area) {
-        return area === 'header' ? 'Header menu'
-            : area === 'library' ? 'Library menu'
+        return area === 'library' ? 'Library menu'
             : area === 'm' ? 'M Menu'
             : area === 'system' ? 'M Configuration Tile'
             : 'Playbar Icon';
@@ -1229,13 +1227,11 @@ function initRadioBrowser($) {
 
     function renderVisibility(visibility) {
         var v = visibility || {};
-        visibilityState.header = v.header !== false;
         visibilityState.library = v.library !== false;
         visibilityState.m = v.m !== false;
         visibilityState.system = v.system !== false;
         visibilityState.playbar = v.playbar !== false;
 
-        applyVisibilityButtonState($('#rb-visibility-header-btn'), $('#rb-visibility-header-state'), 'header', visibilityState.header);
         applyVisibilityButtonState($('#rb-visibility-library-btn'), $('#rb-visibility-library-state'), 'library', visibilityState.library);
         applyVisibilityButtonState($('#rb-visibility-m-btn'), $('#rb-visibility-m-state'), 'm', visibilityState.m);
         applyVisibilityButtonState($('#rb-visibility-system-btn'), $('#rb-visibility-system-state'), 'system', visibilityState.system);
@@ -1297,7 +1293,6 @@ function initRadioBrowser($) {
 
     function bindVisibilityEvents() {
         var areas = [
-            ['rb-visibility-header-btn', 'header'],
             ['rb-visibility-library-btn', 'library'],
             ['rb-visibility-m-btn', 'm'],
             ['rb-visibility-system-btn', 'system'],

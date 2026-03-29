@@ -129,7 +129,6 @@ function rb_get_default_settings()
 {
     return [
         'visibility' => [
-            'header' => true,
             'library' => true,
             'm' => true,
             'system' => false,
@@ -164,9 +163,9 @@ function rb_save_settings($settings)
 
 function rb_set_visibility($area, $visible)
 {
-    $allowed = ['header', 'library', 'm', 'system', 'playbar'];
+    $allowed = ['library', 'm', 'system', 'playbar'];
     if (!in_array($area, $allowed, true)) {
-        return ['success' => false, 'error' => 'Invalid area. Use header, library, m, system, or playbar.'];
+        return ['success' => false, 'error' => 'Invalid area. Use library, m, system, or playbar.'];
     }
 
     $settings = rb_get_settings();

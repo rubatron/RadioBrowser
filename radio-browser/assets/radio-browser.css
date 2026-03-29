@@ -19,6 +19,15 @@
 /* No custom modal styling needed - use moOde's native modal styles */
 
 /* ============================================
+   Hide moOde's config-tabs header bar on radio-browser page
+   This bar is for config pages only per moOde guidelines
+   ============================================ */
+
+#config-tabs {
+    display: none !important;
+}
+
+/* ============================================
    M-Menu Divider (injected by rb-menu-inject.js)
    ============================================ */
 
