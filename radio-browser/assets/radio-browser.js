@@ -16,6 +16,13 @@
 })();
 
 function initRadioBrowser($) {
+        // Capitalize only the first letter of the first word (letters only)
+        function capitalizeFirstWord(str) {
+            if (!str) return '';
+            return str.replace(/^(\s*)([a-zA-Z])/, function(match, p1, p2) {
+                return p1 + p2.toUpperCase();
+            });
+        }
     'use strict';
 
     var API_URL = '/extensions/installed/radio-browser/backend/api.php';
@@ -689,7 +696,9 @@ function initRadioBrowser($) {
                                 ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' • ' + s.codec : '')) +
                                 (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
                             '</div>' +
-                            '<div class="rb-meta rb-meta-genre">' + (s.tags ? s.tags.split(',')[0] : '') + '</div>' +
+                            '<div class="rb-meta rb-meta-genre">' +
+                                (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
+                            '</div>' +
                         '</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +
@@ -860,7 +869,9 @@ function initRadioBrowser($) {
                                 ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' • ' + s.codec : '')) +
                                 (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
                             '</div>' +
-                            '<div class="rb-meta rb-meta-genre">' + (s.tags ? s.tags.split(',')[0] : '') + '</div>' +
+                            '<div class="rb-meta rb-meta-genre">' +
+                                (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
+                            '</div>' +
                         '</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +

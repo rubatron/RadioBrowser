@@ -309,9 +309,10 @@
 }
 
 .rb-meta-genre {
-    color: #d35400;
+    color: #ccc;
     font-size: 0.82rem;
     font-weight: 500;
+    text-transform: none;
 }
 
 /* Station Actions */
