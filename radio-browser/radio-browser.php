@@ -46,6 +46,9 @@ $_SESSION['config_back_link'] = '/index.php';
 // Template file path
 $tpl = 'radio-browser';
 
+// Custom API options (empty - custom APIs added dynamically via JS)
+$_custom_api_options = '';
+
 // Store back link
 storeBackLink($section, $tpl);
 
@@ -58,8 +61,7 @@ echo '<link rel="stylesheet" href="' . $extAssetsPath . '/radio-browser.css">' .
 // Output extension-specific JavaScript (deferred loading)
 echo '<script src="' . $extAssetsPath . '/radio-browser.js" defer></script>' . "\n";
 
-// Modal fix - ensures Configure modal works on non-index pages
-echo '<script src="' . $extAssetsPath . '/radio-browser-modal-fix.js" defer></script>' . "\n";
+// NOTE: modal-fix.js removed - Configure modal loads via footer.min.php
 
 // Load and render template
 $templateFile = $extPath . '/templates/radio-browser.html';

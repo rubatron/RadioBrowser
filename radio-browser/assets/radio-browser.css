@@ -435,15 +435,15 @@
 
 @keyframes pulse {
     0% {
-        box-shadow: 0 2px 12px rgba(40, 167, 69, 0.2);
+        box-shadow: 0 2px 12px rgba(197, 90, 17, 0.2);
     }
 
     50% {
-        box-shadow: 0 2px 12px rgba(40, 167, 69, 0.4);
+        box-shadow: 0 2px 12px rgba(197, 90, 17, 0.4);
     }
 
     100% {
-        box-shadow: 0 2px 12px rgba(40, 167, 69, 0.2);
+        box-shadow: 0 2px 12px rgba(197, 90, 17, 0.2);
     }
 }
 

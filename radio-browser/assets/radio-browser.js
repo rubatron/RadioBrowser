@@ -7,14 +7,10 @@
  * Version: 3.0.0
  */
 
-console.log('Radio Browser: Script file loaded v3.0.1');
-
 (function waitForJQuery() {
     if (typeof jQuery !== 'undefined' || typeof $ !== 'undefined') {
-        console.log('Radio Browser: jQuery found, initializing...');
         initRadioBrowser(jQuery || $);
     } else {
-        console.log('Radio Browser: jQuery not found, waiting...');
         setTimeout(waitForJQuery, 50);
     }
 })();
@@ -122,8 +118,6 @@ function initRadioBrowser($) {
     ];
 
     $(document).ready(function() {
-        console.log('Radio Browser: DOM ready');
-
         // Only initialize if on radio-browser page
         if ($('#rb-name').length > 0 || $('#rb-top-stations').length > 0) {
             initCountryAutocomplete();
@@ -141,10 +135,7 @@ function initRadioBrowser($) {
                 loadRecentlyPlayed();
                 // Only load top stations if user hasn't started searching yet
                 if (!state.hasSearched) {
-                    console.log('Radio Browser: Init callback - loading top stations');
                     loadTopStations();
-                } else {
-                    console.log('Radio Browser: Init callback - skipping top stations (user already searched)');
                 }
                 state.initComplete = true;
             });
@@ -216,7 +207,6 @@ function initRadioBrowser($) {
         $(document).on('click', '.rb-tab', function(e) {
             e.preventDefault();
             var tab = $(this).data('tab');
-            console.log('Tab clicked:', tab);
 
             // Update active tab
             $('.rb-tab').removeClass('active');
@@ -441,7 +431,6 @@ function initRadioBrowser($) {
                         var url = typeof f === 'string' ? f : f.url;
                         state.favoritesMap[url] = f;
                     });
-                    console.log('Loaded favorites:', state.favorites.length, 'names:', state.favoriteNames.length);
                 }
                 if (callback) callback();
             },
@@ -576,8 +565,6 @@ function initRadioBrowser($) {
         state.loading = true;
         state.hasSearched = true;  // Mark that user has searched
 
-        console.log('Radio Browser: searchStations - hasSearched set to true');
-
         // Get country code from autocomplete
         var countryInput = $('#rb-country');
         var countryCode = countryInput.data('selected-code') || '';
@@ -604,8 +591,6 @@ function initRadioBrowser($) {
 
         showLoading(true);
 
-        console.log('Radio Browser: searchStations called with params:', params);
-
         $.ajax({
             url: API_URL + '?cmd=search',
             type: 'GET',
@@ -613,20 +598,16 @@ function initRadioBrowser($) {
             dataType: 'json',
             timeout: 15000,
             success: function(data) {
-                console.log('Radio Browser: search response:', data);
                 state.loading = false;
                 showLoading(false);
                 if (data.success && data.stations && data.stations.length > 0) {
-                    console.log('Radio Browser: rendering ' + data.stations.length + ' stations');
                     renderStations(data.stations);
                     updatePagination(data.stations.length);
                 } else {
-                    console.log('Radio Browser: no stations found');
                     showNoResults(data.message || 'No stations found.');
                 }
             },
             error: function(xhr, status) {
-                console.log('Radio Browser: search error:', status, xhr.responseText);
                 state.loading = false;
                 showLoading(false);
                 var msg = status === 'timeout' ? 'Request timed out.' : 'Failed to search.';
@@ -636,11 +617,8 @@ function initRadioBrowser($) {
     }
 
     function loadTopStations(forceLoad) {
-        console.log('Radio Browser: loadTopStations called, hasSearched:', state.hasSearched, 'forceLoad:', forceLoad);
-
         // Don't overwrite search results unless forced (user clicked Top Stations button)
         if (state.hasSearched && !forceLoad) {
-            console.log('Radio Browser: loadTopStations skipped - user has searched');
             return;
         }
 
@@ -661,7 +639,6 @@ function initRadioBrowser($) {
 
                 // Double-check: don't render if user searched during our request
                 if (state.hasSearched && !forceLoad) {
-                    console.log('Radio Browser: loadTopStations response ignored - user searched during request');
                     return;
                 }
 
@@ -683,7 +660,6 @@ function initRadioBrowser($) {
     }
 
     function renderStations(stations) {
-        console.log('Radio Browser: renderStations called with ' + stations.length + ' stations');
         var container = $('#rb-results');
         var html = [];
 
@@ -1321,8 +1297,6 @@ function initRadioBrowser($) {
         var streamUrl = card.attr('data-url');
         var stationName = card.attr('data-name') || card.find('.rb-name').text() || 'radio_stream';
 
-        console.log('Download: URL=' + streamUrl + ', Name=' + stationName);
-
         if (!streamUrl) {
             notify('Error', 'No stream URL found', 'error');
             return;
@@ -1341,8 +1315,6 @@ function initRadioBrowser($) {
         setTimeout(function() {
             document.body.removeChild(iframe);
         }, 5000);
-
-        var safeName = stationName.replace(/[^a-zA-Z0-9\-_\s]/g, '').trim() || 'radio_stream';
     }
 
     // Initialize visibility and download features when settings tab is opened

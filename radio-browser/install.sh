@@ -39,7 +39,6 @@ declare -A SOURCE_FILES=(
     ["backend/api.php"]="${SCRIPT_DIR}/backend/api.php"
     ["assets/radio-browser.js"]="${SCRIPT_DIR}/assets/radio-browser.js"
     ["assets/radio-browser.css"]="${SCRIPT_DIR}/assets/radio-browser.css"
-    ["assets/coverart-fix.js"]="${SCRIPT_DIR}/assets/coverart-fix.js"
     ["assets/rb-menu-inject.js"]="${SCRIPT_DIR}/assets/rb-menu-inject.js"
     ["rb-shell-bridge.php"]="${SCRIPT_DIR}/rb-shell-bridge.php"
     ["templates/radio-browser.html"]="${SCRIPT_DIR}/templates/radio-browser.html"
