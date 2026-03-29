@@ -563,7 +563,7 @@ function initRadioBrowser($) {
             }
 
             var logoHtml = logoUrl ?
-                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/radio.png\'">' :
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/default-radio-logo.png\'">' :
                 '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
 
             // Store in recentStationData with index for playback (include metadata)
@@ -669,7 +669,7 @@ function initRadioBrowser($) {
             }
 
             var logoHtml = logoUrl ?
-                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/radio.png\'">' :
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/default-radio-logo.png\'">' :
                 '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
 
             var storeIndex = index;
@@ -831,7 +831,7 @@ function initRadioBrowser($) {
 
         stations.forEach(function(s, index) {
             var logoHtml = s.favicon ?
-                '<img class="rb-logo" src="' + escapeHtml(s.favicon) + '" alt="" onerror="this.src=\'/images/radio.png\'">' :
+                '<img class="rb-logo" src="' + escapeHtml(s.favicon) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/default-radio-logo.png\'">' :
                 '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
 
             var metaParts = [];
