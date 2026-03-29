@@ -763,6 +763,12 @@ function initRadioBrowser($) {
             timeout: 20000,
             success: function(data) {
                 if (data.success) {
+                    // Store the playing station URL for playbar icon active state
+                    try {
+                        localStorage.setItem('rb_playing_url', stationData.url);
+                        localStorage.setItem('rb_playing_name', stationData.name);
+                    } catch (e) {}
+
                     // Mark ALL cards with this URL as playing (both recently played and search results)
                     $('.rb-station-card').removeClass('playing');
                     $('.rb-play-btn').removeClass('playing').html('<i class="fa-solid fa-sharp fa-play"></i>');
@@ -801,6 +807,13 @@ function initRadioBrowser($) {
             card.removeClass('playing');
             btn.removeClass('playing').html('<i class="fa-solid fa-sharp fa-play"></i>');
             state.currentPlaying = null;
+
+            // Clear Radio Browser playing state
+            try {
+                localStorage.removeItem('rb_playing_url');
+                localStorage.removeItem('rb_playing_name');
+            } catch (e) {}
+
             notify('Stopped', 'Playback stopped', 'info');
         }).fail(function() {
             btn.html('<i class="fa-solid fa-sharp fa-stop"></i>');

@@ -303,6 +303,55 @@
     }
 
     /**
+     * Check if current moOde playback is from Radio Browser
+     */
+    function isPlayingFromRadioBrowser() {
+        try {
+            var rbUrl = localStorage.getItem('rb_playing_url');
+            if (!rbUrl) return false;
+
+            // Check moOde's current state via global UI object
+            if (typeof UI !== 'undefined' && UI.currentFile) {
+                // Normalize URLs for comparison (strip protocol)
+                var currentFile = UI.currentFile.replace(/^https?:/, '');
+                var storedUrl = rbUrl.replace(/^https?:/, '');
+                return currentFile === storedUrl || currentFile.indexOf(storedUrl) !== -1;
+            }
+
+            // Fallback: check MPD state
+            if (typeof MPD !== 'undefined' && MPD.json && MPD.json.file) {
+                var mpdFile = MPD.json.file.replace(/^https?:/, '');
+                var storedUrl2 = rbUrl.replace(/^https?:/, '');
+                return mpdFile === storedUrl2 || mpdFile.indexOf(storedUrl2) !== -1;
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    /**
+     * Update playbar icon active state
+     */
+    function updatePlaybarIconState() {
+        var btn = document.getElementById('rb-playbar-btn');
+        if (!btn) return;
+
+        var isActive = isPlayingFromRadioBrowser();
+        var icon = btn.querySelector('i');
+
+        if (isActive) {
+            btn.classList.add('rb-active');
+            btn.style.color = '#c55a11';
+            btn.style.opacity = '1';
+            if (icon) icon.classList.add('fa-beat-fade');
+        } else {
+            btn.classList.remove('rb-active');
+            btn.style.color = 'var(--adapttext)';
+            btn.style.opacity = '0.7';
+            if (icon) icon.classList.remove('fa-beat-fade');
+        }
+    }
+
+    /**
      * Inject Radio Browser icon into moOde's playbar
      */
     function renderPlaybarIcon(settings) {
@@ -330,14 +379,16 @@
         btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
         btn.style.cssText = 'color: var(--adapttext); opacity: 0.7; transition: opacity 0.2s;';
 
-        // Hover effect
+        // Hover effect (only when not active)
         btn.addEventListener('mouseenter', function() {
             this.style.opacity = '1';
             this.style.color = '#c55a11';
         });
         btn.addEventListener('mouseleave', function() {
-            this.style.opacity = '0.7';
-            this.style.color = 'var(--adapttext)';
+            if (!this.classList.contains('rb-active')) {
+                this.style.opacity = '0.7';
+                this.style.color = 'var(--adapttext)';
+            }
         });
 
         // Insert at the beginning of toggles
@@ -346,6 +397,9 @@
         } else {
             toggles.appendChild(btn);
         }
+
+        // Initial state check
+        updatePlaybarIconState();
     }
 
     /**
@@ -428,6 +482,9 @@
 
         // Bootstrap dropdown events (if available)
         document.addEventListener('shown.bs.dropdown', renderAllDebounced);
+
+        // Periodic check for playbar icon active state (every 2 seconds)
+        setInterval(updatePlaybarIconState, 2000);
     }
 
     // Run when DOM is ready
