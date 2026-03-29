@@ -266,6 +266,16 @@ function initRadioBrowser($) {
             clearLog();
         });
 
+        $('#rb-repair').on('click', function(e) {
+            e.stopPropagation();
+            repairExtension();
+        });
+
+        $('#rb-reinstall').on('click', function(e) {
+            e.stopPropagation();
+            reinstallExtension();
+        });
+
         $('#rb-reboot-system').on('click', function(e) {
             e.stopPropagation();
             rebootSystem();
@@ -1121,6 +1131,58 @@ function initRadioBrowser($) {
             error: function() {
                 btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-power-off');
                 notify('Error', 'Failed to reboot system', 'error');
+            }
+        });
+    }
+
+    function repairExtension() {
+        var btn = $('#rb-repair');
+        btn.prop('disabled', true).find('i').removeClass('fa-screwdriver-wrench').addClass('fa-spinner fa-spin');
+
+        $.ajax({
+            url: API_URL + '?cmd=repair',
+            type: 'POST',
+            dataType: 'json',
+            timeout: 30000,
+            success: function(data) {
+                btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-screwdriver-wrench');
+                if (data.success) {
+                    notify('Repaired', data.message || 'Extension repaired successfully', 'success');
+                } else {
+                    notify('Error', data.message || 'Repair failed', 'error');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-screwdriver-wrench');
+                notify('Error', 'Failed to repair extension', 'error');
+            }
+        });
+    }
+
+    function reinstallExtension() {
+        if (!confirm('Re-run install script? This will refresh all symlinks and permissions.')) {
+            return;
+        }
+
+        var btn = $('#rb-reinstall');
+        btn.prop('disabled', true).find('i').removeClass('fa-arrows-rotate').addClass('fa-spinner fa-spin');
+
+        $.ajax({
+            url: API_URL + '?cmd=reinstall',
+            type: 'POST',
+            dataType: 'json',
+            timeout: 60000,
+            success: function(data) {
+                btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-arrows-rotate');
+                if (data.success) {
+                    notify('Reinstalled', data.message || 'Extension reinstalled successfully', 'success');
+                } else {
+                    notify('Error', data.message || 'Reinstall failed', 'error');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-arrows-rotate');
+                notify('Error', 'Failed to reinstall extension', 'error');
             }
         });
     }

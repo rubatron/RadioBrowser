@@ -1199,6 +1199,57 @@ switch ($cmd) {
         exit;
         break;
 
+    case 'repair':
+        // Fix permissions and symlinks
+        rb_debug_log('Repair requested');
+        $extDir = dirname(__DIR__);
+        $output = [];
+        $returnVar = 0;
+
+        // Fix permissions
+        exec("sudo chown -R www-data:www-data " . escapeshellarg($extDir) . " 2>&1", $output, $returnVar);
+        exec("sudo chmod -R 755 " . escapeshellarg($extDir) . " 2>&1", $output, $returnVar);
+
+        // Recreate symlink if needed
+        $symlinkPath = '/var/www/radio-browser.php';
+        $targetPath = $extDir . '/radio-browser.php';
+        if (!is_link($symlinkPath) && file_exists($targetPath)) {
+            exec("sudo ln -sf " . escapeshellarg($targetPath) . " " . escapeshellarg($symlinkPath) . " 2>&1", $output, $returnVar);
+        }
+
+        if ($returnVar === 0) {
+            $response = ['success' => true, 'message' => 'Permissions and symlinks repaired'];
+            rb_debug_log('Repair completed successfully');
+        } else {
+            $response = ['success' => false, 'message' => 'Repair failed: ' . implode("\n", $output)];
+            rb_debug_log('Repair failed: ' . implode("\n", $output));
+        }
+        break;
+
+    case 'reinstall':
+        // Re-run install.sh
+        rb_debug_log('Reinstall requested');
+        $extDir = dirname(__DIR__);
+        $installScript = $extDir . '/install.sh';
+
+        if (!file_exists($installScript)) {
+            $response = ['success' => false, 'message' => 'install.sh not found'];
+            break;
+        }
+
+        $output = [];
+        $returnVar = 0;
+        exec("cd " . escapeshellarg($extDir) . " && sudo bash install.sh 2>&1", $output, $returnVar);
+
+        if ($returnVar === 0) {
+            $response = ['success' => true, 'message' => 'Reinstall completed successfully'];
+            rb_debug_log('Reinstall completed: ' . implode("\n", $output));
+        } else {
+            $response = ['success' => false, 'message' => 'Reinstall failed: ' . implode("\n", array_slice($output, -5))];
+            rb_debug_log('Reinstall failed: ' . implode("\n", $output));
+        }
+        break;
+
     // ============================================================================
     // SETTINGS / VISIBILITY API
     // ============================================================================

@@ -28,7 +28,7 @@
             .then(function(html) {
                 var parser = new DOMParser();
                 var doc = parser.parseFromString(html, 'text/html');
-                
+
                 // Find the configure-modal in the fetched HTML
                 var sourceModal = doc.getElementById('configure-modal');
                 if (!sourceModal) {
@@ -71,7 +71,7 @@
             if (!modalLoaded) {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 loadConfigureModal().then(function() {
                     // Now trigger the modal via Bootstrap
                     if (window.jQuery && window.jQuery.fn.modal) {
