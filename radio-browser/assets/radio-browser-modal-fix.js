@@ -1,9 +1,8 @@
 /**
  * Radio Browser Modal Fix
  *
- * On non-index pages, Bootstrap's data-api modal handlers may not be
- * fully initialized. This script ensures the configure-modal works
- * by manually triggering Bootstrap's modal.
+ * On non-index pages, the Configure modal content is not initialized.
+ * This script redirects to index.php to open the configure modal there.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
@@ -12,36 +11,29 @@
     'use strict';
 
     function initModalFix($) {
-        var $modal = $('#configure-modal');
-        if (!$modal.length) {
-            console.log('[RB Modal Fix] configure-modal not found');
+        // Only run on radio-browser page
+        if (window.location.pathname.indexOf('radio-browser') === -1) {
             return;
         }
 
-        // Check if Bootstrap modal is available
-        if (!$.fn.modal) {
-            console.log('[RB Modal Fix] Bootstrap modal not available');
-            return;
-        }
+        console.log('[RB Modal Fix] Initializing on Radio Browser page');
 
-        console.log('[RB Modal Fix] Initializing Bootstrap modal support');
-
-        // Handle Configure link clicks - just trigger Bootstrap's modal properly
+        // Handle Configure link clicks - redirect to index.php with hash
         $(document).on('click.rbModal', 'a[href="#configure-modal"]', function (e) {
             e.preventDefault();
-            console.log('[RB Modal Fix] Opening configure modal');
+            console.log('[RB Modal Fix] Redirecting to index.php for Configure');
             
-            // Use Bootstrap's native modal - don't force any CSS
-            $modal.modal('show');
+            // Redirect to index.php - moOde will open the configure modal via hash
+            window.location.href = '/index.php#configure-modal';
             return false;
         });
 
         console.log('[RB Modal Fix] Ready');
     }
 
-    // Wait for jQuery and Bootstrap
+    // Wait for jQuery
     function waitAndInit() {
-        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+        if (window.jQuery) {
             initModalFix(window.jQuery);
         } else {
             setTimeout(waitAndInit, 100);
@@ -50,9 +42,9 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(waitAndInit, 200);
+            setTimeout(waitAndInit, 100);
         });
     } else {
-        setTimeout(waitAndInit, 200);
+        setTimeout(waitAndInit, 100);
     }
 })(window, document);
