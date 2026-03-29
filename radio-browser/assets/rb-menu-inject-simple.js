@@ -34,17 +34,15 @@
         }
 
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', API_URL + '?cmd=get_settings', true);
+        xhr.open('GET', API_URL + '?action=get_settings', true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
                     try {
                         var data = JSON.parse(xhr.responseText);
-                        // API returns { success: true, settings: { ... } }
-                        var settings = (data && data.settings) ? data.settings : data;
-                        settings._ts = Date.now();
-                        sessionStorage.setItem('rb_settings', JSON.stringify(settings));
-                        callback(settings);
+                        data._ts = Date.now();
+                        sessionStorage.setItem('rb_settings', JSON.stringify(data));
+                        callback(data);
                     } catch (e) {
                         callback({ visibility: {} });
                     }
@@ -63,23 +61,20 @@
         var visibility = settings.visibility || {};
         if (visibility.library === false) return;
 
-        // Find library container (viewswitch is the Library dropdown)
-        var container = document.querySelector('#viewswitch .dropdown-menu') ||
-                        document.querySelector('.viewswitch .dropdown-menu') ||
-                        document.querySelector('ul.dropdown-menu.context-menu');
+        // Find library container
+        var container = document.querySelector('#panel-header .dropdown-menu') ||
+                        document.querySelector('.viewswitch .dropdown-menu');
         if (!container) return;
 
-        // Don't inject into Configure modal
-        if (container.closest && container.closest('#configure-modal')) return;
+        // Already exists?
+        if (container.querySelector('.rb-library-entry')) return;
 
-        // Already exists? Check for ANY radio-browser link
-        if (container.querySelector('a[href*="radio-browser"]')) return;
-
-        // Create entry (button-style to match Library menu)
+        // Create entry
         var entry = document.createElement('a');
         entry.className = 'btn rb-library-entry';
         entry.href = '/radio-browser.php';
         entry.innerHTML = '<i class="fa-solid fa-sharp fa-radio" style="margin-right:.5em"></i> Radio Browser';
+        entry.style.cssText = 'font-size:.92em;opacity:.95;border-color:transparent';
 
         // Add divider + entry
         var divider = document.createElement('div');
@@ -102,8 +97,8 @@
                         document.querySelector('#menu-settings ~ ul.dropdown-menu');
         if (!container) return;
 
-        // Already exists? Check for ANY radio-browser link
-        if (container.querySelector('a[href*="radio-browser"]')) return;
+        // Already exists?
+        if (container.querySelector('.rb-mmenu-entry')) return;
 
         // Create entry
         var li = document.createElement('li');
@@ -131,7 +126,7 @@
 
     /**
      * Add Radio Browser tile to Configure modal
-     * Uses jQuery Bootstrap events to add tile when modal opens
+     * Uses jQuery Bootstrap event to add tile when modal opens
      */
     function setupConfigureTile(settings) {
         var visibility = settings.visibility || {};
@@ -147,13 +142,12 @@
         if (modal.__rbTileSetup) return;
         modal.__rbTileSetup = true;
 
-        // Use both show and shown events (Bootstrap 2 compatibility)
-        jQuery(modal).on('show shown', function() {
+        jQuery(modal).on('show', function() {
             var list = modal.querySelector('#configure ul');
             if (!list) return;
 
-            // Already exists? Check for ANY radio-browser link
-            if (list.querySelector('a[href*="radio-browser"]')) return;
+            // Already exists?
+            if (list.querySelector('.rb-configure-entry')) return;
 
             // Get template from existing tile
             var templateLi = list.querySelector('li');

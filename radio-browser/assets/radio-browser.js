@@ -279,6 +279,23 @@ function initRadioBrowser($) {
             e.stopPropagation();
             rebootSystem();
         });
+
+        // Debug mode toggle
+        var debugCheckbox = $('#rb-debug-mode');
+        // Initialize checkbox state from localStorage
+        debugCheckbox.prop('checked', localStorage.getItem('rb_debug_mode') === 'true');
+        debugCheckbox.on('change', function(e) {
+            e.stopPropagation();
+            var enabled = $(this).prop('checked');
+            localStorage.setItem('rb_debug_mode', enabled ? 'true' : 'false');
+            if (enabled) {
+                notify('Debug mode ENABLED', 'Check browser console (F12) for [RB DEBUG] messages. This is resource intensive!', 'warning', 5000);
+                console.log('[RB DEBUG] Debug mode enabled. Refresh the page to see full debug output.');
+            } else {
+                notify('Debug mode disabled', '', 'info', 2000);
+                console.log('[RB DEBUG] Debug mode disabled.');
+            }
+        });
     }
 
     function bindEvents() {

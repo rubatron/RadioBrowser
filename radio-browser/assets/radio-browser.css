@@ -84,7 +84,25 @@
    (No .modal-dialog or .modal-content wrapper in Bootstrap 2.x!)
    ============================================ */
 
-/* Force modals to display correctly - Bootstrap 2.x removes .hide and adds .in */
+/* Fix: Override .hide class on modals when body.modal-open is set */
+/* Use high specificity and z-index above backdrop (10000) */
+body.modal-open .modal,
+body.modal-open .modal.hide,
+body.modal-open #configure-modal,
+body.modal-open #configure-modal.hide {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    top: 10% !important;
+    left: 50% !important;
+    margin-left: -280px !important;
+    width: 560px !important;
+    background: var(--themebg, #1a1a1a) !important;
+    border-radius: 6px !important;
+    z-index: 10050 !important;
+}
+
+/* Also keep .modal.in rules for normal Bootstrap operation */
 .modal.in {
     display: block !important;
     visibility: visible !important;
@@ -98,32 +116,37 @@
 }
 
 /* Ensure modal content sections are visible (Bootstrap 2.x structure) */
+body.modal-open .modal>.modal-header,
+body.modal-open .modal>.modal-body,
+body.modal-open .modal>.modal-footer,
+body.modal-open .modal #configure,
+body.modal-open .modal #configure ul,
 .modal.in>.modal-header,
 .modal.in>.modal-body,
 .modal.in>.modal-footer,
 .modal.in #configure,
-.modal.in #configure ul,
-.modal.in #configure ul li {
+.modal.in #configure ul {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
 }
 
-/* Configure modal tile list needs flex */
+/* Configure modal tile list - match moOde's inline-table + inline-flex layout */
+body.modal-open .modal #configure ul,
 .modal.in #configure ul {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    gap: 10px !important;
-    padding: 10px !important;
+    display: inline-table !important;
     margin: 0 !important;
-    list-style: none !important;
 }
 
+body.modal-open .modal #configure ul li,
 .modal.in #configure ul li {
-    display: block !important;
+    display: inline-flex !important;
+    padding: .5em !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
+body.modal-open .modal-backdrop,
 .modal-backdrop.in {
     opacity: 0.7 !important;
 }
