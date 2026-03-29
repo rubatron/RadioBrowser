@@ -333,15 +333,12 @@
                 </div>
             </div>
         </div>
-        <div class="rb-tabs">
-            <button type="button" class="rb-tab active" data-tab="search">Search Stations</button>
-        </div>
 
         <!-- Search Panel -->
         <div id="rb-search-panel" class="rb-panel">
-            <form class="form-horizontal" id="radio-search-form">
-                <fieldset>
-                    <legend style="display:none;">Search Stations</legend>
+            <fieldset id="rb-search-section">
+                <legend>Search Stations</legend>
+                <form class="form-horizontal" id="radio-search-form">
 
                     <div class="control-group">
                         <label class="control-label" for="rb-name">Station Name</label>
@@ -405,8 +402,8 @@
                             </button>
                         </div>
                     </div>
-                </fieldset>
-            </form>
+                </form>
+            </fieldset>
 
             <!-- Results -->
             <fieldset id="rb-results-section" class="hide">

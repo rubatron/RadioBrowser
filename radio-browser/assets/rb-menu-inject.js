@@ -361,6 +361,84 @@
     }
 
     /**
+     * Inject Radio Browser icon into coverart view button group
+     */
+    function renderCoverartIcon(settings) {
+        var btnGroup = document.querySelector('#playbtns .btn-group, div.btn-group');
+        if (!btnGroup) return;
+
+        // Check visibility setting (reuse playbar setting)
+        var visible = settings && settings.visibility && settings.visibility.playbar !== false;
+        var existing = document.getElementById('rb-coverart-btn');
+        if (!visible) {
+            if (existing) existing.remove();
+            return;
+        }
+
+        // Check if already exists
+        if (document.getElementById('rb-coverart-btn')) {
+            // Update state only
+            updateCoverartIconState();
+            return;
+        }
+
+        // Create Radio Browser button matching moOde's style
+        var btn = document.createElement('button');
+        btn.id = 'rb-coverart-btn';
+        btn.className = 'btn btn-cmd';
+        btn.setAttribute('aria-label', 'Radio Browser');
+        btn.title = 'Radio Browser';
+        btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
+        btn.style.cssText = 'opacity: 0.7; transition: opacity 0.2s, color 0.2s;';
+
+        // Click handler - navigate to Radio Browser
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/radio-browser.php';
+        });
+
+        // Hover effect
+        btn.addEventListener('mouseenter', function() {
+            this.style.opacity = '1';
+            this.style.color = '#c55a11';
+        });
+        btn.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('rb-active')) {
+                this.style.opacity = '0.7';
+                this.style.color = '';
+            }
+        });
+
+        // Insert at end of button group
+        btnGroup.appendChild(btn);
+
+        // Initial state check
+        updateCoverartIconState();
+    }
+
+    /**
+     * Update coverart icon active state
+     */
+    function updateCoverartIconState() {
+        var btn = document.getElementById('rb-coverart-btn');
+        if (!btn) return;
+
+        var isActive = isPlayingFromRadioBrowser();
+
+        if (isActive) {
+            btn.classList.add('rb-active');
+            btn.style.color = '#c55a11';
+            btn.style.opacity = '1';
+            btn.style.textShadow = '0 0 8px rgba(197, 90, 17, 0.6)';
+        } else {
+            btn.classList.remove('rb-active');
+            btn.style.color = '';
+            btn.style.opacity = '0.7';
+            btn.style.textShadow = 'none';
+        }
+    }
+
+    /**
      * Find the Configure modal tile list
      */
     function findConfigureTileList() {
@@ -419,6 +497,7 @@
             renderLibraryMenu(settings);
             renderMMenu(settings);
             renderPlaybarIcon(settings);
+            renderCoverartIcon(settings);
             renderConfigureTile(settings);
         });
     }
@@ -461,8 +540,11 @@
             });
         }
 
-        // Periodic check for playbar icon active state (every 2 seconds)
-        setInterval(updatePlaybarIconState, 2000);
+        // Periodic check for playbar/coverart icon active state (every 2 seconds)
+        setInterval(function() {
+            updatePlaybarIconState();
+            updateCoverartIconState();
+        }, 2000);
     }
 
     // Run when DOM is ready

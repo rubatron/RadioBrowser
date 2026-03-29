@@ -218,37 +218,18 @@ function initRadioBrowser($) {
             $('.rb-section-panel').addClass('hide');
             $('#rb-' + section + '-section').removeClass('hide');
 
-            // Show/hide search tabs and panel based on section
+            // Show/hide search area based on section
             if (section === 'settings') {
                 // Hide search area when in settings
-                $('.rb-tabs').addClass('hide');
-                $('#rb-search-panel').addClass('hide');
+                $('#rb-search-section').addClass('hide');
+                $('#rb-results-section').addClass('hide');
                 // Load settings and check API status
                 loadSettings();
                 checkApiStatus();
             } else {
                 // Show search area when in recently-played
-                $('.rb-tabs').removeClass('hide');
-                $('#rb-search-panel').removeClass('hide');
-            }
-        });
-
-        // Tab switching - use event delegation to ensure it works
-        $(document).on('click', '.rb-tab', function(e) {
-            e.preventDefault();
-            var tab = $(this).data('tab');
-
-            // Update active tab
-            $('.rb-tab').removeClass('active');
-            $(this).addClass('active');
-
-            // Show corresponding panel
-            $('.rb-panel').addClass('hide');
-            $('#rb-' + tab + '-panel').removeClass('hide');
-
-            // Check API status when Settings tab is opened
-            if (tab === 'settings') {
-                checkApiStatus();
+                $('#rb-search-section').removeClass('hide');
+                // Results section visibility managed by search logic
             }
         });
 
