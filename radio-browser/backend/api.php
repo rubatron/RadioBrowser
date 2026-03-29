@@ -136,7 +136,11 @@ function rb_get_default_settings()
             'download' => true,
             'activityglow' => true
         ],
-        'version' => '3.1.0',
+        'limits' => [
+            'recentlyPlayed' => 0,  // 0 = no limit (show all)
+            'favorites' => 0        // 0 = no limit (show all)
+        ],
+        'version' => '3.9.0',
         'updated' => date('Y-m-d H:i:s')
     ];
 }
@@ -222,11 +226,15 @@ function rb_add_recently_played($station)
         'url' => $url,
         'name' => $station['name'] ?? 'Radio Browser Station',
         'logo' => $station['logo'] ?? 'local',
+        'country' => $station['country'] ?? '',
+        'tags' => $station['tags'] ?? '',
+        'bitrate' => $station['bitrate'] ?? 0,
+        'codec' => $station['codec'] ?? '',
         'played_at' => time()
     ]);
 
-    // Keep only last 6 (to match UI display)
-    $list = array_slice($list, 0, 6);
+    // Keep only last 30 (enough for display limits)
+    $list = array_slice($list, 0, 30);
 
     // Save to file
     @file_put_contents(RB_RECENTLY_PLAYED_FILE, json_encode($list, JSON_PRETTY_PRINT));
@@ -476,6 +484,8 @@ function rb_get_servers()
         }
     }
     if (empty($servers)) $servers = RB_FALLBACK;
+    // Deduplicate servers (API can return same server multiple times)
+    $servers = array_unique($servers);
     shuffle($servers);
     rb_cache_set('servers', $servers);
     return $servers;
@@ -845,7 +855,11 @@ switch ($cmd) {
         rb_add_recently_played([
             'url' => $url,
             'name' => $name,
-            'logo' => $favicon ?: $logo
+            'logo' => $favicon ?: $logo,
+            'country' => $station['country'] ?? '',
+            'tags' => $station['tags'] ?? '',
+            'bitrate' => $bitrate,
+            'codec' => $format
         ]);
 
         $sock = openMpdSock('localhost', 6600);
@@ -1081,19 +1095,27 @@ switch ($cmd) {
     case 'recently_played':
         // Recently played: Get from file-based storage (tracks play order) with fallback to database
         $stations = [];
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 30;  // Default to 30 if no limit
 
         // First try file-based recently played (ordered by play time)
         $fileBasedList = rb_get_recently_played();
 
         if (!empty($fileBasedList)) {
+            $count = 0;
             foreach ($fileBasedList as $entry) {
+                if ($limit > 0 && $count >= $limit) break;
                 $stations[] = [
                     'url' => $entry['url'],
                     'name' => $entry['name'],
-                    'logo' => $entry['logo'] ?? 'local'
+                    'logo' => $entry['logo'] ?? 'local',
+                    'country' => $entry['country'] ?? '',
+                    'tags' => $entry['tags'] ?? '',
+                    'bitrate' => $entry['bitrate'] ?? 0,
+                    'codec' => $entry['codec'] ?? ''
                 ];
+                $count++;
             }
-            rb_debug_log('Recently played from file: ' . count($stations) . ' stations');
+            rb_debug_log('Recently played from file: ' . count($stations) . ' stations (limit: ' . $limit . ')');
         } else {
             // Fallback to database for first-time users
             $dbh = sqlConnect();
@@ -1330,6 +1352,30 @@ switch ($cmd) {
             $response = ['success' => true, 'data' => $result];
         } else {
             $response = ['success' => false, 'message' => $result['error'] ?? 'Unknown error'];
+        }
+        break;
+
+    case 'set_limit':
+        $type = strtolower(trim($_POST['type'] ?? $_GET['type'] ?? ''));
+        $value = (int)($_POST['value'] ?? $_GET['value'] ?? 0);
+        
+        $allowed = ['recentlyPlayed', 'favorites'];
+        if (!in_array($type, $allowed, true)) {
+            $response = ['success' => false, 'message' => 'Invalid type'];
+            break;
+        }
+        
+        $settings = rb_get_settings();
+        if (!isset($settings['limits'])) {
+            $settings['limits'] = ['recentlyPlayed' => 0, 'favorites' => 0];
+        }
+        $settings['limits'][$type] = max(0, min(30, $value));  // 0-30 range
+        
+        if (rb_save_settings($settings)) {
+            rb_debug_log('Limit updated: ' . $type . ' = ' . $value);
+            $response = ['success' => true, 'type' => $type, 'value' => $settings['limits'][$type]];
+        } else {
+            $response = ['success' => false, 'message' => 'Failed to save settings'];
         }
         break;
 

@@ -511,8 +511,12 @@ function initRadioBrowser($) {
     }
 
     function loadRecentlyPlayed() {
+        var limit = limitsState.recentlyPlayed || 0;
+        var url = API_URL + '?cmd=recently_played';
+        if (limit > 0) url += '&limit=' + limit;
+        
         $.ajax({
-            url: API_URL + '?cmd=recently_played',
+            url: url,
             type: 'GET',
             dataType: 'json',
             timeout: 5000,
@@ -554,19 +558,26 @@ function initRadioBrowser($) {
                 '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/radio.png\'">' :
                 '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
 
-            // Store in recentStationData with index for playback
+            // Store in recentStationData with index for playback (include metadata)
             var storeIndex = index;
             var stationData = {
                 url: s.url,
                 url_fallback: s.url,
                 name: s.name,
                 favicon: logoUrl,
-                country: '',
-                tags: '',
-                bitrate: 0,
-                codec: ''
+                country: s.country || '',
+                tags: s.tags || '',
+                bitrate: s.bitrate || 0,
+                codec: s.codec || ''
             };
             state.recentStationData.push(stationData);
+
+            // Build metadata line (same format as search results)
+            var metaParts = [];
+            if (s.country) metaParts.push(escapeHtml(s.country));
+            if (s.tags) metaParts.push(escapeHtml(s.tags.split(',')[0]));
+            if (s.bitrate > 0) metaParts.push(s.bitrate + 'k');
+            var metaLine = metaParts.length > 0 ? metaParts.join(' • ') : 'Recently played';
 
             // Check if this station is in favorites (by URL or name)
             var isFavorite = isInFavorites(s.url, s.name);
@@ -579,7 +590,7 @@ function initRadioBrowser($) {
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta-line"><i class="fa-solid fa-sharp fa-clock-rotate-left" style="font-size:0.7rem;margin-right:0.3rem;"></i>Recently played</div>' +
+                        '<div class="rb-meta">' + metaLine + '</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
@@ -610,7 +621,12 @@ function initRadioBrowser($) {
             timeout: 5000,
             success: function(data) {
                 if (data.success && data.favorites && data.favorites.length > 0) {
-                    renderFavorites(data.favorites);
+                    var favs = data.favorites;
+                    // Apply limit if set
+                    if (limitsState.favorites > 0 && favs.length > limitsState.favorites) {
+                        favs = favs.slice(0, limitsState.favorites);
+                    }
+                    renderFavorites(favs);
                 } else {
                     container.html('<p class="rb-no-results">No favorites yet. Add stations from Search or Recently Played.</p>');
                 }
@@ -1341,6 +1357,11 @@ function initRadioBrowser($) {
         activityglow: true
     };
 
+    var limitsState = {
+        recentlyPlayed: 0,  // 0 = no limit
+        favorites: 0         // 0 = no limit
+    };
+
     // Apply download button visibility to all rendered cards
     function applyDownloadButtonVisibility() {
         if (visibilityState.download) {
@@ -1468,6 +1489,12 @@ function initRadioBrowser($) {
                     if (data.settings.visibility) {
                         renderVisibility(data.settings.visibility);
                     }
+                    if (data.settings.limits) {
+                        limitsState.recentlyPlayed = data.settings.limits.recentlyPlayed || 0;
+                        limitsState.favorites = data.settings.limits.favorites || 0;
+                        $('#rb-limit-recently').val(limitsState.recentlyPlayed || '');
+                        $('#rb-limit-favorites').val(limitsState.favorites || '');
+                    }
                 }
             }
         });
@@ -1508,6 +1535,37 @@ function initRadioBrowser($) {
                 data: { area: 'activityglow', value: newState ? '1' : '0' },
                 dataType: 'json',
                 timeout: 10000
+            });
+        });
+
+        // Limit input handlers
+        $('#rb-limit-recently').on('change', function() {
+            var val = parseInt($(this).val()) || 0;
+            limitsState.recentlyPlayed = val;
+            $.ajax({
+                url: API_URL + '?cmd=set_limit',
+                type: 'POST',
+                data: { type: 'recentlyPlayed', value: val },
+                dataType: 'json',
+                timeout: 10000,
+                success: function() {
+                    loadRecentlyPlayed();  // Refresh with new limit
+                }
+            });
+        });
+
+        $('#rb-limit-favorites').on('change', function() {
+            var val = parseInt($(this).val()) || 0;
+            limitsState.favorites = val;
+            $.ajax({
+                url: API_URL + '?cmd=set_limit',
+                type: 'POST',
+                data: { type: 'favorites', value: val },
+                dataType: 'json',
+                timeout: 10000,
+                success: function() {
+                    loadAndRenderFavorites();  // Refresh with new limit
+                }
             });
         });
     }
