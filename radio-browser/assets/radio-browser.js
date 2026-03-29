@@ -567,6 +567,8 @@ function initRadioBrowser($) {
 
         // Check which station is currently playing and mark it
         checkCurrentlyPlaying();
+        // Apply download button visibility based on settings
+        applyDownloadButtonVisibility();
     }
 
     // Load and render favorites in the Favorites section
@@ -647,6 +649,7 @@ function initRadioBrowser($) {
 
         container.html(html.join(''));
         checkCurrentlyPlaying();
+        applyDownloadButtonVisibility();
     }
 
     function searchStations() {
@@ -812,6 +815,8 @@ function initRadioBrowser($) {
 
         // Check current playback status after rendering
         checkCurrentlyPlaying();
+        // Apply download button visibility based on settings
+        applyDownloadButtonVisibility();
     }
 
     function playStation(card) {
@@ -1281,6 +1286,15 @@ function initRadioBrowser($) {
         activityglow: true
     };
 
+    // Apply download button visibility to all rendered cards
+    function applyDownloadButtonVisibility() {
+        if (visibilityState.download) {
+            $('.rb-download-btn').show();
+        } else {
+            $('.rb-download-btn').hide();
+        }
+    }
+
     function visibilityAreaName(area) {
         return area === 'library' ? 'Library menu'
             : area === 'm' ? 'M Menu'
@@ -1326,12 +1340,8 @@ function initRadioBrowser($) {
         applyVisibilityButtonState($('#rb-visibility-download-btn'), $('#rb-visibility-download-state'), 'download', visibilityState.download);
         applyVisibilityButtonState($('#rb-visibility-activityglow-btn'), null, 'activityglow', visibilityState.activityglow);
 
-        // Apply download button visibility to existing cards
-        if (visibilityState.download) {
-            $('.rb-download-btn').show();
-        } else {
-            $('.rb-download-btn').hide();
-        }
+        // Apply download button visibility to all cards
+        applyDownloadButtonVisibility();
     }
 
     function setVisibility(area, visible, toggleEl) {
