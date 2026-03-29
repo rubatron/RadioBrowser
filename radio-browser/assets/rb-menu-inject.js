@@ -467,16 +467,24 @@
      */
     function renderConfigureTile(settings) {
         var list = findConfigureTileList();
-        if (!list) return;
+        console.log('[RB] renderConfigureTile called, list found:', !!list);
+        if (!list) {
+            console.log('[RB] Configure tile list not found - modal may not be open');
+            return;
+        }
 
         var visibility = (settings && settings.visibility) || {};
         var showTile = visibility.system === true;
+        console.log('[RB] showTile:', showTile);
 
         // Always remove existing first
         removeExistingConfigureTile(list);
 
         // Only add if visibility.system is true
-        if (!showTile) return;
+        if (!showTile) {
+            console.log('[RB] Not showing tile - visibility.system is false');
+            return;
+        }
 
         // Create tile entry (copy moOde's structure)
         var li = document.createElement('li');
@@ -491,6 +499,7 @@
 
         li.appendChild(link);
         list.appendChild(li);
+        console.log('[RB] Configure tile ADDED successfully, total items:', list.children.length);
     }
 
     /**
@@ -537,10 +546,15 @@
         // Bootstrap dropdown events (if available)
         document.addEventListener('shown.bs.dropdown', renderAllDebounced);
 
-        // Bootstrap modal shown event - render configure tile when modal opens
+        // Bootstrap 2.x modal shown event - render configure tile when modal opens
+        // Note: Bootstrap 2.x uses 'shown' not 'shown.bs.modal'
         if (window.jQuery) {
-            window.jQuery(document).on('shown.bs.modal', '#configure-modal', function() {
-                fetchSettings().then(renderConfigureTile);
+            window.jQuery('#configure-modal').on('shown', function() {
+                console.log('[RB] Configure modal shown event fired');
+                fetchSettings().then(function(settings) {
+                    console.log('[RB] Settings fetched, visibility.system:', settings && settings.visibility && settings.visibility.system);
+                    renderConfigureTile(settings);
+                });
             });
         }
 

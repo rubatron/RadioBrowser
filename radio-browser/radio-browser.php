@@ -37,9 +37,8 @@ if (file_exists($customApisFile)) {
     }
 }
 
-// Set section to 'index' to load main.min.js instead of config.min.js
-// This ensures Bootstrap modals work correctly (Configure modal, etc.)
-$section = 'index';
+// Set section for moOde header (used for navigation highlighting)
+$section = 'radio-browser';
 
 // Set page title in session for header.php
 $_SESSION['config_back_link'] = '/index.php';
