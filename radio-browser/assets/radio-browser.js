@@ -205,6 +205,25 @@ function initRadioBrowser($) {
     }
 
     function bindTabEvents() {
+        // Section header button switching (Recently Played / Settings)
+        $(document).on('click', '.rb-section-btn', function(e) {
+            e.preventDefault();
+            var section = $(this).data('section');
+
+            // Update active button
+            $('.rb-section-btn').removeClass('active');
+            $(this).addClass('active');
+
+            // Show corresponding section panel
+            $('.rb-section-panel').addClass('hide');
+            $('#rb-' + section + '-section').removeClass('hide');
+
+            // Load settings when switching to settings section
+            if (section === 'settings') {
+                loadSettings();
+            }
+        });
+
         // Tab switching - use event delegation to ensure it works
         $(document).on('click', '.rb-tab', function(e) {
             e.preventDefault();

@@ -16,18 +16,110 @@
         <p class="config-help-static" style="margin-bottom: 1.5rem;">Search and play internet radio stations from
             radio-browser.info</p>
 
-        <!-- Recently Played Section - Always visible at top -->
-        <fieldset id="rb-recently-played-section">
-            <legend>Recently Played</legend>
+        <!-- Section Header with Menu Buttons -->
+        <div class="rb-section-header">
+            <button type="button" class="rb-section-btn active" data-section="recently-played">
+                <i class="fa-solid fa-sharp fa-clock-rotate-left"></i> Recently Played
+            </button>
+            <button type="button" class="rb-section-btn" data-section="settings">
+                <i class="fa-solid fa-sharp fa-gear"></i> Settings
+            </button>
+        </div>
+
+        <!-- Recently Played Section -->
+        <div id="rb-recently-played-section" class="rb-section-panel">
             <div id="rb-recently-played" class="rb-results-grid">
                 <p class="rb-no-results">No recently played stations yet.</p>
             </div>
-        </fieldset>
+        </div>
 
-        <!-- Tab Navigation -->
+        <!-- Settings Section (inline, not tab) -->
+        <div id="rb-settings-section" class="rb-section-panel hide">
+            <div class="rb-visibility-settings">
+                <p class="rb-help-text">Control where Radio Browser appears in moOde's interface.</p>
+
+                <div class="rb-visibility-grid">
+                    <div class="rb-visibility-item">
+                        <div class="rb-visibility-header">
+                            <span class="rb-visibility-label">Library Menu</span>
+                            <div id="rb-visibility-library-btn" class="toggle toggle-sm toggle-on" data-area="library">
+                                <label class="toggle-radio" for="rb-visibility-library-off">ON</label>
+                                <input type="radio" id="rb-visibility-library-on" name="rb-visibility-library"
+                                    value="On" checked>
+                                <label class="toggle-radio" for="rb-visibility-library-on">OFF</label>
+                                <input type="radio" id="rb-visibility-library-off" name="rb-visibility-library"
+                                    value="Off">
+                            </div>
+                        </div>
+                        <p class="rb-visibility-desc">Show in the Library dropdown menu</p>
+                    </div>
+
+                    <div class="rb-visibility-item">
+                        <div class="rb-visibility-header">
+                            <span class="rb-visibility-label"><span class="rb-mbrand-badge">m</span> Menu</span>
+                            <div id="rb-visibility-m-btn" class="toggle toggle-sm toggle-on" data-area="m">
+                                <label class="toggle-radio" for="rb-visibility-m-off">ON</label>
+                                <input type="radio" id="rb-visibility-m-on" name="rb-visibility-m" value="On" checked>
+                                <label class="toggle-radio" for="rb-visibility-m-on">OFF</label>
+                                <input type="radio" id="rb-visibility-m-off" name="rb-visibility-m" value="Off">
+                            </div>
+                        </div>
+                        <p class="rb-visibility-desc">Show in moOde's gear menu</p>
+                    </div>
+
+                    <div class="rb-visibility-item">
+                        <div class="rb-visibility-header">
+                            <span class="rb-visibility-label"><span class="rb-mbrand-badge">m</span> Configure
+                                Tile</span>
+                            <div id="rb-visibility-system-btn" class="toggle toggle-sm toggle-on" data-area="system">
+                                <label class="toggle-radio" for="rb-visibility-system-off">ON</label>
+                                <input type="radio" id="rb-visibility-system-on" name="rb-visibility-system" value="On"
+                                    checked>
+                                <label class="toggle-radio" for="rb-visibility-system-on">OFF</label>
+                                <input type="radio" id="rb-visibility-system-off" name="rb-visibility-system"
+                                    value="Off">
+                            </div>
+                        </div>
+                        <p class="rb-visibility-desc">Show tile in Configure modal</p>
+                    </div>
+
+                    <div class="rb-visibility-item">
+                        <div class="rb-visibility-header">
+                            <span class="rb-visibility-label"><span class="rb-mbrand-badge">m</span> Playbar Icon</span>
+                            <div id="rb-visibility-playbar-btn" class="toggle toggle-sm toggle-on" data-area="playbar">
+                                <label class="toggle-radio" for="rb-visibility-playbar-off">ON</label>
+                                <input type="radio" id="rb-visibility-playbar-on" name="rb-visibility-playbar"
+                                    value="On" checked>
+                                <label class="toggle-radio" for="rb-visibility-playbar-on">OFF</label>
+                                <input type="radio" id="rb-visibility-playbar-off" name="rb-visibility-playbar"
+                                    value="Off">
+                            </div>
+                        </div>
+                        <p class="rb-visibility-desc">Show radio icon in the playbar</p>
+                    </div>
+
+                    <div class="rb-visibility-item">
+                        <div class="rb-visibility-header">
+                            <span class="rb-visibility-label">Download Button</span>
+                            <div id="rb-visibility-download-btn" class="toggle toggle-sm toggle-on"
+                                data-area="download">
+                                <label class="toggle-radio" for="rb-visibility-download-off">ON</label>
+                                <input type="radio" id="rb-visibility-download-on" name="rb-visibility-download"
+                                    value="On" checked>
+                                <label class="toggle-radio" for="rb-visibility-download-on">OFF</label>
+                                <input type="radio" id="rb-visibility-download-off" name="rb-visibility-download"
+                                    value="Off">
+                            </div>
+                        </div>
+                        <p class="rb-visibility-desc">Show .m3u download on station cards</p>
+                    </div>
+                </div>
+
+                <div id="rb-visibility-note" class="rb-settings-note">Changes apply immediately.</div>
+            </div>
+        </div>
         <div class="rb-tabs">
             <button type="button" class="rb-tab active" data-tab="search">Search Stations</button>
-            <button type="button" class="rb-tab" data-tab="settings">Settings</button>
         </div>
 
         <!-- Search Panel -->
@@ -43,7 +135,8 @@
                                 placeholder="e.g. Jazz, Classical, News...">
                             <a class="info-toggle" data-cmd="info-rb-name" href="#notarget"><i
                                     class="fa-solid fa-sharp fa-info-circle"></i></a>
-                            <span id="info-rb-name" class="config-help-info hide">Search by station name or keywords.
+                            <span id="info-rb-name" class="config-help-info hide">Search by station name or
+                                keywords.
                                 Leave empty and use Country/Genre for broader search.</span>
                         </div>
                     </div>
@@ -140,7 +233,8 @@
                 <div class="rb-accordion-content">
                     <div class="rb-accordion-body">
                         <div id="rb-api-status" class="rb-api-status">
-                            <div class="rb-status-loading"><i class="fa-solid fa-sharp fa-spinner fa-spin"></i> Checking
+                            <div class="rb-status-loading"><i class="fa-solid fa-sharp fa-spinner fa-spin"></i>
+                                Checking
                                 API status...</div>
                         </div>
                         <button type="button" id="rb-refresh-status" class="btn btn-small"
@@ -239,7 +333,8 @@
                                                     $_custom_api_options
                                                 </select>
                                                 <button class="btn btn-small" type="submit" name="remove_custom_api"
-                                                    value="1"><i class="fa-solid fa-sharp fa-trash"></i> Remove</button>
+                                                    value="1"><i class="fa-solid fa-sharp fa-trash"></i>
+                                                    Remove</button>
                                             </div>
                                         </div>
                                     </form>
@@ -276,107 +371,6 @@
                 </div>
             </div>
 
-            <!-- Radio Browser Visibility Settings Accordion -->
-            <div class="rb-accordion open">
-                <div class="rb-accordion-header">
-                    <h4><i class="fa-solid fa-sharp fa-eye"></i> Radio Browser Visibility Settings</h4>
-                    <i class="fa-solid fa-sharp fa-chevron-down rb-accordion-icon"></i>
-                </div>
-                <div class="rb-accordion-content">
-                    <div class="rb-accordion-body">
-                        <p class="rb-help-text" style="margin-bottom: 1rem; color: #888;">Hide/unhide Radio Browser in
-                            moOde menu areas without disabling the extension.</p>
-
-                        <div class="rb-visibility-grid" role="group" aria-label="Radio Browser visibility options">
-                            <div class="rb-visibility-row">
-                                <span class="rb-visibility-label">Library menu</span>
-                                <div class="rb-visibility-control">
-                                    <div id="rb-visibility-library-btn" class="toggle toggle-on" data-area="library">
-                                        <label class="toggle-radio" for="rb-visibility-library-off">ON</label>
-                                        <input type="radio" id="rb-visibility-library-on" name="rb-visibility-library"
-                                            value="On" checked>
-                                        <label class="toggle-radio" for="rb-visibility-library-on">OFF</label>
-                                        <input type="radio" id="rb-visibility-library-off" name="rb-visibility-library"
-                                            value="Off">
-                                    </div>
-                                    <span id="rb-visibility-library-state" class="rb-visibility-state">Visible</span>
-                                </div>
-                            </div>
-                            <div class="rb-visibility-row">
-                                <span class="rb-visibility-label rb-visibility-label-m">
-                                    <span class="rb-mbrand-badge" aria-hidden="true">m</span>
-                                    <span class="rb-mbrand-text">Menu</span>
-                                </span>
-                                <div class="rb-visibility-control">
-                                    <div id="rb-visibility-m-btn" class="toggle toggle-on" data-area="m">
-                                        <label class="toggle-radio" for="rb-visibility-m-off">ON</label>
-                                        <input type="radio" id="rb-visibility-m-on" name="rb-visibility-m" value="On"
-                                            checked>
-                                        <label class="toggle-radio" for="rb-visibility-m-on">OFF</label>
-                                        <input type="radio" id="rb-visibility-m-off" name="rb-visibility-m" value="Off">
-                                    </div>
-                                    <span id="rb-visibility-m-state" class="rb-visibility-state">Visible</span>
-                                </div>
-                            </div>
-                            <div class="rb-visibility-row">
-                                <span class="rb-visibility-label rb-visibility-label-m">
-                                    <span class="rb-mbrand-badge" aria-hidden="true">m</span>
-                                    <span class="rb-mbrand-text">Configuration Tile</span>
-                                </span>
-                                <div class="rb-visibility-control">
-                                    <div id="rb-visibility-system-btn" class="toggle toggle-on" data-area="system">
-                                        <label class="toggle-radio" for="rb-visibility-system-off">ON</label>
-                                        <input type="radio" id="rb-visibility-system-on" name="rb-visibility-system"
-                                            value="On" checked>
-                                        <label class="toggle-radio" for="rb-visibility-system-on">OFF</label>
-                                        <input type="radio" id="rb-visibility-system-off" name="rb-visibility-system"
-                                            value="Off">
-                                    </div>
-                                    <span id="rb-visibility-system-state" class="rb-visibility-state">Visible</span>
-                                </div>
-                            </div>
-                            <div class="rb-visibility-row">
-                                <span class="rb-visibility-label rb-visibility-label-m">
-                                    <span class="rb-mbrand-badge" aria-hidden="true">m</span>
-                                    <span class="rb-mbrand-text">Playbar Icon</span>
-                                </span>
-                                <div class="rb-visibility-control">
-                                    <div id="rb-visibility-playbar-btn" class="toggle toggle-on" data-area="playbar">
-                                        <label class="toggle-radio" for="rb-visibility-playbar-off">ON</label>
-                                        <input type="radio" id="rb-visibility-playbar-on" name="rb-visibility-playbar"
-                                            value="On" checked>
-                                        <label class="toggle-radio" for="rb-visibility-playbar-on">OFF</label>
-                                        <input type="radio" id="rb-visibility-playbar-off" name="rb-visibility-playbar"
-                                            value="Off">
-                                    </div>
-                                    <span id="rb-visibility-playbar-state" class="rb-visibility-state">Visible</span>
-                                </div>
-                            </div>
-                            <div class="rb-visibility-row">
-                                <span class="rb-visibility-label rb-visibility-label-m">
-                                    <span class="rb-mbrand-badge" aria-hidden="true">m</span>
-                                    <span class="rb-mbrand-text">Download Button</span>
-                                </span>
-                                <div class="rb-visibility-control">
-                                    <div id="rb-visibility-download-btn" class="toggle toggle-on" data-area="download">
-                                        <label class="toggle-radio" for="rb-visibility-download-off">ON</label>
-                                        <input type="radio" id="rb-visibility-download-on" name="rb-visibility-download"
-                                            value="On" checked>
-                                        <label class="toggle-radio" for="rb-visibility-download-on">OFF</label>
-                                        <input type="radio" id="rb-visibility-download-off" name="rb-visibility-download"
-                                            value="Off">
-                                    </div>
-                                    <span id="rb-visibility-download-state" class="rb-visibility-state">Visible</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="rb-visibility-note" class="rb-settings-note">Changes apply on next menu render and page
-                            refresh.</div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Troubleshooting Accordion -->
             <div class="rb-accordion">
                 <div class="rb-accordion-header">
@@ -385,7 +379,8 @@
                 </div>
                 <div class="rb-accordion-content">
                     <div class="rb-accordion-body">
-                        <p class="rb-help-text" style="margin-bottom: 1rem; color: #888;">Use these tools to fix common
+                        <p class="rb-help-text" style="margin-bottom: 1rem; color: #888;">Use these tools to fix
+                            common
                             issues with the Radio Browser extension.</p>
 
                         <div class="rb-troubleshoot-actions">
