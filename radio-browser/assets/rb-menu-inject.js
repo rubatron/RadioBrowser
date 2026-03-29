@@ -467,24 +467,16 @@
      */
     function renderConfigureTile(settings) {
         var list = findConfigureTileList();
-        console.log('[RB] renderConfigureTile called, list found:', !!list);
-        if (!list) {
-            console.log('[RB] Configure tile list not found - modal may not be open');
-            return;
-        }
+        if (!list) return;
 
         var visibility = (settings && settings.visibility) || {};
         var showTile = visibility.system === true;
-        console.log('[RB] showTile:', showTile);
 
         // Always remove existing first
         removeExistingConfigureTile(list);
 
         // Only add if visibility.system is true
-        if (!showTile) {
-            console.log('[RB] Not showing tile - visibility.system is false');
-            return;
-        }
+        if (!showTile) return;
 
         // Create tile entry (copy moOde's structure)
         var li = document.createElement('li');
@@ -499,7 +491,6 @@
 
         li.appendChild(link);
         list.appendChild(li);
-        console.log('[RB] Configure tile ADDED successfully, total items:', list.children.length);
     }
 
     /**
@@ -550,11 +541,7 @@
         // Note: Bootstrap 2.x uses 'shown' not 'shown.bs.modal'
         if (window.jQuery) {
             window.jQuery('#configure-modal').on('shown', function() {
-                console.log('[RB] Configure modal shown event fired');
-                fetchSettings().then(function(settings) {
-                    console.log('[RB] Settings fetched, visibility.system:', settings && settings.visibility && settings.visibility.system);
-                    renderConfigureTile(settings);
-                });
+                fetchSettings().then(renderConfigureTile);
             });
         }
 
