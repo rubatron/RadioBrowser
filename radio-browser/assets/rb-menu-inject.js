@@ -400,15 +400,15 @@
         if (window.location.pathname !== '/' && window.location.pathname !== '/index.php') {
             return;
         }
-        
+
         try {
             var shouldOpen = localStorage.getItem('rb_open_configure_modal');
             if (shouldOpen === 'true') {
                 // Clear the flag immediately
                 localStorage.removeItem('rb_open_configure_modal');
-                
+
                 console.log('[RB Menu] Opening configure modal after redirect');
-                
+
                 // Wait for jQuery and Bootstrap modal
                 var attempts = 0;
                 var tryOpenModal = function() {
@@ -445,7 +445,7 @@
 
         // Setup radio logo fallback for missing thumbnails
         setupRadioLogoFallback();
-        
+
         // Check if we need to open configure modal (after redirect from radio-browser.php)
         checkAndOpenConfigureModal();
 

@@ -23,14 +23,14 @@
         $(document).on('click.rbModal', 'a[href="#configure-modal"]', function (e) {
             e.preventDefault();
             console.log('[RB Modal Fix] Setting flag and redirecting to index.php');
-            
+
             // Set localStorage flag so rb-menu-inject.js can open the modal
             try {
                 localStorage.setItem('rb_open_configure_modal', 'true');
             } catch (err) {
                 console.log('[RB Modal Fix] localStorage not available');
             }
-            
+
             // Redirect to index.php (rb-menu-inject.js will handle opening the modal)
             window.location.href = '/index.php';
             return false;
