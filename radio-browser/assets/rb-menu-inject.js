@@ -149,6 +149,15 @@
 
         // Use both show and shown events (Bootstrap 2 compatibility)
         jQuery(modal).on('show shown', function() {
+            // Force modal visible (fix for radio-browser.php page)
+            modal.style.display = 'block';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            modal.style.top = '10%';
+            modal.style.zIndex = '10050';
+            modal.classList.remove('hide');
+            modal.classList.add('in');
+
             var list = modal.querySelector('#configure ul');
             if (!list) return;
 
