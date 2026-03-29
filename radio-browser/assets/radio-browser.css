@@ -12,42 +12,57 @@
  ********************************************************************************/
 
 /* ============================================
-   Section Header with Menu Buttons
+   Section Header with Menu Buttons (Carousel Style)
    ============================================ */
 
 .rb-section-header {
     display: flex;
-    gap: 0;
+    gap: 0.25rem;
     margin-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .rb-section-btn {
-    background: transparent;
-    border: none;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-bottom: 2px solid transparent;
-    padding: 0.6rem 1rem;
+    border-radius: 6px 6px 0 0;
+    padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
+    position: relative;
+    opacity: 0.7;
 }
 
 .rb-section-btn:hover {
-    color: rgba(255, 255, 255, 0.75);
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.05);
+    opacity: 0.85;
 }
 
 .rb-section-btn.active {
-    color: #d35400;
-    border-bottom-color: #d35400;
+    color: #c55a11;
+    background: rgba(197, 90, 17, 0.08);
+    border-color: rgba(197, 90, 17, 0.15);
+    border-bottom-color: #c55a11;
+    opacity: 1;
+    box-shadow: 0 1px 4px rgba(197, 90, 17, 0.15);
+}
+
+.rb-section-btn.active i {
+    color: #c55a11;
 }
 
 .rb-section-btn i {
     font-size: 0.85rem;
+    opacity: 0.8;
 }
 
 .rb-section-panel {
@@ -55,6 +70,14 @@
 }
 
 .rb-section-panel.hide {
+    display: none !important;
+}
+
+/* ============================================
+   Tab Navigation (hideable)
+   ============================================ */
+
+.rb-tabs.hide {
     display: none !important;
 }
 
@@ -922,7 +945,8 @@
 }
 
 .rb-visibility-state {
-    display: none; /* Hide state text in new design */
+    display: none;
+    /* Hide state text in new design */
 }
 
 /* ============================================

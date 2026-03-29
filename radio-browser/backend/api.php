@@ -852,22 +852,22 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'Cannot connect to MPD'];
             break;
         }
-        sendMpdCmd($sock, 'clear');
+        // Use addid to get the song ID, then playid to play without clearing queue
+        sendMpdCmd($sock, 'addid "' . $url . '"');
         $resp = readMpdResp($sock);
-        if (strpos($resp, 'OK') === false) {
-            $response = ['success' => false, 'message' => 'MPD clear failed'];
-            break;
-        }
-        sendMpdCmd($sock, 'add "' . $url . '"');
-        $resp = readMpdResp($sock);
-        if (strpos($resp, 'OK') === false) {
-            $response = ['success' => false, 'message' => 'MPD add failed'];
-            break;
-        }
-        sendMpdCmd($sock, 'play');
-        $resp = readMpdResp($sock);
-        if (strpos($resp, 'OK') === false) {
-            $response = ['success' => false, 'message' => 'MPD play failed'];
+        // Parse song ID from response (format: "Id: 123\nOK\n")
+        if (preg_match('/Id:\s*(\d+)/', $resp, $matches)) {
+            $songId = $matches[1];
+            sendMpdCmd($sock, 'playid ' . $songId);
+            $resp = readMpdResp($sock);
+            if (strpos($resp, 'OK') === false) {
+                $response = ['success' => false, 'message' => 'MPD playid failed'];
+                closeMpdSock($sock);
+                break;
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'MPD addid failed: ' . $resp];
+            closeMpdSock($sock);
             break;
         }
         closeMpdSock($sock);

@@ -218,9 +218,18 @@ function initRadioBrowser($) {
             $('.rb-section-panel').addClass('hide');
             $('#rb-' + section + '-section').removeClass('hide');
 
-            // Load settings when switching to settings section
+            // Show/hide search tabs and panel based on section
             if (section === 'settings') {
+                // Hide search area when in settings
+                $('.rb-tabs').addClass('hide');
+                $('#rb-search-panel').addClass('hide');
+                // Load settings and check API status
                 loadSettings();
+                checkApiStatus();
+            } else {
+                // Show search area when in recently-played
+                $('.rb-tabs').removeClass('hide');
+                $('#rb-search-panel').removeClass('hide');
             }
         });
 
