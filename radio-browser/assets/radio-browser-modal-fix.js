@@ -1,10 +1,8 @@
 /**
  * Radio Browser Modal Fix
  *
- * On non-index pages, the Configure modal content is not initialized.
- * This script intercepts Configure link clicks BEFORE Bootstrap handles them,
- * sets a localStorage flag and redirects to index.php.
- * rb-menu-inject.js (loaded on all pages) will detect this and open the modal.
+ * On the Radio Browser page, the Configure modal is not available.
+ * This script hides Configure links since they only work on index.php.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
@@ -17,32 +15,34 @@
         return;
     }
 
-    console.log('[RB Modal Fix] Initializing on Radio Browser page');
+    /**
+     * Hide Configure links that don't work on this page
+     */
+    function hideConfigureLinks() {
+        var links = document.querySelectorAll('a[href="#configure-modal"]');
+        links.forEach(function(link) {
+            // Hide the link or its parent list item
+            var li = link.closest('li');
+            if (li) {
+                li.style.display = 'none';
+            } else {
+                link.style.display = 'none';
+            }
+        });
+    }
 
-    // Use capturing phase to intercept BEFORE Bootstrap's delegated handlers
+    // Run on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', hideConfigureLinks);
+    } else {
+        hideConfigureLinks();
+    }
+
+    // Also run when dropdowns open (for dynamically rendered menus)
     document.addEventListener('click', function(e) {
-        // Find the closest anchor element
-        var link = e.target.closest('a[href="#configure-modal"]');
-        if (!link) return;
-
-        // Stop Bootstrap from handling this
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-
-        console.log('[RB Modal Fix] Intercepted Configure click, redirecting to index.php');
-
-        // Set localStorage flag so rb-menu-inject.js can open the modal
-        try {
-            localStorage.setItem('rb_open_configure_modal', 'true');
-        } catch (err) {
-            console.log('[RB Modal Fix] localStorage not available');
+        if (e.target.closest('.dropdown-toggle, #menu-settings')) {
+            setTimeout(hideConfigureLinks, 50);
         }
-
-        // Redirect to index.php (rb-menu-inject.js will handle opening the modal)
-        window.location.href = '/index.php';
-    }, true); // true = capturing phase (fires BEFORE bubbling)
-
-    console.log('[RB Modal Fix] Ready - capturing Configure clicks');
+    });
 
 })(window, document);
