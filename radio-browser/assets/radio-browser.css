@@ -111,13 +111,14 @@
     display: none !important;
 }
 
-/* General hide class for Radio Browser elements */
-.hide,
+/* Hide class for Radio Browser elements only - scoped to avoid modal conflicts */
 #rb-results.hide,
 #rb-loading.hide,
 #rb-no-results.hide,
 #rb-results-section.hide,
-#rb-pagination.hide {
+#rb-pagination.hide,
+.rb-log-output.hide,
+.rb-info-section.hide {
     display: none !important;
 }
 
