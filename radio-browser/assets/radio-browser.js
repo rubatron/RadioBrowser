@@ -123,6 +123,8 @@ function initRadioBrowser($) {
             initCountryAutocomplete();
             bindEvents();
             bindTabEvents();
+            bindVisibilityEvents();
+            loadSettings();  // Load visibility settings on init
 
             // Initialize active tab panel
             var activeTab = $('.rb-tab.active').data('tab');
@@ -1171,13 +1173,15 @@ function initRadioBrowser($) {
         library: true,
         m: true,
         system: true,
-        playbar: true
+        playbar: true,
+        download: true
     };
 
     function visibilityAreaName(area) {
         return area === 'library' ? 'Library menu'
             : area === 'm' ? 'M Menu'
             : area === 'system' ? 'M Configuration Tile'
+            : area === 'download' ? 'Download Button'
             : 'Playbar Icon';
     }
 
@@ -1207,11 +1211,20 @@ function initRadioBrowser($) {
         visibilityState.m = v.m !== false;
         visibilityState.system = v.system !== false;
         visibilityState.playbar = v.playbar !== false;
+        visibilityState.download = v.download !== false;
 
         applyVisibilityButtonState($('#rb-visibility-library-btn'), $('#rb-visibility-library-state'), 'library', visibilityState.library);
         applyVisibilityButtonState($('#rb-visibility-m-btn'), $('#rb-visibility-m-state'), 'm', visibilityState.m);
         applyVisibilityButtonState($('#rb-visibility-system-btn'), $('#rb-visibility-system-state'), 'system', visibilityState.system);
         applyVisibilityButtonState($('#rb-visibility-playbar-btn'), $('#rb-visibility-playbar-state'), 'playbar', visibilityState.playbar);
+        applyVisibilityButtonState($('#rb-visibility-download-btn'), $('#rb-visibility-download-state'), 'download', visibilityState.download);
+
+        // Apply download button visibility to existing cards
+        if (visibilityState.download) {
+            $('.rb-download-btn').show();
+        } else {
+            $('.rb-download-btn').hide();
+        }
     }
 
     function setVisibility(area, visible, toggleEl) {
@@ -1272,7 +1285,8 @@ function initRadioBrowser($) {
             ['rb-visibility-library-btn', 'library'],
             ['rb-visibility-m-btn', 'm'],
             ['rb-visibility-system-btn', 'system'],
-            ['rb-visibility-playbar-btn', 'playbar']
+            ['rb-visibility-playbar-btn', 'playbar'],
+            ['rb-visibility-download-btn', 'download']
         ];
 
         areas.forEach(function(e) {
@@ -1318,12 +1332,8 @@ function initRadioBrowser($) {
     }
 
     // Initialize visibility and download features when settings tab is opened
+    // Reload settings when settings tab is opened
     $(document).on('click', '.rb-tab[data-tab="settings"]', function() {
         loadSettings();
-    });
-
-    // Bind events on document ready
-    $(document).ready(function() {
-        bindVisibilityEvents();
     });
 }
