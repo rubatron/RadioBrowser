@@ -506,8 +506,34 @@
         });
     }
 
-    // Debounced version for event handlers (300ms delay)
-    var renderAllDebounced = debounce(renderAll, 300);
+    // Debounced version for event handlers (120ms delay, like ext-mgr)
+    var renderAllDebounced = debounce(renderAll, 120);
+
+    /**
+     * MutationObserver to catch all DOM changes (modal opens, etc.)
+     * Same approach as ext-mgr which works reliably
+     */
+    function observeDOM() {
+        if (!window.MutationObserver) {
+            return;
+        }
+
+        var timer = null;
+        var observer = new MutationObserver(function() {
+            if (timer) {
+                window.clearTimeout(timer);
+            }
+            timer = window.setTimeout(function() {
+                fetchSettings().then(function(settings) {
+                    renderLibraryMenu(settings);
+                    renderMMenu(settings);
+                    renderConfigureTile(settings);
+                });
+            }, 120);
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
 
     /**
      * Initialize and set up observers
@@ -516,34 +542,9 @@
         // Initial render (once)
         renderAll();
 
-        // Only listen for dropdown toggle clicks - no MutationObserver on body
-        document.addEventListener('click', function(e) {
-            var toggle = e.target.closest('.dropdown-toggle, #menu-settings, #viewswitch');
-            if (toggle) {
-                // Debounced render after dropdown opens
-                renderAllDebounced();
-            }
-
-            // Also render when Configure modal link is clicked
-            var configureLink = e.target.closest('a[href="#configure-modal"]');
-            if (configureLink) {
-                // Small delay to ensure modal is opening
-                setTimeout(function() {
-                    fetchSettings().then(renderConfigureTile);
-                }, 100);
-            }
-        });
-
-        // Bootstrap dropdown events (if available)
-        document.addEventListener('shown.bs.dropdown', renderAllDebounced);
-
-        // Bootstrap 2.x modal shown event - render configure tile when modal opens
-        // Note: Bootstrap 2.x uses 'shown' not 'shown.bs.modal'
-        if (window.jQuery) {
-            window.jQuery('#configure-modal').on('shown', function() {
-                fetchSettings().then(renderConfigureTile);
-            });
-        }
+        // Use MutationObserver for reliable DOM change detection
+        // This catches modal opens regardless of Bootstrap version
+        observeDOM();
 
         // Periodic check for playbar/coverart icon active state (every 2 seconds)
         setInterval(function() {
