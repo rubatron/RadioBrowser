@@ -301,42 +301,41 @@
     }
 
     /**
-     * Radio logo fallback - replace missing logos with moOde default
-     * Handles 404 errors for radio-logos thumbnails
+     * Inject Radio Browser icon into moOde's playbar
      */
-    var FALLBACK_IMAGE = '/images/radio.png';
-    var processedImages = new WeakSet();
+    function renderPlaybarIcon() {
+        var toggles = document.getElementById('playbar-toggles');
+        if (!toggles) return;
 
-    function setupRadioLogoFallback() {
-        // Event delegation for img error events
-        document.addEventListener('error', function(e) {
-            var img = e.target;
-            if (img.tagName !== 'IMG') return;
+        // Check if already exists
+        if (document.getElementById('rb-playbar-btn')) return;
 
-            // Only handle radio-logos images
-            var src = img.src || '';
-            if (src.indexOf('radio-logos') === -1) return;
+        // Create Radio Browser button
+        var btn = document.createElement('a');
+        btn.id = 'rb-playbar-btn';
+        btn.href = '/radio-browser.php';
+        btn.className = 'btn';
+        btn.setAttribute('aria-label', 'Radio Browser');
+        btn.title = 'Radio Browser';
+        btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
+        btn.style.cssText = 'color: var(--adapttext); opacity: 0.7; transition: opacity 0.2s;';
 
-            // Prevent infinite loop
-            if (processedImages.has(img)) return;
-            processedImages.add(img);
+        // Hover effect
+        btn.addEventListener('mouseenter', function() {
+            this.style.opacity = '1';
+            this.style.color = '#c55a11';
+        });
+        btn.addEventListener('mouseleave', function() {
+            this.style.opacity = '0.7';
+            this.style.color = 'var(--adapttext)';
+        });
 
-            // Replace with fallback
-            img.src = FALLBACK_IMAGE;
-        }, true); // Use capture phase to catch error before it bubbles
-
-        // Also handle existing images that may have already failed
-        setTimeout(function() {
-            var imgs = document.querySelectorAll('img[src*="radio-logos"]');
-            imgs.forEach(function(img) {
-                if (!img.complete || img.naturalWidth === 0) {
-                    if (!processedImages.has(img)) {
-                        processedImages.add(img);
-                        img.src = FALLBACK_IMAGE;
-                    }
-                }
-            });
-        }, 500);
+        // Insert at the beginning of toggles
+        if (toggles.firstChild) {
+            toggles.insertBefore(btn, toggles.firstChild);
+        } else {
+            toggles.appendChild(btn);
+        }
     }
 
     /**
@@ -347,6 +346,7 @@
             renderLibraryMenu(settings);
             renderMMenu(settings);
             renderHeaderButton(settings);
+            renderPlaybarIcon();
         });
     }
 
@@ -403,9 +403,6 @@
     function init() {
         // Initial render (once)
         renderAll();
-
-        // Setup radio logo fallback for missing thumbnails
-        setupRadioLogoFallback();
 
         // Check if we need to open configure modal (after redirect from radio-browser.php)
         checkAndOpenConfigureModal();

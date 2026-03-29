@@ -31,6 +31,23 @@
 }
 
 /* ============================================
+   Playbar Radio Browser Icon
+   ============================================ */
+
+#rb-playbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    font-size: 1.1rem;
+}
+
+#rb-playbar-btn:hover {
+    color: #c55a11 !important;
+    opacity: 1 !important;
+}
+
+/* ============================================
    Radio Browser Header
    ============================================ */
 
