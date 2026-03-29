@@ -1,0 +1,29 @@
+# Radio Browser Extension - File Manifest
+# This file lists all files needed for installation
+# The installer downloads this first, then fetches each file
+# Lines starting with # are comments
+
+# Core files
+manifest.json
+radio-browser.php
+rb-shell-bridge.php
+info.json
+version.txt
+README.md
+
+# Backend
+backend/api.php
+
+# Frontend assets
+assets/radio-browser.js
+assets/radio-browser.css
+assets/rb-menu-inject.js
+
+# Templates
+templates/radio-browser.html
+
+# Scripts
+scripts/fix-permissions.sh
+scripts/test-api.sh
+scripts/flush-cache.sh
+scripts/clear-recently-played.sh

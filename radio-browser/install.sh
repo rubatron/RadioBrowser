@@ -43,44 +43,61 @@ fi
 if [[ "$NEED_DOWNLOAD" == "true" ]]; then
     SCRIPT_DIR="/tmp/radio-browser-install"
     rm -rf "$SCRIPT_DIR"
-    mkdir -p "$SCRIPT_DIR"/{assets,backend,scripts,templates}
+    mkdir -p "$SCRIPT_DIR"
     
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
     echo "║       📥 DOWNLOADING SOURCE FILES FROM GITHUB               ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo ""
+    echo "  Repository: ${GITHUB_REPO}"
+    echo "  Branch:     ${GITHUB_BRANCH}"
+    echo "  Source:     ${GITHUB_RAW}"
+    echo ""
     
-    FILES=(
-        "manifest.json"
-        "radio-browser.php"
-        "rb-shell-bridge.php"
-        "info.json"
-        "version.txt"
-        "README.md"
-        "backend/api.php"
-        "assets/radio-browser.js"
-        "assets/radio-browser.css"
-        "assets/rb-menu-inject.js"
-        "templates/radio-browser.html"
-        "scripts/fix-permissions.sh"
-        "scripts/test-api.sh"
-        "scripts/flush-cache.sh"
-        "scripts/clear-recently-played.sh"
-    )
+    # Download file manifest first
+    printf "  Fetching file manifest (files.txt)... "
+    MANIFEST_URL="${GITHUB_RAW}/files.txt"
+    if ! curl -sL "$MANIFEST_URL" -o "${SCRIPT_DIR}/files.txt" 2>/dev/null; then
+        echo "✗"
+        echo "ERROR: Could not download file manifest from ${MANIFEST_URL}"
+        exit 1
+    fi
+    echo "✓"
+    echo ""
+    echo "  Files to download:"
+    echo "  ─────────────────────────────────────────────────────────────"
     
-    for file in "${FILES[@]}"; do
-        printf "  Downloading %-40s" "$file..."
+    # Parse manifest and download files
+    FILE_COUNT=0
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # Skip empty lines and comments
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+        
+        # Trim whitespace
+        file=$(echo "$line" | xargs)
+        [[ -z "$file" ]] && continue
+        
+        # Create subdirectory if needed
+        filedir=$(dirname "$file")
+        if [[ "$filedir" != "." ]]; then
+            mkdir -p "${SCRIPT_DIR}/${filedir}"
+        fi
+        
+        # Download file
+        printf "  %-45s" "$file"
         if curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" 2>/dev/null; then
             echo "✓"
+            ((FILE_COUNT++))
         else
             echo "✗"
             echo "ERROR: Failed to download ${file}"
             exit 1
         fi
-    done
-    echo ""
-    echo "Downloaded ${#FILES[@]} files to ${SCRIPT_DIR}"
+    done < "${SCRIPT_DIR}/files.txt"
+    
+    echo "  ─────────────────────────────────────────────────────────────"
+    echo "  Downloaded ${FILE_COUNT} files to ${SCRIPT_DIR}"
     echo ""
 fi
 
