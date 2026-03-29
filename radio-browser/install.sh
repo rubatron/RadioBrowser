@@ -52,7 +52,7 @@ if ! curl -sL "$MANIFEST_URL" -o "${SCRIPT_DIR}/files.txt" 2>/dev/null; then
     exit 1
 fi
     # Strip any CR characters (Windows line endings) from files.txt
-    sed -i 's/\r$//' "${SCRIPT_DIR}/files.txt"
+    sed -i 's/\r//g' "${SCRIPT_DIR}/files.txt"
     # Debug: show hidden characters in files.txt
     echo "\n[DEBUG] files.txt content (with hidden chars):"
     cat -A "${SCRIPT_DIR}/files.txt"
