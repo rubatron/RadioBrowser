@@ -78,89 +78,6 @@
 }
 
 /* ============================================
-   Modal z-index fix for Radio Browser page
-   Ensure moOde modals work correctly when opened from this page
-   Bootstrap 2.x structure: .modal > .modal-header/.modal-body/.modal-footer
-   (No .modal-dialog or .modal-content wrapper in Bootstrap 2.x!)
-   ============================================ */
-
-/* Fix: Override .hide class on modals when body.modal-open is set */
-/* Use high specificity and z-index above backdrop (10000) */
-body.modal-open .modal,
-body.modal-open .modal.hide,
-body.modal-open #configure-modal,
-body.modal-open #configure-modal.hide {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    top: 10% !important;
-    left: 50% !important;
-    margin-left: -280px !important;
-    width: 560px !important;
-    background: var(--themebg, #1a1a1a) !important;
-    border-radius: 6px !important;
-    z-index: 10050 !important;
-}
-
-/* Also keep .modal.in rules for normal Bootstrap operation */
-.modal.in {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    top: 10% !important;
-    left: 50% !important;
-    margin-left: -280px !important;
-    width: 560px !important;
-    background: var(--themebg, #1a1a1a) !important;
-    border-radius: 6px !important;
-}
-
-/* Ensure modal content sections are visible (Bootstrap 2.x structure) */
-body.modal-open .modal>.modal-header,
-body.modal-open .modal>.modal-body,
-body.modal-open .modal>.modal-footer,
-body.modal-open .modal #configure,
-body.modal-open .modal #configure ul,
-.modal.in>.modal-header,
-.modal.in>.modal-body,
-.modal.in>.modal-footer,
-.modal.in #configure,
-.modal.in #configure ul {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Configure modal tile list - match moOde's inline-table + inline-flex layout */
-body.modal-open .modal #configure ul,
-.modal.in #configure ul {
-    display: inline-table !important;
-    margin: 0 !important;
-}
-
-body.modal-open .modal #configure ul li,
-.modal.in #configure ul li {
-    display: inline-flex !important;
-    padding: .5em !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-body.modal-open .modal-backdrop,
-.modal-backdrop.in {
-    opacity: 0.7 !important;
-}
-
-/* Ensure z-index hierarchy for modals */
-.modal {
-    z-index: 1050 !important;
-}
-
-.modal-backdrop {
-    z-index: 1040 !important;
-}
-
-/* ============================================
    Hide moOde's config-tabs header bar on radio-browser page
    This bar is for config pages only per moOde guidelines
    ============================================ */
@@ -262,7 +179,7 @@ body.modal-open .modal-backdrop,
     display: none !important;
 }
 
-/* Hide class for Radio Browser elements only - scoped to avoid modal conflicts */
+/* Hide class for Radio Browser elements */
 #rb-results.hide,
 #rb-loading.hide,
 #rb-no-results.hide,
@@ -312,7 +229,7 @@ body.modal-open .modal-backdrop,
 /* Station Logo */
 .rb-logo {
     flex-shrink: 0;
-    margin-right: 1rem;
+    margin-right: 0.75rem;
     border-radius: 6px;
     background: #1a1a1a;
     display: flex;
@@ -323,6 +240,7 @@ body.modal-open .modal-backdrop,
     height: 44px;
     min-width: 44px;
     min-height: 44px;
+    object-fit: cover;
 }
 
 .rb-logo-placeholder {
@@ -901,6 +819,66 @@ body.modal-open .modal-backdrop,
 
 .rb-visibility-item:hover {
     border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Playbar Card - Combined Playbar Icon + Activity Glow */
+.rb-playbar-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.rb-playbar-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+
+.rb-playbar-mockup {
+    font-size: 1.4rem;
+    color: #666;
+    cursor: default;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.rb-playbar-mockup.active {
+    color: #ddd;
+    cursor: pointer;
+}
+
+.rb-playbar-mockup.active:hover {
+    color: #c55a11;
+}
+
+.rb-playbar-mockup.rb-active {
+    color: #c55a11;
+    filter: drop-shadow(0 0 4px rgba(197, 90, 17, 0.6));
+}
+
+.rb-playbar-options {
+    flex: 1;
+}
+
+.rb-activityglow-option {
+    margin: 0;
+}
+
+.rb-activityglow-option.disabled {
+    opacity: 0.35;
+}
+
+.rb-activityglow-option .rb-visibility-desc {
+    margin: 0.25rem 0 0 0;
+    font-style: normal;
+    font-size: 0.75rem;
+}
+
+.rb-activityglow-option .rb-visibility-label {
+    font-size: 0.8rem;
+    color: #999;
 }
 
 .rb-visibility-header {

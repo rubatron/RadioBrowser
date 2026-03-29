@@ -147,38 +147,139 @@
         if (modal.__rbTileSetup) return;
         modal.__rbTileSetup = true;
 
-        // Use both show and shown events (Bootstrap 2 compatibility)
-        jQuery(modal).on('show shown', function() {
-            // Force modal visible (fix for radio-browser.php page)
-            modal.style.display = 'block';
-            modal.style.visibility = 'visible';
-            modal.style.opacity = '1';
-            modal.style.top = '10%';
-            modal.style.zIndex = '10050';
-            modal.classList.remove('hide');
-            modal.classList.add('in');
-
-            var list = modal.querySelector('#configure ul');
-            if (!list) return;
-
-            // Already exists? Check for ANY radio-browser link
-            if (list.querySelector('a[href*="radio-browser"]')) return;
-
-            // Get template from existing tile
-            var templateLi = list.querySelector('li');
-            var liClass = templateLi ? templateLi.className : '';
-
-            // Create tile
-            var li = document.createElement('li');
-            li.className = (liClass ? liClass + ' ' : '') + 'rb-configure-entry';
-            var a = document.createElement('a');
-            a.className = 'btn btn-large';
-            a.href = '/radio-browser.php';
-            a.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i><br>Radio Browser';
-            li.appendChild(a);
-
-            list.appendChild(li);
+        // Add tile when modal is shown (Bootstrap 2 event)
+        jQuery(modal).on('show', function() {
+            addRadioBrowserTile(modal);
         });
+    }
+
+    /**
+     * Inject Activity Light CSS if not present
+     */
+    function injectActivityLightCSS() {
+        if (document.getElementById('rb-activity-light-styles')) return;
+        var style = document.createElement('style');
+        style.id = 'rb-activity-light-styles';
+        style.textContent = [
+            '/* Radio Browser Activity Light - subtle orange indicator */',
+            '#rb-playbar-btn.rb-active i,',
+            '#rb-coverview-btn.rb-active i {',
+            '  color: #c55a11 !important;',
+            '  filter: drop-shadow(0 0 4px rgba(197, 90, 17, 0.6));',
+            '}',
+            '#rb-playbar-btn {',
+            '  margin-right: 8px;',
+            '}'
+        ].join('\n');
+        document.head.appendChild(style);
+    }
+
+    /**
+     * Add Radio Browser icon to playbar (index.php only)
+     * Positioned at the very front, before all other buttons
+     */
+    function injectPlaybar(settings) {
+        var visibility = settings.visibility || {};
+        if (visibility.playbar === false) return;
+
+        // Inject Activity Light CSS
+        injectActivityLightCSS();
+
+        // Find playbar toggles container
+        var container = document.getElementById('playbar-toggles');
+        if (!container) return;
+
+        // Already exists?
+        var existingBtn = container.querySelector('#rb-playbar-btn');
+        if (existingBtn) {
+            // Update activity light state
+            if (visibility.activityglow !== false) {
+                existingBtn.classList.add('rb-active');
+            } else {
+                existingBtn.classList.remove('rb-active');
+            }
+            return;
+        }
+
+        // Create button
+        var btn = document.createElement('button');
+        btn.id = 'rb-playbar-btn';
+        btn.className = 'btn btn-cmd';
+        if (visibility.activityglow !== false) {
+            btn.classList.add('rb-active');
+        }
+        btn.setAttribute('aria-label', 'Radio Browser');
+        btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
+        btn.onclick = function() {
+            window.location.href = '/radio-browser.php';
+        };
+
+        // Insert at the very front (before all other elements)
+        if (container.firstChild) {
+            container.insertBefore(btn, container.firstChild);
+        } else {
+            container.appendChild(btn);
+        }
+    }
+
+    /**
+     * Add Radio Browser icon to Coverview (album art panel)
+     */
+    function injectCoverview(settings) {
+        var visibility = settings.visibility || {};
+        if (visibility.playbar === false) return; // Use same setting as playbar
+
+        // Find btn-group inside togglebtns
+        var togglebtns = document.getElementById('togglebtns');
+        if (!togglebtns) return;
+
+        var btnGroup = togglebtns.querySelector('.btn-group');
+        if (!btnGroup) return;
+
+        // Already exists?
+        if (btnGroup.querySelector('#rb-coverview-btn')) return;
+
+        // Create button
+        var btn = document.createElement('button');
+        btn.id = 'rb-coverview-btn';
+        btn.className = 'btn btn-cmd';
+        if (visibility.activityglow !== false) {
+            btn.classList.add('rb-active');
+        }
+        btn.setAttribute('aria-label', 'Radio Browser');
+        btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
+        btn.onclick = function() {
+            window.location.href = '/radio-browser.php';
+        };
+
+        // Append as last button in the group
+        btnGroup.appendChild(btn);
+    }
+
+    /**
+     * Add Radio Browser tile to the configure modal ul
+     */
+    function addRadioBrowserTile(modal) {
+        var list = modal.querySelector('#configure ul');
+        if (!list) return;
+
+        // Already exists? Check for ANY radio-browser link
+        if (list.querySelector('a[href*="radio-browser"]')) return;
+
+        // Get template from existing tile
+        var templateLi = list.querySelector('li');
+        var liClass = templateLi ? templateLi.className : '';
+
+        // Create tile
+        var li = document.createElement('li');
+        li.className = (liClass ? liClass + ' ' : '') + 'rb-configure-entry';
+        var a = document.createElement('a');
+        a.className = 'btn btn-large';
+        a.href = '/radio-browser.php#settings';
+        a.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i><br>Radio Browser';
+        li.appendChild(a);
+
+        list.appendChild(li);
     }
 
     /**
@@ -188,6 +289,8 @@
         getSettings(function(settings) {
             injectLibraryMenu(settings);
             injectMMenu(settings);
+            injectPlaybar(settings);
+            injectCoverview(settings);
             setupConfigureTile(settings);
         });
     }

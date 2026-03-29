@@ -1128,6 +1128,67 @@ switch ($cmd) {
         rb_debug_log('Cache flushed: ' . $deleted . ' files deleted');
         $response = ['success' => true, 'message' => 'Cache flushed (' . $deleted . ' files deleted)'];
         break;
+    case 'repair_thumbnails':
+        // Repair missing thumbnails for favorites
+        rb_debug_log('Repair thumbnails started');
+        $dbh = sqlConnect();
+        if (!$dbh) {
+            $response = ['success' => false, 'message' => 'Database connection failed'];
+            break;
+        }
+        // Get all favorites with logo URLs
+        $result = sqlQuery("SELECT station, name, logo FROM cfg_radio WHERE type='f' AND logo != '' AND logo IS NOT NULL", $dbh);
+        $repaired = 0;
+        $skipped = 0;
+        $failed = 0;
+        if (is_array($result)) {
+            foreach ($result as $row) {
+                $name = trim($row['name']);
+                $logoUrl = trim($row['logo']);
+                if (empty($name) || empty($logoUrl)) {
+                    $skipped++;
+                    continue;
+                }
+                // Build safe filename same way as rb_save_permanent_logo
+                $safeName = str_replace(['/', '\0'], '', $name);
+                $safeName = trim($safeName);
+                $thumbPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg';
+                $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
+                // Skip if thumbnails already exist
+                if (file_exists($thumbPath) && file_exists($thumbSmPath)) {
+                    $skipped++;
+                    continue;
+                }
+                // Fetch logo and save
+                rb_debug_log('Repair: Fetching logo for "' . $name . '" from ' . $logoUrl);
+                $ch = curl_init($logoUrl);
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT => 10,
+                    CURLOPT_USERAGENT => RB_UA,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS => 3
+                ]);
+                $imageData = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                if ($imageData && $httpCode == 200 && strlen($imageData) > 100) {
+                    if (rb_save_permanent_logo($name, $imageData)) {
+                        $repaired++;
+                        rb_debug_log('Repair: Saved thumbnails for "' . $name . '"');
+                    } else {
+                        $failed++;
+                        rb_debug_log('Repair: Failed to save thumbnails for "' . $name . '"');
+                    }
+                } else {
+                    $failed++;
+                    rb_debug_log('Repair: Failed to fetch logo for "' . $name . '" (HTTP ' . $httpCode . ')');
+                }
+            }
+        }
+        rb_debug_log('Repair thumbnails complete: repaired=' . $repaired . ', skipped=' . $skipped . ', failed=' . $failed);
+        $response = ['success' => true, 'message' => 'Repaired ' . $repaired . ' thumbnails, skipped ' . $skipped . ', failed ' . $failed];
+        break;
     case 'restart_services':
         // Restart nginx and PHP-FPM using background process
         // We need to send response first, then restart in background so connection doesn't die

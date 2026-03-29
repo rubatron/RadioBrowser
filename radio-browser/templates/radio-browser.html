@@ -184,19 +184,30 @@
                         <p class="rb-visibility-desc">Show tile in Configure modal</p>
                     </div>
 
-                    <div class="rb-visibility-item">
-                        <div class="rb-visibility-header">
-                            <span class="rb-visibility-label"><span class="rb-mbrand-badge">m</span> Playbar Icon</span>
-                            <div id="rb-visibility-playbar-btn" class="toggle" data-area="playbar">
-                                <label class="toggle-radio" for="rb-visibility-playbar-off">ON</label>
-                                <input type="radio" id="rb-visibility-playbar-on" name="rb-visibility-playbar"
-                                    value="On" checked>
-                                <label class="toggle-radio" for="rb-visibility-playbar-on">OFF</label>
-                                <input type="radio" id="rb-visibility-playbar-off" name="rb-visibility-playbar"
-                                    value="Off">
+                    <div class="rb-visibility-item rb-playbar-card">
+                        <div class="rb-playbar-options">
+                            <div class="rb-visibility-header">
+                                <span class="rb-visibility-label"><span class="rb-mbrand-badge">m</span> Playbar
+                                    Icon</span>
+                                <div id="rb-visibility-playbar-btn" class="toggle" data-area="playbar">
+                                    <label class="toggle-radio" for="rb-visibility-playbar-off">ON</label>
+                                    <input type="radio" id="rb-visibility-playbar-on" name="rb-visibility-playbar"
+                                        value="On" checked>
+                                    <label class="toggle-radio" for="rb-visibility-playbar-on">OFF</label>
+                                    <input type="radio" id="rb-visibility-playbar-off" name="rb-visibility-playbar"
+                                        value="Off">
+                                </div>
                             </div>
+                            <p class="rb-visibility-desc">Show radio icon in the playbar and coverview</p>
                         </div>
-                        <p class="rb-visibility-desc">Show radio icon in the playbar</p>
+                        <div class="rb-playbar-preview">
+                            <div class="rb-activityglow-option" id="rb-activityglow-wrapper">
+                                <span class="rb-visibility-label">Activity Light</span>
+                                <p class="rb-visibility-desc">Click icon to toggle. Lights up when playing a Radio
+                                    Browser stream.</p>
+                            </div>
+                            <i class="fa-solid fa-sharp fa-radio rb-playbar-mockup" id="rb-playbar-mockup"></i>
+                        </div>
                     </div>
 
                     <div class="rb-visibility-item">
@@ -212,22 +223,6 @@
                             </div>
                         </div>
                         <p class="rb-visibility-desc">Show .m3u download on station cards</p>
-                    </div>
-
-                    <div class="rb-visibility-item">
-                        <div class="rb-visibility-header">
-                            <span class="rb-visibility-label"><i
-                                    class="fa-solid fa-sharp fa-circle rb-activity-indicator"></i> Activity Glow</span>
-                            <div id="rb-visibility-activityglow-btn" class="toggle" data-area="activityglow">
-                                <label class="toggle-radio" for="rb-visibility-activityglow-off">ON</label>
-                                <input type="radio" id="rb-visibility-activityglow-on" name="rb-visibility-activityglow"
-                                    value="On" checked>
-                                <label class="toggle-radio" for="rb-visibility-activityglow-on">OFF</label>
-                                <input type="radio" id="rb-visibility-activityglow-off"
-                                    name="rb-visibility-activityglow" value="Off">
-                            </div>
-                        </div>
-                        <p class="rb-visibility-desc">Orange glow on radio icon when playing</p>
                     </div>
                 </div>
             </div>
@@ -423,6 +418,13 @@
                                     <i class="fa-solid fa-sharp fa-screwdriver-wrench"></i> Repair
                                 </button>
                                 <span class="rb-action-desc">Fix permissions and symlinks</span>
+                            </div>
+
+                            <div class="rb-action-item">
+                                <button type="button" id="rb-repair-thumbnails" class="btn btn-small">
+                                    <i class="fa-solid fa-sharp fa-images"></i> Repair Thumbnails
+                                </button>
+                                <span class="rb-action-desc">Regenerate missing station thumbnails</span>
                             </div>
 
                             <div class="rb-action-item">

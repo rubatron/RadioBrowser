@@ -127,6 +127,11 @@ function initRadioBrowser($) {
             bindVisibilityEvents();
             loadSettings();  // Load visibility settings on init
 
+            // Hash navigation: if URL has #settings, activate settings section
+            if (window.location.hash === '#settings') {
+                $('.rb-section-btn[data-section="settings"]').trigger('click');
+            }
+
             // Initialize active tab panel
             var activeTab = $('.rb-tab.active').data('tab');
             if (activeTab) {
@@ -268,6 +273,11 @@ function initRadioBrowser($) {
         $('#rb-repair').on('click', function(e) {
             e.stopPropagation();
             repairExtension();
+        });
+
+        $('#rb-repair-thumbnails').on('click', function(e) {
+            e.stopPropagation();
+            repairThumbnails();
         });
 
         $('#rb-reinstall').on('click', function(e) {
@@ -569,7 +579,7 @@ function initRadioBrowser($) {
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta">Recently played</div>' +
+                        '<div class="rb-meta-line"><i class="fa-solid fa-sharp fa-clock-rotate-left" style="font-size:0.7rem;margin-right:0.3rem;"></i>Recently played</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
@@ -653,7 +663,7 @@ function initRadioBrowser($) {
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta"><i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i> Favorite</div>' +
+                        '<div class="rb-meta-line"><i class="fa-solid fa-sharp fa-heart" style="color:#d35400;font-size:0.7rem;margin-right:0.3rem;"></i>Favorite</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
@@ -1096,14 +1106,14 @@ function initRadioBrowser($) {
         return div.innerHTML;
     }
 
-    function notify(title, text, type) {
+    function notify(title, text, type, duration) {
         if (typeof $.pnotify === 'function') {
             $.pnotify({
                 title: title,
                 text: text,
                 type: type === 'success' ? 'success' : (type === 'error' ? 'error' : 'notice'),
                 hide: true,
-                delay: 3000
+                delay: duration || 3000
             });
         } else {
             console.log('[' + type + '] ' + title + ': ' + text);
@@ -1262,6 +1272,34 @@ function initRadioBrowser($) {
         });
     }
 
+    function repairThumbnails() {
+        var btn = $('#rb-repair-thumbnails');
+        btn.prop('disabled', true).find('i').removeClass('fa-images').addClass('fa-spinner fa-spin');
+
+        $.ajax({
+            url: API_URL + '?cmd=repair_thumbnails',
+            type: 'POST',
+            dataType: 'json',
+            timeout: 120000,
+            success: function(data) {
+                btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-images');
+                if (data.success) {
+                    var msg = data.message || 'Thumbnails repaired';
+                    if (data.repaired > 0) {
+                        msg += ' (' + data.repaired + ' fixed)';
+                    }
+                    notify('Thumbnails', msg, 'success');
+                } else {
+                    notify('Error', data.message || 'Thumbnail repair failed', 'error');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-images');
+                notify('Error', 'Failed to repair thumbnails', 'error');
+            }
+        });
+    }
+
     function reinstallExtension() {
         if (!confirm('Re-run install script? This will refresh all symlinks and permissions.')) {
             return;
@@ -1341,6 +1379,25 @@ function initRadioBrowser($) {
         }
     }
 
+    function updatePlaybarMockup() {
+        var mockup = $('#rb-playbar-mockup');
+        var activityOptions = $('.rb-activityglow-option');
+
+        if (visibilityState.playbar) {
+            mockup.addClass('active');
+            activityOptions.removeClass('disabled');
+
+            if (visibilityState.activityglow) {
+                mockup.addClass('rb-active');
+            } else {
+                mockup.removeClass('rb-active');
+            }
+        } else {
+            mockup.removeClass('active rb-active');
+            activityOptions.addClass('disabled');
+        }
+    }
+
     function renderVisibility(visibility) {
         var v = visibility || {};
         visibilityState.library = v.library !== false;
@@ -1355,7 +1412,9 @@ function initRadioBrowser($) {
         applyVisibilityButtonState($('#rb-visibility-system-btn'), $('#rb-visibility-system-state'), 'system', visibilityState.system);
         applyVisibilityButtonState($('#rb-visibility-playbar-btn'), $('#rb-visibility-playbar-state'), 'playbar', visibilityState.playbar);
         applyVisibilityButtonState($('#rb-visibility-download-btn'), $('#rb-visibility-download-state'), 'download', visibilityState.download);
-        applyVisibilityButtonState($('#rb-visibility-activityglow-btn'), null, 'activityglow', visibilityState.activityglow);
+
+        // Update playbar mockup preview
+        updatePlaybarMockup();
 
         // Apply download button visibility to all cards
         applyDownloadButtonVisibility();
@@ -1380,7 +1439,12 @@ function initRadioBrowser($) {
 
                 if (data.success && data.data && data.data.visibility) {
                     renderVisibility(data.data.visibility);
-                    notify('Updated', visibilityAreaName(area) + ' visibility updated', 'success');
+                    // Menu-related toggles require cache flush + hard refresh
+                    if (['library', 'm', 'system', 'playbar'].indexOf(area) !== -1) {
+                        notify('Updated', visibilityAreaName(area) + ' updated — flush cache (Troubleshooting) and hard refresh moOde (Ctrl+Shift+R)', 'info', 8000);
+                    } else {
+                        notify('Updated', visibilityAreaName(area) + ' visibility updated', 'success');
+                    }
                 } else {
                     notify('Error', data.message || 'Failed to update visibility', 'error');
                 }
@@ -1415,8 +1479,7 @@ function initRadioBrowser($) {
             ['rb-visibility-m-btn', 'm'],
             ['rb-visibility-system-btn', 'system'],
             ['rb-visibility-playbar-btn', 'playbar'],
-            ['rb-visibility-download-btn', 'download'],
-            ['rb-visibility-activityglow-btn', 'activityglow']
+            ['rb-visibility-download-btn', 'download']
         ];
 
         areas.forEach(function(e) {
@@ -1428,6 +1491,23 @@ function initRadioBrowser($) {
                 if ($(this).prop('checked')) {
                     setVisibility(area, $(this).val() === 'On', toggleEl);
                 }
+            });
+        });
+
+        // Activity glow toggle via mockup click
+        $('#rb-playbar-mockup').on('click', function() {
+            if (!visibilityState.playbar) return; // Only works when playbar is enabled
+            var newState = !visibilityState.activityglow;
+            visibilityState.activityglow = newState;
+            updatePlaybarMockup();
+
+            // Save to backend
+            $.ajax({
+                url: API_URL + '?cmd=set_visibility',
+                type: 'POST',
+                data: { area: 'activityglow', value: newState ? '1' : '0' },
+                dataType: 'json',
+                timeout: 10000
             });
         });
     }
