@@ -82,7 +82,37 @@
    Ensure moOde modals work correctly when opened from this page
    ============================================ */
 
-/* No custom modal styling needed - use moOde's native modal styles */
+/* Explicitly ensure modals display correctly - prevent .hide conflicts */
+.modal {
+    /* Don't override display - let Bootstrap handle it */
+}
+
+.modal.in {
+    display: block !important;
+}
+
+.modal.in .modal-dialog,
+.modal.in .modal-content,
+.modal.in .modal-body,
+.modal.in .modal-header,
+.modal.in .modal-footer {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.modal-backdrop.in {
+    opacity: 0.7 !important;
+}
+
+/* Ensure z-index hierarchy for modals */
+.modal {
+    z-index: 1050 !important;
+}
+
+.modal-backdrop {
+    z-index: 1040 !important;
+}
 
 /* ============================================
    Hide moOde's config-tabs header bar on radio-browser page
@@ -907,10 +937,7 @@
     gap: 0.34rem;
 }
 
-.rb-visibility-control .toggle {
-    margin: 0;
-    background: transparent !important;
-}
+/* Let moOde's flat-ui.css handle toggle styling completely */
 
 .rb-visibility-state {
     display: none;
