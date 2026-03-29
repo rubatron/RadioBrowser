@@ -73,7 +73,8 @@
                     library: true,
                     m: true,
                     system: false,
-                    playbar: true
+                    playbar: true,
+                    activityglow: true
                 }
             };
         })
@@ -84,7 +85,8 @@
                     library: true,
                     m: true,
                     system: false,
-                    playbar: true
+                    playbar: true,
+                    activityglow: true
                 }
             };
         });
@@ -295,8 +297,9 @@
         if (!btn) return;
 
         var isActive = isPlayingFromRadioBrowser();
+        var showGlow = SETTINGS_CACHE && SETTINGS_CACHE.visibility && SETTINGS_CACHE.visibility.activityglow !== false;
 
-        if (isActive) {
+        if (isActive && showGlow) {
             btn.classList.add('rb-active');
             btn.style.color = '#c55a11';
             btn.style.opacity = '1';
@@ -424,8 +427,9 @@
         if (!btn) return;
 
         var isActive = isPlayingFromRadioBrowser();
+        var showGlow = SETTINGS_CACHE && SETTINGS_CACHE.visibility && SETTINGS_CACHE.visibility.activityglow !== false;
 
-        if (isActive) {
+        if (isActive && showGlow) {
             btn.classList.add('rb-active');
             btn.style.color = '#c55a11';
             btn.style.opacity = '1';

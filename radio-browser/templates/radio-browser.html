@@ -18,12 +18,8 @@
 
         <!-- Section Header with Menu Buttons -->
         <div class="rb-section-header">
-            <button type="button" class="rb-section-btn active" data-section="recently-played">
-                <i class="fa-solid fa-sharp fa-clock-rotate-left"></i> Recently Played
-            </button>
-            <button type="button" class="rb-section-btn" data-section="settings">
-                <i class="fa-solid fa-sharp fa-gear"></i> Settings
-            </button>
+            <button type="button" class="rb-section-btn active" data-section="recently-played">Recently Played</button>
+            <button type="button" class="rb-section-btn" data-section="settings">Settings</button>
         </div>
 
         <!-- Recently Played Section -->
@@ -112,6 +108,23 @@
                             </div>
                         </div>
                         <p class="rb-visibility-desc">Show .m3u download on station cards</p>
+                    </div>
+
+                    <div class="rb-visibility-item">
+                        <div class="rb-visibility-header">
+                            <span class="rb-visibility-label"><i
+                                    class="fa-solid fa-sharp fa-circle rb-activity-indicator"></i> Activity Glow</span>
+                            <div id="rb-visibility-activityglow-btn" class="toggle toggle-sm toggle-on"
+                                data-area="activityglow">
+                                <label class="toggle-radio" for="rb-visibility-activityglow-off">ON</label>
+                                <input type="radio" id="rb-visibility-activityglow-on" name="rb-visibility-activityglow"
+                                    value="On" checked>
+                                <label class="toggle-radio" for="rb-visibility-activityglow-on">OFF</label>
+                                <input type="radio" id="rb-visibility-activityglow-off"
+                                    name="rb-visibility-activityglow" value="Off">
+                            </div>
+                        </div>
+                        <p class="rb-visibility-desc">Orange glow on radio icon when playing</p>
                     </div>
                 </div>
 

@@ -1295,7 +1295,8 @@ function initRadioBrowser($) {
             ['rb-visibility-m-btn', 'm'],
             ['rb-visibility-system-btn', 'system'],
             ['rb-visibility-playbar-btn', 'playbar'],
-            ['rb-visibility-download-btn', 'download']
+            ['rb-visibility-download-btn', 'download'],
+            ['rb-visibility-activityglow-btn', 'activityglow']
         ];
 
         areas.forEach(function(e) {

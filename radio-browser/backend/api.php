@@ -133,7 +133,8 @@ function rb_get_default_settings()
             'm' => true,
             'system' => false,
             'playbar' => true,
-            'download' => true
+            'download' => true,
+            'activityglow' => true
         ],
         'version' => '3.1.0',
         'updated' => date('Y-m-d H:i:s')
@@ -164,9 +165,9 @@ function rb_save_settings($settings)
 
 function rb_set_visibility($area, $visible)
 {
-    $allowed = ['library', 'm', 'system', 'playbar', 'download'];
+    $allowed = ['library', 'm', 'system', 'playbar', 'download', 'activityglow'];
     if (!in_array($area, $allowed, true)) {
-        return ['success' => false, 'error' => 'Invalid area. Use library, m, system, playbar, or download.'];
+        return ['success' => false, 'error' => 'Invalid area. Use library, m, system, playbar, download, or activityglow.'];
     }
 
     $settings = rb_get_settings();
