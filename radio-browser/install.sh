@@ -757,6 +757,13 @@ show_menu() {
 }
 
 main_menu() {
+    # Auto-install when stdin is not a terminal (curl | bash)
+    if [ ! -t 0 ]; then
+        echo "Detected pipe input - running auto-install..."
+        auto_install
+        exit 0
+    fi
+    
     while true; do
         show_menu
         read -p "Select option: " -n 1 choice
