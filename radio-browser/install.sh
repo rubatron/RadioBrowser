@@ -21,19 +21,36 @@ set -e  # Exit on any error (disabled for menu mode)
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-SCRIPT_VERSION="3.0"
+SCRIPT_VERSION="3.9"
 GITHUB_REPO="rubatron/RadioBrowser"
 GITHUB_BRANCH="develop"  # Change to "main" for releases
 GITHUB_RAW="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/radio-browser"
 
-# Detect pipe input and download files from GitHub
-if [ ! -t 0 ]; then
-    SCRIPT_DIR="/tmp/radio-browser-source-$$"
+# Determine SCRIPT_DIR - either local or we need to download
+if [[ -n "${BASH_SOURCE[0]}" && -f "${BASH_SOURCE[0]}" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+    # Running via pipe (curl | bash) - set temp directory
+    SCRIPT_DIR="/tmp/radio-browser-install"
+fi
+
+# Check if we need to download source files
+NEED_DOWNLOAD=false
+if [[ ! -f "${SCRIPT_DIR}/manifest.json" ]]; then
+    NEED_DOWNLOAD=true
+fi
+
+if [[ "$NEED_DOWNLOAD" == "true" ]]; then
+    SCRIPT_DIR="/tmp/radio-browser-install"
+    rm -rf "$SCRIPT_DIR"
     mkdir -p "$SCRIPT_DIR"/{assets,backend,scripts,templates}
-
-    echo "Downloading source files from GitHub..."
-
-    # List of files to download
+    
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║       📥 DOWNLOADING SOURCE FILES FROM GITHUB               ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+    
     FILES=(
         "manifest.json"
         "radio-browser.php"
@@ -51,16 +68,26 @@ if [ ! -t 0 ]; then
         "scripts/flush-cache.sh"
         "scripts/clear-recently-played.sh"
     )
-
+    
     for file in "${FILES[@]}"; do
-        curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" || {
-            echo "Failed to download ${file}"
+        printf "  Downloading %-40s" "$file..."
+        if curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" 2>/dev/null; then
+            echo "✓"
+        else
+            echo "✗"
+            echo "ERROR: Failed to download ${file}"
             exit 1
-        }
+        fi
     done
+    echo ""
     echo "Downloaded ${#FILES[@]} files to ${SCRIPT_DIR}"
-else
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    echo ""
+fi
+
+# Auto-run mode detection (for curl | bash)
+AUTO_RUN=false
+if [ ! -t 0 ]; then
+    AUTO_RUN=true
 fi
 
 LOG_FILE="/tmp/radio-browser-install-$(date +%Y%m%d-%H%M%S).log"
@@ -797,9 +824,11 @@ show_menu() {
 }
 
 main_menu() {
-    # Auto-install when stdin is not a terminal (curl | bash)
-    if [ ! -t 0 ]; then
-        echo "Detected pipe input - running auto-install..."
+    # Auto-install when running via pipe (curl | bash)
+    if [[ "$AUTO_RUN" == "true" ]]; then
+        echo ""
+        echo "Auto-install mode detected - starting installation..."
+        echo ""
         auto_install
         exit 0
     fi
