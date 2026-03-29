@@ -763,7 +763,7 @@ main_menu() {
         auto_install
         exit 0
     fi
-    
+
     while true; do
         show_menu
         read -p "Select option: " -n 1 choice
