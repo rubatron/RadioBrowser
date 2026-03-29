@@ -26,6 +26,7 @@ function initRadioBrowser($) {
         currentPlaying: null,
         stationData: [],           // Search results stations
         recentStationData: [],     // Recently played stations (separate to prevent memory leak)
+        favoriteStationData: [],   // Favorites section stations
         favorites: [],
         favoriteNames: [],         // Station names for matching when URLs differ
         favoritesMap: {},
@@ -205,7 +206,7 @@ function initRadioBrowser($) {
     }
 
     function bindTabEvents() {
-        // Section header button switching (Recently Played / Settings)
+        // Section header button switching (Search / Recently Played / Favorites / Settings)
         $(document).on('click', '.rb-section-btn', function(e) {
             e.preventDefault();
             var section = $(this).data('section');
@@ -214,23 +215,20 @@ function initRadioBrowser($) {
             $('.rb-section-btn').removeClass('active');
             $(this).addClass('active');
 
-            // Show corresponding section panel
+            // Show corresponding section panel, hide all others
             $('.rb-section-panel').addClass('hide');
             $('#rb-' + section + '-section').removeClass('hide');
 
-            // Show/hide search area based on section
+            // Section-specific actions
             if (section === 'settings') {
-                // Hide search area when in settings
-                $('#rb-search-section').addClass('hide');
-                $('#rb-results-section').addClass('hide');
-                // Load settings and check API status
                 loadSettings();
                 checkApiStatus();
-            } else {
-                // Show search area when in recently-played
-                $('#rb-search-section').removeClass('hide');
-                // Results section visibility managed by search logic
+            } else if (section === 'recently-played') {
+                loadRecentlyPlayed();
+            } else if (section === 'favorites') {
+                loadAndRenderFavorites();
             }
+            // 'search' section has no special load action
         });
 
         // Accordion toggle - for settings panel
@@ -571,6 +569,86 @@ function initRadioBrowser($) {
         checkCurrentlyPlaying();
     }
 
+    // Load and render favorites in the Favorites section
+    function loadAndRenderFavorites() {
+        var container = $('#rb-favorites');
+        container.html('<p class="rb-no-results"><i class="fa-solid fa-sharp fa-spinner fa-spin"></i> Loading favorites...</p>');
+
+        $.ajax({
+            url: API_URL + '?cmd=favorites',
+            type: 'GET',
+            dataType: 'json',
+            timeout: 5000,
+            success: function(data) {
+                if (data.success && data.favorites && data.favorites.length > 0) {
+                    renderFavorites(data.favorites);
+                } else {
+                    container.html('<p class="rb-no-results">No favorites yet. Add stations from Search or Recently Played.</p>');
+                }
+            },
+            error: function() {
+                container.html('<p class="rb-no-results">Failed to load favorites.</p>');
+            }
+        });
+    }
+
+    function renderFavorites(favStations) {
+        var container = $('#rb-favorites');
+        var html = [];
+
+        // Store favorites station data for playback
+        state.favoriteStationData = [];
+
+        favStations.forEach(function(s, index) {
+            // Logo field: 'local' means moOde's radio-logos folder
+            var logoUrl = '';
+            if (s.logo === 'local') {
+                logoUrl = '/imagesw/radio-logos/thumbs/' + encodeURIComponent(s.name) + '.jpg';
+            } else if (s.logo && s.logo.startsWith('/extensions/')) {
+                logoUrl = s.logo;
+            } else if (s.logo && (s.logo.startsWith('http://') || s.logo.startsWith('https://'))) {
+                logoUrl = s.logo;
+            } else if (s.logo) {
+                logoUrl = '/imagesw/radio-logos/thumbs/' + encodeURIComponent(s.name) + '.jpg';
+            }
+
+            var logoHtml = logoUrl ?
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/radio-logo.png\'">' :
+                '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
+
+            var storeIndex = index;
+            var stationData = {
+                url: s.url,
+                url_fallback: s.url,
+                name: s.name,
+                favicon: logoUrl,
+                country: '',
+                tags: '',
+                bitrate: 0,
+                codec: ''
+            };
+            state.favoriteStationData.push(stationData);
+
+            html.push(
+                '<div class="rb-station-card rb-favorite-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '" data-name="' + escapeHtml(s.name) + '">' +
+                    logoHtml +
+                    '<div class="rb-info">' +
+                        '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
+                        '<div class="rb-meta"><i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i> Favorite</div>' +
+                    '</div>' +
+                    '<div class="rb-actions">' +
+                        '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
+                        '<button class="btn rb-add-btn added" title="Remove from Favorites"><i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i></button>' +
+                        '<button class="btn rb-download-btn" title="Download .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
+                    '</div>' +
+                '</div>'
+            );
+        });
+
+        container.html(html.join(''));
+        checkCurrentlyPlaying();
+    }
+
     function searchStations() {
         if (state.loading) return;
         state.loading = true;
@@ -739,9 +817,17 @@ function initRadioBrowser($) {
     function playStation(card) {
         var stationIndex = parseInt(card.data('station-index'));
 
-        // Check if this is a recently played card or a search result card
+        // Check card type to get correct station data
         var isRecentCard = card.hasClass('rb-recent-card');
-        var stationData = isRecentCard ? state.recentStationData[stationIndex] : state.stationData[stationIndex];
+        var isFavoriteCard = card.hasClass('rb-favorite-card');
+        var stationData;
+        if (isRecentCard) {
+            stationData = state.recentStationData[stationIndex];
+        } else if (isFavoriteCard) {
+            stationData = state.favoriteStationData[stationIndex];
+        } else {
+            stationData = state.stationData[stationIndex];
+        }
 
         if (!stationData) {
             notify('Error', 'Station data not found', 'error');
@@ -820,9 +906,17 @@ function initRadioBrowser($) {
     function addToRadio(card) {
         var stationIndex = parseInt(card.data('station-index'));
 
-        // Check if this is a recently played card or a search result card
+        // Check card type to get correct station data
         var isRecentCard = card.hasClass('rb-recent-card');
-        var stationData = isRecentCard ? state.recentStationData[stationIndex] : state.stationData[stationIndex];
+        var isFavoriteCard = card.hasClass('rb-favorite-card');
+        var stationData;
+        if (isRecentCard) {
+            stationData = state.recentStationData[stationIndex];
+        } else if (isFavoriteCard) {
+            stationData = state.favoriteStationData[stationIndex];
+        } else {
+            stationData = state.stationData[stationIndex];
+        }
 
         if (!stationData) {
             notify('Error', 'Station data not found', 'error');

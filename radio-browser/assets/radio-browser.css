@@ -60,6 +60,15 @@
     display: none !important;
 }
 
+.rb-section-subtitle {
+    font-family: Lato, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 300;
+    color: #ddd;
+    margin: 1.5rem 0 0.75rem;
+    padding: 0;
+}
+
 /* ============================================
    Search Section (hideable)
    ============================================ */
@@ -859,40 +868,6 @@
     color: #c55a11;
     font-size: 0.5rem;
     text-shadow: 0 0 6px rgba(197, 90, 17, 0.8);
-}
-
-/* Smaller transparent toggle */
-.toggle.toggle-sm {
-    transform: scale(0.8);
-    transform-origin: right center;
-    background: transparent !important;
-    margin: 0 !important;
-}
-
-.toggle.toggle-sm .toggle-radio {
-    background: transparent !important;
-}
-
-/* Remove black background from all Radio Browser toggles */
-.rb-visibility-item .toggle,
-.rb-visibility-settings .toggle {
-    background: transparent !important;
-}
-
-.rb-visibility-item .toggle .toggle-radio,
-.rb-visibility-settings .toggle .toggle-radio {
-    background: rgba(255, 255, 255, 0.05) !important;
-}
-
-.rb-visibility-item .toggle.toggle-on .toggle-radio:first-of-type,
-.rb-visibility-settings .toggle.toggle-on .toggle-radio:first-of-type {
-    background: #d35400 !important;
-    color: #fff;
-}
-
-.rb-visibility-item .toggle.toggle-off .toggle-radio:last-of-type,
-.rb-visibility-settings .toggle.toggle-off .toggle-radio:last-of-type {
-    background: rgba(255, 255, 255, 0.15) !important;
 }
 
 .rb-settings-note {
