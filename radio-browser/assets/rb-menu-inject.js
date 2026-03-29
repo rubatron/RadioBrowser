@@ -295,18 +295,17 @@
         if (!btn) return;
 
         var isActive = isPlayingFromRadioBrowser();
-        var icon = btn.querySelector('i');
 
         if (isActive) {
             btn.classList.add('rb-active');
             btn.style.color = '#c55a11';
             btn.style.opacity = '1';
-            if (icon) icon.classList.add('fa-beat-fade');
+            btn.style.textShadow = '0 0 8px rgba(197, 90, 17, 0.6)';
         } else {
             btn.classList.remove('rb-active');
             btn.style.color = 'var(--adapttext)';
             btn.style.opacity = '0.7';
-            if (icon) icon.classList.remove('fa-beat-fade');
+            btn.style.textShadow = 'none';
         }
     }
 
