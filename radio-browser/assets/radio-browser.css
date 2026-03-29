@@ -98,9 +98,9 @@
 }
 
 /* Ensure modal content sections are visible (Bootstrap 2.x structure) */
-.modal.in > .modal-header,
-.modal.in > .modal-body,
-.modal.in > .modal-footer,
+.modal.in>.modal-header,
+.modal.in>.modal-body,
+.modal.in>.modal-footer,
 .modal.in #configure,
 .modal.in #configure ul,
 .modal.in #configure ul li {
