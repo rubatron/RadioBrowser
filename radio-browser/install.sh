@@ -45,11 +45,14 @@ echo ""
 # Download file manifest first
 printf "  Fetching file manifest (files.txt)... "
 MANIFEST_URL="${GITHUB_RAW}/files.txt"
+
 if ! curl -sL "$MANIFEST_URL" -o "${SCRIPT_DIR}/files.txt" 2>/dev/null; then
     echo "✗"
     echo "ERROR: Could not download file manifest from ${MANIFEST_URL}"
     exit 1
 fi
+# Strip any CR characters (Windows line endings) from files.txt
+sed -i 's/\r$//' "${SCRIPT_DIR}/files.txt"
 echo "✓"
 echo ""
 echo "  Files to download:"
