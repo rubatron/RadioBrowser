@@ -362,6 +362,57 @@
     }
 
     /**
+     * Find the Configure modal tile list
+     */
+    function findConfigureTileList() {
+        return document.querySelector('#configure-modal #configure ul');
+    }
+
+    /**
+     * Remove existing Radio Browser tiles from Configure modal
+     */
+    function removeExistingConfigureTile(list) {
+        if (!list) return;
+        var existing = list.querySelectorAll('.rb-configure-entry');
+        for (var i = 0; i < existing.length; i++) {
+            if (existing[i] && existing[i].parentNode) {
+                existing[i].parentNode.removeChild(existing[i]);
+            }
+        }
+    }
+
+    /**
+     * Inject Radio Browser tile into Configure modal
+     */
+    function renderConfigureTile(settings) {
+        var list = findConfigureTileList();
+        if (!list) return;
+
+        var visibility = (settings && settings.visibility) || {};
+        var showTile = visibility.system === true;
+
+        // Always remove existing first
+        removeExistingConfigureTile(list);
+
+        // Only add if visibility.system is true
+        if (!showTile) return;
+
+        // Create tile entry (copy moOde's structure)
+        var li = document.createElement('li');
+        li.className = 'rb-configure-entry';
+
+        var link = document.createElement('a');
+        link.className = 'btn btn-large';
+        link.href = '/radio-browser.php';
+        link.setAttribute('data-rb-entry', 'radio-browser');
+        link.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i><br>Radio Browser';
+        link.title = 'Open Radio Browser';
+
+        li.appendChild(link);
+        list.appendChild(li);
+    }
+
+    /**
      * Main render function - refresh all menu injections
      */
     function renderAll() {
@@ -369,6 +420,7 @@
             renderLibraryMenu(settings);
             renderMMenu(settings);
             renderPlaybarIcon(settings);
+            renderConfigureTile(settings);
         });
     }
 
@@ -389,10 +441,26 @@
                 // Debounced render after dropdown opens
                 renderAllDebounced();
             }
+
+            // Also render when Configure modal link is clicked
+            var configureLink = e.target.closest('a[href="#configure-modal"]');
+            if (configureLink) {
+                // Small delay to ensure modal is opening
+                setTimeout(function() {
+                    fetchSettings().then(renderConfigureTile);
+                }, 100);
+            }
         });
 
         // Bootstrap dropdown events (if available)
         document.addEventListener('shown.bs.dropdown', renderAllDebounced);
+
+        // Bootstrap modal shown event - render configure tile when modal opens
+        if (window.jQuery) {
+            window.jQuery(document).on('shown.bs.modal', '#configure-modal', function() {
+                fetchSettings().then(renderConfigureTile);
+            });
+        }
 
         // Periodic check for playbar icon active state (every 2 seconds)
         setInterval(updatePlaybarIconState, 2000);
