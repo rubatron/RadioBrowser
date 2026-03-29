@@ -93,7 +93,7 @@ if [ ! -t 0 ]; then
     AUTO_RUN=true
 fi
 
-LOG_FILE="/tmp/radio-browser-install-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="${SCRIPT_DIR}/install-$(date +%Y%m%d-%H%M%S).log"
 
 # Installation paths
 EXT_BASE="/var/www/extensions/installed/radio-browser"
