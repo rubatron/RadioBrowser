@@ -73,7 +73,8 @@
                     header: true,
                     library: true,
                     m: true,
-                    system: false
+                    system: false,
+                    playbar: true
                 }
             };
         })
@@ -84,7 +85,8 @@
                     header: true,
                     library: true,
                     m: true,
-                    system: false
+                    system: false,
+                    playbar: true
                 }
             };
         });
@@ -303,9 +305,17 @@
     /**
      * Inject Radio Browser icon into moOde's playbar
      */
-    function renderPlaybarIcon() {
+    function renderPlaybarIcon(settings) {
         var toggles = document.getElementById('playbar-toggles');
         if (!toggles) return;
+
+        // Check visibility setting
+        var visible = settings && settings.visibility && settings.visibility.playbar !== false;
+        var existing = document.getElementById('rb-playbar-btn');
+        if (!visible) {
+            if (existing) existing.remove();
+            return;
+        }
 
         // Check if already exists
         if (document.getElementById('rb-playbar-btn')) return;
@@ -346,7 +356,7 @@
             renderLibraryMenu(settings);
             renderMMenu(settings);
             renderHeaderButton(settings);
-            renderPlaybarIcon();
+            renderPlaybarIcon(settings);
         });
     }
 

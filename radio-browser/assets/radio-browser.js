@@ -1120,14 +1120,16 @@ function initRadioBrowser($) {
         header: true,
         library: true,
         m: true,
-        system: true
+        system: true,
+        playbar: true
     };
 
     function visibilityAreaName(area) {
         return area === 'header' ? 'Header menu'
             : area === 'library' ? 'Library menu'
             : area === 'm' ? 'M Menu'
-            : 'M Configuration Tile';
+            : area === 'system' ? 'M Configuration Tile'
+            : 'Playbar Icon';
     }
 
     function applyToggleState(toggleEl, visible) {
@@ -1156,11 +1158,13 @@ function initRadioBrowser($) {
         visibilityState.library = v.library !== false;
         visibilityState.m = v.m !== false;
         visibilityState.system = v.system !== false;
+        visibilityState.playbar = v.playbar !== false;
 
         applyVisibilityButtonState($('#rb-visibility-header-btn'), $('#rb-visibility-header-state'), 'header', visibilityState.header);
         applyVisibilityButtonState($('#rb-visibility-library-btn'), $('#rb-visibility-library-state'), 'library', visibilityState.library);
         applyVisibilityButtonState($('#rb-visibility-m-btn'), $('#rb-visibility-m-state'), 'm', visibilityState.m);
         applyVisibilityButtonState($('#rb-visibility-system-btn'), $('#rb-visibility-system-state'), 'system', visibilityState.system);
+        applyVisibilityButtonState($('#rb-visibility-playbar-btn'), $('#rb-visibility-playbar-state'), 'playbar', visibilityState.playbar);
     }
 
     function setVisibility(area, visible, toggleEl) {
@@ -1221,7 +1225,8 @@ function initRadioBrowser($) {
             ['rb-visibility-header-btn', 'header'],
             ['rb-visibility-library-btn', 'library'],
             ['rb-visibility-m-btn', 'm'],
-            ['rb-visibility-system-btn', 'system']
+            ['rb-visibility-system-btn', 'system'],
+            ['rb-visibility-playbar-btn', 'playbar']
         ];
 
         areas.forEach(function(e) {

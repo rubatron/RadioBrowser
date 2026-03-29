@@ -132,7 +132,8 @@ function rb_get_default_settings()
             'header' => true,
             'library' => true,
             'm' => true,
-            'system' => false
+            'system' => false,
+            'playbar' => true
         ],
         'version' => '3.1.0',
         'updated' => date('Y-m-d H:i:s')
@@ -163,9 +164,9 @@ function rb_save_settings($settings)
 
 function rb_set_visibility($area, $visible)
 {
-    $allowed = ['header', 'library', 'm', 'system'];
+    $allowed = ['header', 'library', 'm', 'system', 'playbar'];
     if (!in_array($area, $allowed, true)) {
-        return ['success' => false, 'error' => 'Invalid area. Use header, library, m, or system.'];
+        return ['success' => false, 'error' => 'Invalid area. Use header, library, m, system, or playbar.'];
     }
 
     $settings = rb_get_settings();
@@ -178,6 +179,7 @@ function rb_set_visibility($area, $visible)
     // Ensure all visibility keys exist
     foreach ($allowed as $key) {
         if (!array_key_exists($key, $settings['visibility'])) {
+            // playbar defaults to true, system defaults to false
             $settings['visibility'][$key] = ($key === 'system') ? false : true;
         }
     }
