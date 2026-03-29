@@ -586,12 +586,15 @@ function initRadioBrowser($) {
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
             var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
 
+            // HiRes badge for bitrate >= 320 kbps
+            var hiResBadge = (s.bitrate && s.bitrate >= 320) ? ' <span class="playback-hd-badge">HiRes</span>' : '';
+
             html.push(
                 '<div class="rb-station-card rb-recent-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '" data-name="' + escapeHtml(s.name) + '">' +
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta">' + metaLine + '</div>' +
+                        '<div class="rb-meta">' + metaLine + hiResBadge + '</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
@@ -680,7 +683,14 @@ function initRadioBrowser($) {
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta-line"><i class="fa-solid fa-sharp fa-heart" style="color:#d35400;font-size:0.7rem;margin-right:0.3rem;"></i>Favorite</div>' +
+                        '<div class="rb-meta-lines">' +
+                            '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
+                            '<div class="rb-meta rb-meta-bitrate">' +
+                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' • ' + s.codec : '')) +
+                                (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
+                            '</div>' +
+                            '<div class="rb-meta rb-meta-genre">' + (s.tags ? s.tags.split(',')[0] : '') + '</div>' +
+                        '</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
@@ -844,7 +854,14 @@ function initRadioBrowser($) {
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta">' + metaParts.join(' • ') + '</div>' +
+                        '<div class="rb-meta-lines">' +
+                            '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
+                            '<div class="rb-meta rb-meta-bitrate">' +
+                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' • ' + s.codec : '')) +
+                                (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
+                            '</div>' +
+                            '<div class="rb-meta rb-meta-genre">' + (s.tags ? s.tags.split(',')[0] : '') + '</div>' +
+                        '</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
