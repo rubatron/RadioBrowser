@@ -22,7 +22,47 @@ set -e  # Exit on any error (disabled for menu mode)
 # CONFIGURATION
 # ============================================================================
 SCRIPT_VERSION="3.0"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GITHUB_REPO="rubatron/RadioBrowser"
+GITHUB_BRANCH="develop"  # Change to "main" for releases
+GITHUB_RAW="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/radio-browser"
+
+# Detect pipe input and download files from GitHub
+if [ ! -t 0 ]; then
+    SCRIPT_DIR="/tmp/radio-browser-source-$$"
+    mkdir -p "$SCRIPT_DIR"/{assets,backend,scripts,templates}
+    
+    echo "Downloading source files from GitHub..."
+    
+    # List of files to download
+    FILES=(
+        "manifest.json"
+        "radio-browser.php"
+        "rb-shell-bridge.php"
+        "info.json"
+        "version.txt"
+        "README.md"
+        "backend/api.php"
+        "assets/radio-browser.js"
+        "assets/radio-browser.css"
+        "assets/rb-menu-inject.js"
+        "templates/radio-browser.html"
+        "scripts/fix-permissions.sh"
+        "scripts/test-api.sh"
+        "scripts/flush-cache.sh"
+        "scripts/clear-recently-played.sh"
+    )
+    
+    for file in "${FILES[@]}"; do
+        curl -sL "${GITHUB_RAW}/${file}" -o "${SCRIPT_DIR}/${file}" || {
+            echo "Failed to download ${file}"
+            exit 1
+        }
+    done
+    echo "Downloaded ${#FILES[@]} files to ${SCRIPT_DIR}"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+
 LOG_FILE="/tmp/radio-browser-install-$(date +%Y%m%d-%H%M%S).log"
 
 # Installation paths
