@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
- * Version: 3.0.0
+ * Version: 4.0.0
  */
 
 // Include moOde common functions (required for session, SQL, etc.)
@@ -24,15 +24,30 @@ $extPath = __DIR__;
 $extAssetsPath = '/extensions/installed/radio-browser/assets';
 
 // Define variables for template
-$_radio_api_options = '<option value="radio-browser-info" selected>radio-browser.info (Default)</option>';
+// Load settings to get active API
+$settingsFile = $extPath . '/data/settings.json';
+$activeApi = 'radio-browser-info';
+if (file_exists($settingsFile)) {
+    $settingsData = json_decode(file_get_contents($settingsFile), true);
+    if (is_array($settingsData) && !empty($settingsData['active_api'])) {
+        $activeApi = $settingsData['active_api'];
+    }
+}
+
+$defaultSelected = ($activeApi === 'radio-browser-info') ? ' selected' : '';
+$_radio_api_options = '<option value="radio-browser-info"' . $defaultSelected . '>radio-browser.info (Default)</option>';
 
 // Load custom APIs from data folder (survives cache flush)
 $customApisFile = $extPath . '/data/custom_apis.json';
+$_custom_api_options = '<option value="">No custom APIs</option>';
 if (file_exists($customApisFile)) {
     $customApis = json_decode(file_get_contents($customApisFile), true);
-    if (is_array($customApis)) {
+    if (is_array($customApis) && !empty($customApis)) {
+        $_custom_api_options = '';
         foreach ($customApis as $id => $api) {
-            $_radio_api_options .= '<option value="' . htmlspecialchars($id) . '">' . htmlspecialchars($api['name']) . ' (Custom)</option>';
+            $selected = ($activeApi === $id) ? ' selected' : '';
+            $_radio_api_options .= '<option value="' . htmlspecialchars($id) . '"' . $selected . '>' . htmlspecialchars($api['name']) . ' (Custom)</option>';
+            $_custom_api_options .= '<option value="' . htmlspecialchars($id) . '">' . htmlspecialchars($api['name']) . '</option>';
         }
     }
 }
@@ -45,9 +60,6 @@ $_SESSION['config_back_link'] = '/index.php';
 
 // Template file path
 $tpl = 'radio-browser';
-
-// Custom API options (empty - custom APIs added dynamically via JS)
-$_custom_api_options = '';
 
 // Store back link
 storeBackLink($section, $tpl);

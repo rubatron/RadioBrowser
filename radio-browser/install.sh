@@ -4,8 +4,8 @@
 # ============================================================================
 # SPDX-License-Identifier: GPL-3.0-or-later
 # 2026 RubaTron
-# Version: 3.0.0
-# Date: January 2026
+# Version: 4.0.0
+# Date: April 2026
 #
 # Interactive installer with menu for moOde Radio Browser Extension
 #
@@ -21,7 +21,7 @@
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-SCRIPT_VERSION="3.9"
+SCRIPT_VERSION="4.0"
 GITHUB_REPO="rubatron/RadioBrowser"
 GITHUB_BRANCH="develop"  # Change to "main" for releases
 GITHUB_RAW="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/radio-browser"
@@ -123,6 +123,9 @@ declare -A SOURCE_FILES=(
     ["scripts/test-api.sh"]="${SCRIPT_DIR}/scripts/test-api.sh"
     ["scripts/flush-cache.sh"]="${SCRIPT_DIR}/scripts/flush-cache.sh"
     ["scripts/clear-recently-played.sh"]="${SCRIPT_DIR}/scripts/clear-recently-played.sh"
+    ["systemd/radio-browser-health.sh"]="${SCRIPT_DIR}/systemd/radio-browser-health.sh"
+    ["systemd/radio-browser-health.service"]="${SCRIPT_DIR}/systemd/radio-browser-health.service"
+    ["systemd/radio-browser-health.timer"]="${SCRIPT_DIR}/systemd/radio-browser-health.timer"
     ["info.json"]="${SCRIPT_DIR}/info.json"
     ["version.txt"]="${SCRIPT_DIR}/version.txt"
     ["README.md"]="${SCRIPT_DIR}/README.md"
@@ -377,6 +380,7 @@ create_folders() {
         "${EXT_BASE}/assets"
         "${EXT_BASE}/templates"
         "${EXT_BASE}/scripts"
+        "${EXT_BASE}/systemd"
         "${CACHE_DIR}"
         "${IMAGE_CACHE_DIR}"
         "${DATA_DIR}"
@@ -598,6 +602,56 @@ cleanup_shell_bridge() {
 }
 
 # ============================================================================
+# SYSTEMD SERVICE INSTALLATION
+# ============================================================================
+install_systemd_service() {
+    log "Installing systemd health check service..."
+
+    local service_src="${EXT_BASE}/systemd/radio-browser-health.service"
+    local timer_src="${EXT_BASE}/systemd/radio-browser-health.timer"
+    local script_src="${EXT_BASE}/systemd/radio-browser-health.sh"
+
+    if [[ ! -f "$service_src" ]] || [[ ! -f "$timer_src" ]] || [[ ! -f "$script_src" ]]; then
+        warning "Systemd files not found, skipping service installation"
+        return 1
+    fi
+
+    # Make health check script executable
+    chmod +x "$script_src"
+
+    # Copy unit files to systemd directory
+    cp "$service_src" /etc/systemd/system/radio-browser-health.service
+    cp "$timer_src" /etc/systemd/system/radio-browser-health.timer
+
+    # Reload systemd and enable timer
+    systemctl daemon-reload
+    systemctl enable radio-browser-health.timer
+    systemctl start radio-browser-health.timer
+
+    if systemctl is-active --quiet radio-browser-health.timer; then
+        success "Health check timer installed and running (every 5 minutes)"
+        echo -e "  ${CYAN}→${NC} View logs: journalctl -u radio-browser-health"
+        return 0
+    else
+        warning "Timer installed but not started"
+        return 1
+    fi
+}
+
+remove_systemd_service() {
+    log "Removing systemd health check service..."
+
+    systemctl stop radio-browser-health.timer 2>/dev/null
+    systemctl disable radio-browser-health.timer 2>/dev/null
+    rm -f /etc/systemd/system/radio-browser-health.service
+    rm -f /etc/systemd/system/radio-browser-health.timer
+    systemctl daemon-reload
+
+    success "Health check service removed"
+    return 0
+}
+
+# ============================================================================
 # UNINSTALL FUNCTION
 # ============================================================================
 uninstall() {
@@ -626,6 +680,9 @@ uninstall() {
 
     # Remove menu integration from header.php
     cleanup_shell_bridge
+
+    # Remove systemd service
+    remove_systemd_service
 
     log "Removing files..."
 
@@ -658,13 +715,13 @@ auto_install() {
     local errors=0
 
     # Step 1: Check root
-    echo -e "${BOLD}Step 1/8: Checking permissions...${NC}"
+    echo -e "${BOLD}Step 1/9: Checking permissions...${NC}"
     check_root || { error "Must run as root"; return 1; }
     echo
 
 
     # Step 2: Download and check source files
-    echo -e "${BOLD}Step 2/8: Downloading and checking source files...${NC}"
+    echo -e "${BOLD}Step 2/9: Downloading and checking source files...${NC}"
     if ! check_source_files; then
         error "Source files missing after download";
         return 1;
@@ -672,34 +729,39 @@ auto_install() {
     echo
 
     # Step 3: Install dependencies
-    echo -e "${BOLD}Step 3/8: Installing dependencies...${NC}"
+    echo -e "${BOLD}Step 3/9: Installing dependencies...${NC}"
     install_curl || warning "cURL installation issue"
     install_php_curl || warning "PHP cURL installation issue"
     echo
 
     # Step 4: Create backup
-    echo -e "${BOLD}Step 4/8: Creating backup...${NC}"
+    echo -e "${BOLD}Step 4/9: Creating backup...${NC}"
     create_backup || warning "Backup creation issue"
     echo
 
     # Step 5: Create folders
-    echo -e "${BOLD}Step 5/8: Creating folders...${NC}"
+    echo -e "${BOLD}Step 5/9: Creating folders...${NC}"
     create_folders || { error "Failed to create folders"; errors=$((errors + 1)); }
     echo
 
     # Step 6: Copy files
-    echo -e "${BOLD}Step 6/8: Copying files...${NC}"
+    echo -e "${BOLD}Step 6/9: Copying files...${NC}"
     copy_files || { error "Failed to copy files"; errors=$((errors + 1)); }
     echo
 
     # Step 7: Set permissions
-    echo -e "${BOLD}Step 7/8: Setting permissions...${NC}"
+    echo -e "${BOLD}Step 7/9: Setting permissions...${NC}"
     set_permissions || { error "Failed to set permissions"; errors=$((errors + 1)); }
     echo
 
     # Step 8: Install menu integration
-    echo -e "${BOLD}Step 8/8: Installing menu integration...${NC}"
+    echo -e "${BOLD}Step 8/9: Installing menu integration...${NC}"
     patch_moode_header || warning "Menu integration issue"
+    echo
+
+    # Step 9: Install systemd health check
+    echo -e "${BOLD}Step 9/9: Installing health check service...${NC}"
+    install_systemd_service || warning "Systemd service issue"
     echo
 
     # Summary
@@ -709,8 +771,15 @@ auto_install() {
         echo -e "${GREEN}║         ✓ INSTALLATION COMPLETED SUCCESSFULLY               ║${NC}"
         echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
         echo
+        local MY_HOSTNAME
+        MY_HOSTNAME=$(hostname 2>/dev/null || echo "moode")
+        local MY_IP
+        MY_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
         echo "Access Radio Browser at:"
-        echo "  http://moode.local/radio-browser.php"
+        echo "  http://${MY_HOSTNAME}.local/radio-browser.php"
+        if [[ -n "$MY_IP" ]]; then
+            echo "  http://${MY_IP}/radio-browser.php"
+        fi
         echo
         echo "Or via moOde menu: Menu → Extensions → Radio Browser"
         echo

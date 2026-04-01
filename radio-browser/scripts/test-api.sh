@@ -2,7 +2,7 @@
 # RubaTron's Radio Browser Extension for moOde Audio Player
 # SPDX-License-Identifier: GPL-3.0-or-later
 # 2026 RubaTron
-# Version: 3.0.0
+# Version: 4.0.0
 #
 # Test API Connection Script
 
@@ -25,15 +25,15 @@ OFFLINE_COUNT=0
 
 for SERVER in "${SERVERS[@]}"; do
     URL="https://$SERVER/json/stats"
-    
+
     # Test connection with 5 second timeout
     START=$(date +%s%N)
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 --max-time 10 "$URL")
     END=$(date +%s%N)
-    
+
     # Calculate latency in ms
     LATENCY=$(( (END - START) / 1000000 ))
-    
+
     if [ "$HTTP_CODE" = "200" ]; then
         echo "  ✓ $SERVER - ONLINE (${LATENCY}ms)"
         ((ONLINE_COUNT++))

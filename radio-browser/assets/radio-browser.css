@@ -20,12 +20,45 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
- * Version: 3.0.0
+ * Version: 4.0.0
  *
  * Radio Browser specific CSS - extends moOde's styles.min.css
  * This file only contains Radio Browser specific styles.
  * Base styles (buttons, forms, layout) are inherited from /css/styles.min.css
  ********************************************************************************/
+
+/* ============================================
+   Service Status Dot
+   ============================================ */
+
+.rb-status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.rb-status-running {
+    background: #4caf50;
+    box-shadow: 0 0 4px #4caf50;
+}
+
+.rb-status-warning {
+    background: #ff9800;
+    box-shadow: 0 0 4px #ff9800;
+}
+
+.rb-status-error {
+    background: #f44336;
+    box-shadow: 0 0 4px #f44336;
+}
+
+.rb-status-unknown,
+.rb-status-inactive {
+    background: #666;
+}
 
 /* ============================================
    Section Header with Legend-Style Buttons
@@ -149,51 +182,8 @@
 }
 
 /* ============================================
-   Tab Navigation
-   ============================================ */
-
-.rb-tabs {
-    display: flex;
-    gap: 0;
-    justify-content: flex-start;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid #ddd;
-}
-
-.rb-tab {
-    background: transparent;
-    border: none;
-    padding: 10px 12px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.5);
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s ease, border-color 0.15s ease;
-    border-radius: 4px 4px 0 0;
-    margin-bottom: -1px;
-}
-
-.rb-tab:hover {
-    color: #ddd;
-}
-
-.rb-tab.active {
-    color: var(--accentxts, #0dc5c1);
-    border-bottom-color: var(--accentxts, #0dc5c1);
-}
-
-/* ============================================
    Panels
    ============================================ */
-
-.rb-panel {
-    display: block !important;
-}
-
-.rb-panel.hide {
-    display: none !important;
-}
 
 /* Hide class for Radio Browser elements */
 #rb-results.hide,
@@ -201,8 +191,7 @@
 #rb-no-results.hide,
 #rb-results-section.hide,
 #rb-pagination.hide,
-.rb-log-output.hide,
-.rb-info-section.hide {
+.rb-log-output.hide {
     display: none !important;
 }
 
@@ -474,7 +463,8 @@
 
 .rb-status-name {
     flex: 1;
-    font-weight: 500;
+    font-weight: 400;
+    opacity: 0.85;
 }
 
 .rb-status-latency {
@@ -494,9 +484,7 @@
     color: #dc3545;
 }
 
-.rb-status-item.offline {
-    opacity: 0.45;
-}
+
 
 /* ============================================
    Top Stations Button - Simple Star Color
@@ -514,7 +502,8 @@
     position: absolute;
     top: 100%;
     left: 0;
-    right: 0;
+    width: 100%;
+    max-width: 210px;
     max-height: 200px;
     overflow-y: auto;
     background: #1a1a1a;
@@ -581,15 +570,6 @@
     .rb-actions {
         margin-left: 0;
         justify-content: center;
-    }
-
-    .rb-tabs {
-        flex-wrap: wrap;
-    }
-
-    .rb-tab {
-        flex: 1;
-        min-width: 120px;
     }
 }
 

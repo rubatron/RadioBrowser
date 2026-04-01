@@ -22,15 +22,27 @@
      * Fetch settings from backend (cached in sessionStorage)
      */
     function getSettings(callback) {
-        var cached = sessionStorage.getItem('rb_settings');
-        if (cached) {
-            try {
-                var data = JSON.parse(cached);
-                if (data && data._ts && Date.now() - data._ts < 60000) {
-                    callback(data);
-                    return;
-                }
-            } catch (e) {}
+        // Check if settings were changed on the Radio Browser page
+        var forceRefresh = false;
+        try {
+            if (sessionStorage.getItem('rb_settings_changed')) {
+                sessionStorage.removeItem('rb_settings_changed');
+                sessionStorage.removeItem('rb_settings');
+                forceRefresh = true;
+            }
+        } catch (e) {}
+
+        if (!forceRefresh) {
+            var cached = sessionStorage.getItem('rb_settings');
+            if (cached) {
+                try {
+                    var data = JSON.parse(cached);
+                    if (data && data._ts && Date.now() - data._ts < 60000) {
+                        callback(data);
+                        return;
+                    }
+                } catch (e) {}
+            }
         }
 
         var xhr = new XMLHttpRequest();
@@ -174,6 +186,55 @@
     }
 
     /**
+     * Check if Radio Browser stream is currently playing
+     * Compares localStorage rb_playing_url against MPD current song
+     */
+    function checkRbPlaying(callback) {
+        var rbUrl = '';
+        try { rbUrl = localStorage.getItem('rb_playing_url') || ''; } catch (e) {}
+        if (!rbUrl) { callback(false); return; }
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API_URL + '?cmd=current_status', true);
+        xhr.timeout = 5000;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        if (data.success && data.is_playing && data.current_url) {
+                            // Compare URLs (ignore http/https and trailing slashes)
+                            var normalize = function(u) { return u.replace(/^https?:\/\//, '').replace(/\/+$/, '').toLowerCase(); };
+                            callback(normalize(rbUrl) === normalize(data.current_url));
+                        } else {
+                            callback(false);
+                        }
+                    } catch (e) { callback(false); }
+                } else {
+                    callback(false);
+                }
+            }
+        };
+        xhr.send();
+    }
+
+    /**
+     * Update activity glow on playbar and coverview buttons
+     */
+    function updateActivityGlow(isRbPlaying) {
+        var playbarBtn = document.getElementById('rb-playbar-btn');
+        var coverviewBtn = document.getElementById('rb-coverview-btn');
+        if (playbarBtn) {
+            if (isRbPlaying) { playbarBtn.classList.add('rb-active'); }
+            else { playbarBtn.classList.remove('rb-active'); }
+        }
+        if (coverviewBtn) {
+            if (isRbPlaying) { coverviewBtn.classList.add('rb-active'); }
+            else { coverviewBtn.classList.remove('rb-active'); }
+        }
+    }
+
+    /**
      * Add Radio Browser icon to playbar (index.php only)
      * Positioned at the very front, before all other buttons
      */
@@ -189,24 +250,12 @@
         if (!container) return;
 
         // Already exists?
-        var existingBtn = container.querySelector('#rb-playbar-btn');
-        if (existingBtn) {
-            // Update activity light state
-            if (visibility.activityglow !== false) {
-                existingBtn.classList.add('rb-active');
-            } else {
-                existingBtn.classList.remove('rb-active');
-            }
-            return;
-        }
+        if (container.querySelector('#rb-playbar-btn')) return;
 
-        // Create button
+        // Create button (start without glow, will be set by polling)
         var btn = document.createElement('button');
         btn.id = 'rb-playbar-btn';
         btn.className = 'btn btn-cmd';
-        if (visibility.activityglow !== false) {
-            btn.classList.add('rb-active');
-        }
         btn.setAttribute('aria-label', 'Radio Browser');
         btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
         btn.onclick = function() {
@@ -238,13 +287,10 @@
         // Already exists?
         if (btnGroup.querySelector('#rb-coverview-btn')) return;
 
-        // Create button
+        // Create button (start without glow, will be set by polling)
         var btn = document.createElement('button');
         btn.id = 'rb-coverview-btn';
         btn.className = 'btn btn-cmd';
-        if (visibility.activityglow !== false) {
-            btn.classList.add('rb-active');
-        }
         btn.setAttribute('aria-label', 'Radio Browser');
         btn.innerHTML = '<i class="fa-solid fa-sharp fa-radio"></i>';
         btn.onclick = function() {
@@ -282,6 +328,23 @@
     }
 
     /**
+     * Start polling for activity glow state
+     * Checks every 3 seconds if a Radio Browser stream is active
+     */
+    function startActivityPolling(settings) {
+        var visibility = settings.visibility || {};
+        if (visibility.activityglow === false || visibility.playbar === false) return;
+
+        // Initial check
+        checkRbPlaying(updateActivityGlow);
+
+        // Poll every 3 seconds
+        setInterval(function() {
+            checkRbPlaying(updateActivityGlow);
+        }, 3000);
+    }
+
+    /**
      * Initialize - run once when DOM is ready
      */
     function init() {
@@ -291,6 +354,7 @@
             injectPlaybar(settings);
             injectCoverview(settings);
             setupConfigureTile(settings);
+            startActivityPolling(settings);
         });
     }
 

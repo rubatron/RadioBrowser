@@ -4,7 +4,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
- * Version: 3.0.0
+ * Version: 4.0.0
  */
 
 (function waitForJQuery() {
@@ -139,20 +139,72 @@ function initRadioBrowser($) {
                 $('.rb-section-btn[data-section="settings"]').trigger('click');
             }
 
-            // Initialize active tab panel
-            var activeTab = $('.rb-tab.active').data('tab');
-            if (activeTab) {
-                $('#rb-' + activeTab + '-panel').removeClass('hide');
+            // Initialize active section panel
+            var activeSection = $('.rb-section-btn.active').data('section');
+            if (activeSection) {
+                $('#rb-' + activeSection + '-section').removeClass('hide');
             }
 
-            // Load favorites then top stations
-            loadFavorites(function() {
-                loadRecentlyPlayed();
-                // Only load top stations if user hasn't started searching yet
+            // Load data in parallel for faster initial render
+            var initPending = { favorites: false, recent: false };
+            var initData = { favorites: null, recent: null };
+
+            function checkInitComplete() {
+                if (!initPending.favorites || !initPending.recent) return;
+                // Both loaded - render in order
+                if (initData.favorites) {
+                    state.favorites = initData.favorites.map(function(f) {
+                        return typeof f === 'string' ? f : f.url;
+                    });
+                    state.favoriteNames = initData.favorites.map(function(f) {
+                        return typeof f === 'object' && f.name ? f.name : '';
+                    }).filter(function(n) { return n; });
+                    state.favoritesMap = {};
+                    initData.favorites.forEach(function(f) {
+                        var url = typeof f === 'string' ? f : f.url;
+                        state.favoritesMap[url] = f;
+                    });
+                }
+                if (initData.recent && initData.recent.length > 0) {
+                    renderRecentlyPlayed(initData.recent);
+                }
                 if (!state.hasSearched) {
                     loadTopStations();
                 }
                 state.initComplete = true;
+            }
+
+            // Fire both requests in parallel
+            $.ajax({
+                url: API_URL + '?cmd=favorites',
+                type: 'GET',
+                dataType: 'json',
+                timeout: 5000,
+                success: function(data) {
+                    if (data.success && data.favorites) {
+                        initData.favorites = data.favorites;
+                    }
+                },
+                complete: function() {
+                    initPending.favorites = true;
+                    checkInitComplete();
+                }
+            });
+
+            $.ajax({
+                url: API_URL + '?cmd=recently_played',
+                type: 'GET',
+                dataType: 'json',
+                timeout: 5000,
+                success: function(data) {
+                    if (data.success && data.stations) {
+                        initData.recent = data.stations;
+                    }
+                },
+                complete: function() {
+                    initPending.recent = true;
+                    checkInitComplete();
+                }
             });
         }
     });
@@ -313,6 +365,131 @@ function initRadioBrowser($) {
                 console.log('[RB DEBUG] Debug mode disabled.');
             }
         });
+
+        // === Custom API Management (AJAX) ===
+
+        // Save active API
+        $('#rb-save-api').on('click', function(e) {
+            e.stopPropagation();
+            var apiId = $('#rb-active-api').val();
+            var btn = $(this);
+            btn.prop('disabled', true);
+            $.ajax({
+                url: API_URL + '?cmd=set_active_api',
+                type: 'POST',
+                data: { id: apiId },
+                dataType: 'json',
+                timeout: 5000,
+                success: function(data) {
+                    btn.prop('disabled', false);
+                    if (data.success) {
+                        notify('API Updated', 'Active API changed. New searches will use this server.', 'success');
+                    } else {
+                        notify('Error', data.message || 'Failed to save API', 'error');
+                    }
+                },
+                error: function() {
+                    btn.prop('disabled', false);
+                    notify('Error', 'Failed to save API setting', 'error');
+                }
+            });
+        });
+
+        // Add custom API
+        $('#rb-add-custom-api').on('click', function(e) {
+            e.stopPropagation();
+            var name = $('#rb-custom-api-name').val().trim();
+            var url = $('#rb-custom-api-url').val().trim();
+            var type = $('#rb-custom-api-type').val();
+            if (!name) { notify('Error', 'Name is required', 'error'); return; }
+            if (!url) { notify('Error', 'URL is required', 'error'); return; }
+            var btn = $(this);
+            btn.prop('disabled', true);
+            $.ajax({
+                url: API_URL + '?cmd=custom_api_add',
+                type: 'POST',
+                data: { name: name, url: url, type: type },
+                dataType: 'json',
+                timeout: 5000,
+                success: function(data) {
+                    btn.prop('disabled', false);
+                    if (data.success) {
+                        notify('Added', 'Custom API "' + name + '" added', 'success');
+                        // Clear form
+                        $('#rb-custom-api-name').val('');
+                        $('#rb-custom-api-url').val('');
+                        // Update dropdowns with new API
+                        if (data.apis) {
+                            refreshApiDropdowns(data.apis);
+                        }
+                    } else {
+                        notify('Error', data.message || 'Failed to add API', 'error');
+                    }
+                },
+                error: function() {
+                    btn.prop('disabled', false);
+                    notify('Error', 'Failed to add custom API', 'error');
+                }
+            });
+        });
+
+        // Remove custom API
+        $('#rb-remove-custom-api').on('click', function(e) {
+            e.stopPropagation();
+            var id = $('#rb-remove-api-select').val();
+            if (!id) { notify('Error', 'Select an API to remove', 'error'); return; }
+            var label = $('#rb-remove-api-select option:selected').text();
+            if (!confirm('Remove custom API "' + label + '"?')) return;
+            var btn = $(this);
+            btn.prop('disabled', true);
+            $.ajax({
+                url: API_URL + '?cmd=custom_api_remove',
+                type: 'POST',
+                data: { id: id },
+                dataType: 'json',
+                timeout: 5000,
+                success: function(data) {
+                    btn.prop('disabled', false);
+                    if (data.success) {
+                        notify('Removed', 'Custom API removed', 'success');
+                        if (data.apis) {
+                            refreshApiDropdowns(data.apis);
+                        }
+                    } else {
+                        notify('Error', data.message || 'Failed to remove API', 'error');
+                    }
+                },
+                error: function() {
+                    btn.prop('disabled', false);
+                    notify('Error', 'Failed to remove custom API', 'error');
+                }
+            });
+        });
+    }
+
+    /**
+     * Refresh API dropdowns after add/remove
+     */
+    function refreshApiDropdowns(apis) {
+        // Update "Active API" dropdown (keep default + add customs)
+        var activeSelect = $('#rb-active-api');
+        var currentVal = activeSelect.val();
+        activeSelect.find('option[value^="custom_"]').remove();
+        $.each(apis, function(id, api) {
+            activeSelect.append('<option value="' + id + '">' + api.name + ' (Custom)</option>');
+        });
+        activeSelect.val(currentVal);
+
+        // Update "Remove" dropdown
+        var removeSelect = $('#rb-remove-api-select');
+        removeSelect.empty();
+        if ($.isEmptyObject(apis)) {
+            removeSelect.append('<option value="">No custom APIs</option>');
+        } else {
+            $.each(apis, function(id, api) {
+                removeSelect.append('<option value="' + id + '">' + api.name + '</option>');
+            });
+        }
     }
 
     function bindEvents() {
@@ -429,19 +606,22 @@ function initRadioBrowser($) {
                 refreshBtn.find('i').removeClass('fa-spin');
                 if (data.success && data.servers) {
                     var html = '';
+                    var isLoadBalancer = function(name) { return name.indexOf('all.') === 0; };
                     data.servers.forEach(function(server) {
+                        // Hide offline mirrors, always show the load balancer
+                        if (!server.online && !isLoadBalancer(server.name)) return;
+
                         var statusClass = server.online ? 'online' : 'offline';
-                        var itemClass = server.online ? '' : ' offline';
                         var latencyClass = server.online ? (server.latency < 500 ? 'fast' : 'slow') : 'offline';
                         var latencyText = server.online ? server.latency + 'ms' : 'offline';
 
-                        html += '<div class="rb-status-item' + itemClass + '">' +
+                        html += '<div class="rb-status-item">' +
                             '<div class="rb-status-indicator ' + statusClass + '"></div>' +
                             '<span class="rb-status-name">' + escapeHtml(server.name) + '</span>' +
                             '<span class="rb-status-latency ' + latencyClass + '">' + latencyText + '</span>' +
                         '</div>';
                     });
-                    statusContainer.html(html);
+                    statusContainer.html(html || '<div class="rb-status-item"><span class="rb-status-name">No servers reachable</span></div>');
                 } else {
                     statusContainer.html('<div class="rb-status-item"><span class="rb-status-name">Could not check API status</span></div>');
                 }
@@ -563,7 +743,7 @@ function initRadioBrowser($) {
             }
 
             var logoHtml = logoUrl ?
-                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/default-radio-logo.png\'">' :
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/default-notfound-cover.jpg\'">' :
                 '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
 
             // Store in recentStationData with index for playback (include metadata)
@@ -580,28 +760,27 @@ function initRadioBrowser($) {
             };
             state.recentStationData.push(stationData);
 
-            // Build metadata line (same format as search results)
-            var metaParts = [];
-            if (s.country) metaParts.push(escapeHtml(s.country));
-            if (s.tags) metaParts.push(escapeHtml(s.tags.split(',')[0]));
-            if (s.bitrate > 0) metaParts.push(s.bitrate + 'k');
-            var metaLine = metaParts.length > 0 ? metaParts.join(' • ') : 'Recently played';
-
             // Check if this station is in favorites (by URL or name)
             var isFavorite = isInFavorites(s.url, s.name);
             var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
             var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
             var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
 
-            // HiRes badge for bitrate >= 320 kbps
-            var hiResBadge = (s.bitrate && s.bitrate >= 320) ? ' <span class="playback-hd-badge">HiRes</span>' : '';
-
             html.push(
                 '<div class="rb-station-card rb-recent-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '" data-name="' + escapeHtml(s.name) + '">' +
                     logoHtml +
                     '<div class="rb-info">' +
                         '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta">' + metaLine + hiResBadge + '</div>' +
+                        '<div class="rb-meta-lines">' +
+                            '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
+                            '<div class="rb-meta rb-meta-bitrate">' +
+                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' ' + s.codec : '')) +
+                                (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
+                            '</div>' +
+                            '<div class="rb-meta rb-meta-genre">' +
+                                (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
+                            '</div>' +
+                        '</div>' +
                     '</div>' +
                     '<div class="rb-actions">' +
                         '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
@@ -669,7 +848,7 @@ function initRadioBrowser($) {
             }
 
             var logoHtml = logoUrl ?
-                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/default-radio-logo.png\'">' :
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/default-notfound-cover.jpg\'">' :
                 '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
 
             var storeIndex = index;
@@ -693,7 +872,7 @@ function initRadioBrowser($) {
                         '<div class="rb-meta-lines">' +
                             '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
                             '<div class="rb-meta rb-meta-bitrate">' +
-                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' • ' + s.codec : '')) +
+                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' ' + s.codec : '')) +
                                 (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
                             '</div>' +
                             '<div class="rb-meta rb-meta-genre">' +
@@ -831,7 +1010,7 @@ function initRadioBrowser($) {
 
         stations.forEach(function(s, index) {
             var logoHtml = s.favicon ?
-                '<img class="rb-logo" src="' + escapeHtml(s.favicon) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/default-radio-logo.png\'">' :
+                '<img class="rb-logo" src="' + escapeHtml(s.favicon) + '" alt="" onerror="this.src=\'/images/default-notfound-cover.jpg\'">' :
                 '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
 
             var metaParts = [];
@@ -866,7 +1045,7 @@ function initRadioBrowser($) {
                         '<div class="rb-meta-lines">' +
                             '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
                             '<div class="rb-meta rb-meta-bitrate">' +
-                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' • ' + s.codec : '')) +
+                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' ' + s.codec : '')) +
                                 (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
                             '</div>' +
                             '<div class="rb-meta rb-meta-genre">' +
@@ -1489,9 +1668,22 @@ function initRadioBrowser($) {
 
                 if (data.success && data.data && data.data.visibility) {
                     renderVisibility(data.data.visibility);
-                    // Menu-related toggles require cache flush + hard refresh
+                    // Invalidate inject-script cache so moOde picks up changes on next navigation
+                    try {
+                        sessionStorage.removeItem('rb_settings');
+                        sessionStorage.setItem('rb_settings_changed', '1');
+                    } catch (e) {}
+                    // Menu-related toggles: auto-flush cache so moOde picks up changes
                     if (['library', 'm', 'system', 'playbar'].indexOf(area) !== -1) {
-                        notify('Updated', visibilityAreaName(area) + ' updated — flush cache (Troubleshooting) and hard refresh moOde (Ctrl+Shift+R)', 'info', 8000);
+                        $.ajax({
+                            url: API_URL + '?cmd=flush_cache',
+                            type: 'POST',
+                            dataType: 'json',
+                            timeout: 5000,
+                            complete: function() {
+                                notify('Updated', visibilityAreaName(area) + ' updated — navigate back to moOde to apply', 'success', 4000);
+                            }
+                        });
                     } else {
                         notify('Updated', visibilityAreaName(area) + ' visibility updated', 'success');
                     }
@@ -1525,6 +1717,50 @@ function initRadioBrowser($) {
                         $('#rb-limit-favorites').val(limitsState.favorites || '');
                     }
                 }
+            }
+        });
+        // Load service status for Extension Info badge
+        loadServiceStatus();
+    }
+
+    function loadServiceStatus() {
+        $.ajax({
+            url: API_URL + '?cmd=service_status',
+            type: 'GET',
+            dataType: 'json',
+            timeout: 10000,
+            success: function(data) {
+                if (data.success) {
+                    // Set version
+                    $('#rb-ext-version').text(data.version || 'unknown');
+
+                    // Set status badge
+                    var statusMap = {
+                        running: { css: 'rb-status-running', label: 'Running' },
+                        warning: { css: 'rb-status-warning', label: 'Warning' },
+                        error:   { css: 'rb-status-error', label: 'Error' },
+                        inactive:{ css: 'rb-status-inactive', label: 'Inactive' }
+                    };
+                    var s = statusMap[data.status] || statusMap.inactive;
+                    $('#rb-service-status').html(
+                        '<span class="rb-status-dot ' + s.css + '"></span> ' + s.label
+                    );
+
+                    // Build tooltip with check details
+                    if (data.checks) {
+                        var details = [];
+                        $.each(data.checks, function(name, check) {
+                            details.push((check.ok ? '✓' : '✗') + ' ' + name + ': ' + check.detail);
+                        });
+                        $('#rb-service-status').attr('title', details.join('\n'));
+                    }
+                }
+            },
+            error: function() {
+                $('#rb-ext-version').text('?');
+                $('#rb-service-status').html(
+                    '<span class="rb-status-dot rb-status-error"></span> Unreachable'
+                );
             }
         });
     }
@@ -1628,9 +1864,8 @@ function initRadioBrowser($) {
         }, 5000);
     }
 
-    // Initialize visibility and download features when settings tab is opened
-    // Reload settings when settings tab is opened
-    $(document).on('click', '.rb-tab[data-tab="settings"]', function() {
+    // Reload settings when settings section is opened
+    $(document).on('click', '.rb-section-btn[data-section="settings"]', function() {
         loadSettings();
     });
 }

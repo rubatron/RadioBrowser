@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
- * Version: 3.0.0
+ * Version: 4.0.0
  */
 
 // --- EXTENSIEVE BACKEND LOGGING ---
@@ -34,7 +34,7 @@ define('RB_IMAGE_CACHE', __DIR__ . '/../cache/images');
 define('RB_LOG', __DIR__ . '/../cache/radio-browser.log');
 define('RB_UA', 'moode-radio-browser/1.0');
 define('RB_CACHE_TTL', 1800);
-define('RB_CACHE_TTL_STATIC', 86400);
+define('RB_CACHE_TTL_STATIC', 43200);
 define('RB_IMAGE_CACHE_SIZE_MB', 1); // 1MB cache size limit
 
 // Define moOde constants if not already defined (for logo handling)
@@ -57,6 +57,13 @@ define('RB_CUSTOM_APIS_FILE', RB_DATA_DIR . '/custom_apis.json');
 define('RB_SETTINGS_FILE', RB_DATA_DIR . '/settings.json');
 // NOTE: Favorites use moOde's native system (type='f' in cfg_radio)
 // This integrates with moOde's Favorites playlist
+
+// --- PATH CONSTANTS ---
+define('RB_EXT_BASE', dirname(__DIR__));
+define('RB_SYMLINK', '/var/www/radio-browser.php');
+define('RB_HEADER_FILE', '/var/www/header.php');
+define('RB_MPD_HOST', 'localhost');
+define('RB_MPD_PORT', 6600);
 
 function rb_get_custom_apis()
 {
@@ -138,7 +145,8 @@ function rb_get_default_settings()
             'recentlyPlayed' => 0,  // 0 = no limit (show all)
             'favorites' => 0        // 0 = no limit (show all)
         ],
-        'version' => '3.9.0',
+        'active_api' => 'radio-browser-info',  // default or custom_* ID
+        'version' => '4.0.0',
         'updated' => date('Y-m-d H:i:s')
     ];
 }
@@ -461,6 +469,31 @@ function rb_cleanup_image_cache()
 }
 
 /**
+ * Get the active API host based on settings
+ * Returns the hostname (without https://) of the currently selected API
+ */
+function rb_get_active_api_host()
+{
+    $settings = rb_get_settings();
+    $activeId = $settings['active_api'] ?? 'radio-browser-info';
+
+    if ($activeId === 'radio-browser-info') {
+        return RB_API_PRIMARY;
+    }
+
+    // Check custom APIs
+    $customApis = rb_get_custom_apis();
+    if (isset($customApis[$activeId]) && !empty($customApis[$activeId]['url'])) {
+        // Extract hostname from URL (custom APIs store full URLs like https://api.example.com)
+        $parsed = parse_url($customApis[$activeId]['url']);
+        return $parsed['host'] ?? RB_API_PRIMARY;
+    }
+
+    // Fallback to default
+    return RB_API_PRIMARY;
+}
+
+/**
  * Get list of API servers for status checking
  */
 function rb_get_servers()
@@ -470,15 +503,15 @@ function rb_get_servers()
 
 /**
  * Make API request with automatic failover
- * Primary: all.api.radio-browser.info (DNS load-balanced to nearest mirror)
- * Fallback: specific mirrors if DNS fails
+ * Uses the active API setting, falls back to default mirrors
  */
 function rb_api($endpoint, $params = [], $timeout = 10)
 {
     $query = http_build_query($params);
 
-    // Try primary DNS load-balanced endpoint first
-    $servers = array_merge([RB_API_PRIMARY], RB_FALLBACK);
+    // Use active API as primary, then default fallbacks
+    $activeHost = rb_get_active_api_host();
+    $servers = array_unique(array_merge([$activeHost], [RB_API_PRIMARY], RB_FALLBACK));
 
     foreach ($servers as $srv) {
         $url = 'https://' . $srv . $endpoint . ($query ? '?' . $query : '');
@@ -573,9 +606,113 @@ switch ($cmd) {
         }
         break;
 
-    case 'test':
-        $response = ['success' => true, 'message' => 'Radio Browser API is working', 'timestamp' => time(), 'version' => '1.1.0'];
+    case 'set_active_api':
+        $apiId = trim($_POST['id'] ?? '');
+        if (empty($apiId)) {
+            $response = ['success' => false, 'message' => 'API ID is required'];
+        } else {
+            // Validate: must be 'radio-browser-info' or an existing custom API
+            if ($apiId !== 'radio-browser-info') {
+                $customApis = rb_get_custom_apis();
+                if (!isset($customApis[$apiId])) {
+                    $response = ['success' => false, 'message' => 'Unknown API ID'];
+                    break;
+                }
+            }
+            $settings = rb_get_settings();
+            $settings['active_api'] = $apiId;
+            if (rb_save_settings($settings)) {
+                rb_debug_log('Active API changed to: ' . $apiId);
+                $response = ['success' => true, 'message' => 'Active API updated', 'active_api' => $apiId];
+            } else {
+                $response = ['success' => false, 'message' => 'Failed to save setting'];
+            }
+        }
         break;
+
+    case 'test':
+        $response = ['success' => true, 'message' => 'Radio Browser API is working', 'timestamp' => time(), 'version' => '4.0.0'];
+        break;
+
+    case 'service_status':
+        // Comprehensive health check for UI status badge
+        $checks = [];
+        $overall = 'running'; // running, warning, error, inactive
+
+        // 1. Check symlink
+        $symlinkOk = is_link(RB_SYMLINK) && file_exists(RB_SYMLINK);
+        $checks['symlink'] = ['ok' => $symlinkOk, 'detail' => $symlinkOk ? 'OK' : 'Missing or broken'];
+        if (!$symlinkOk) $overall = 'error';
+
+        // 2. Check PHP files exist
+        $extBase = RB_EXT_BASE;
+        $requiredFiles = ['radio-browser.php', 'backend/api.php', 'assets/radio-browser.js', 'assets/rb-menu-inject.js'];
+        $missingFiles = [];
+        foreach ($requiredFiles as $f) {
+            if (!file_exists($extBase . '/' . $f)) $missingFiles[] = $f;
+        }
+        $filesOk = empty($missingFiles);
+        $checks['files'] = ['ok' => $filesOk, 'detail' => $filesOk ? 'All present' : 'Missing: ' . implode(', ', $missingFiles)];
+        if (!$filesOk) $overall = 'error';
+
+        // 3. Check cache writable
+        $cacheDir = $extBase . '/cache';
+        $cacheOk = is_dir($cacheDir) && is_writable($cacheDir);
+        $checks['cache'] = ['ok' => $cacheOk, 'detail' => $cacheOk ? 'Writable' : 'Not writable'];
+        if (!$cacheOk && $overall !== 'error') $overall = 'warning';
+
+        // 4. Check data dir writable
+        $dataDir = $extBase . '/data';
+        $dataOk = is_dir($dataDir) && is_writable($dataDir);
+        $checks['data'] = ['ok' => $dataOk, 'detail' => $dataOk ? 'Writable' : 'Not writable'];
+        if (!$dataOk && $overall !== 'error') $overall = 'warning';
+
+        // 5. Check header.php patch
+        $headerOk = file_exists(RB_HEADER_FILE) && strpos(file_get_contents(RB_HEADER_FILE), 'RB_SHELL_BRIDGE_START') !== false;
+        $checks['header_patch'] = ['ok' => $headerOk, 'detail' => $headerOk ? 'Installed' : 'Missing'];
+        if (!$headerOk && $overall !== 'error') $overall = 'warning';
+
+        // 6. Check radio-browser.info API reachability (quick test)
+        $apiTestUrl = 'https://' . RB_API_PRIMARY . '/json/stats';
+        $ch = curl_init($apiTestUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_USERAGENT => RB_UA,
+        ]);
+        curl_exec($ch);
+        $apiCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $apiTime = round(curl_getinfo($ch, CURLINFO_TOTAL_TIME) * 1000);
+        curl_close($ch);
+        $apiOk = $apiCode === 200;
+        $checks['api_remote'] = ['ok' => $apiOk, 'detail' => $apiOk ? "Reachable ({$apiTime}ms)" : "Unreachable (HTTP {$apiCode})", 'latency_ms' => $apiTime];
+        if (!$apiOk && $overall !== 'error') $overall = 'warning';
+
+        // 7. Check MPD connection
+        $mpdOk = false;
+        $sock = @stream_socket_client('tcp://' . RB_MPD_HOST . ':' . RB_MPD_PORT, $errno, $errstr, 2);
+        if ($sock) {
+            $banner = fgets($sock, 256);
+            $mpdOk = strpos($banner, 'OK MPD') === 0;
+            fclose($sock);
+        }
+        $checks['mpd'] = ['ok' => $mpdOk, 'detail' => $mpdOk ? 'Connected' : 'Not reachable'];
+        if (!$mpdOk && $overall !== 'error') $overall = 'warning';
+
+        // Read version
+        $versionFile = $extBase . '/version.txt';
+        $version = file_exists($versionFile) ? trim(file_get_contents($versionFile)) : 'unknown';
+
+        $response = [
+            'success' => true,
+            'status' => $overall,
+            'version' => $version,
+            'checks' => $checks,
+            'timestamp' => time()
+        ];
+        break;
+
     case 'test_search':
         // Return mock data for testing
         $response = [
@@ -693,6 +830,7 @@ switch ($cmd) {
             'limit' => $_REQUEST['limit'] ?? 30,
             'order' => $_REQUEST['order'] ?? 'clickcount',
             'reverse' => $_REQUEST['reverse'] ?? 'true',
+            'hidebroken' => 'true',
         ];
         $params = array_filter($params, function ($v) {
             return $v !== '' && $v !== null;
@@ -703,6 +841,9 @@ switch ($cmd) {
             $data = rb_api('/json/stations/search', $params);
             if ($data !== false) {
                 rb_cache_set($cache_key, $data);
+            } else {
+                // Stale cache fallback: serve expired cache if API is down
+                $data = rb_cache_get($cache_key, 0);
             }
         }
         if ($data !== false) {
@@ -725,7 +866,7 @@ switch ($cmd) {
         $cache_key = 'top_click_' . $limit;
         $data = rb_cache_get($cache_key, RB_CACHE_TTL_STATIC);
         if ($data === false) {
-            $data = rb_api('/json/stations/topclick/' . $limit);
+            $data = rb_api('/json/stations/topclick/' . $limit, ['hidebroken' => 'true']);
             if ($data !== false) {
                 rb_cache_set($cache_key, $data);
             } else {
@@ -852,7 +993,7 @@ switch ($cmd) {
             'codec' => $format
         ]);
 
-        $sock = openMpdSock('localhost', 6600);
+        $sock = openMpdSock(RB_MPD_HOST, RB_MPD_PORT);
         if (!$sock) {
             $response = ['success' => false, 'message' => 'Cannot connect to MPD'];
             break;
@@ -986,7 +1127,7 @@ switch ($cmd) {
 
             // Update MPD database to pick up the new station
             require_once '/var/www/inc/mpd.php';
-            $sock = openMpdSock('localhost', 6600);
+            $sock = openMpdSock(RB_MPD_HOST, RB_MPD_PORT);
             if ($sock) {
                 sendMpdCmd($sock, 'update RADIO');
                 readMpdResp($sock);
@@ -1006,7 +1147,7 @@ switch ($cmd) {
         break;
     case 'current_status':
         require_once '/var/www/inc/mpd.php';
-        $sock = openMpdSock('localhost', 6600);
+        $sock = openMpdSock(RB_MPD_HOST, RB_MPD_PORT);
         if (!$sock) {
             $response = ['success' => false, 'message' => 'Cannot connect to MPD'];
             break;
@@ -1273,37 +1414,10 @@ switch ($cmd) {
         exit;
         break;
 
-    case 'repair':
-        // Fix permissions and symlinks
-        rb_debug_log('Repair requested');
-        $extDir = dirname(__DIR__);
-        $output = [];
-        $returnVar = 0;
-
-        // Fix permissions
-        exec("sudo chown -R www-data:www-data " . escapeshellarg($extDir) . " 2>&1", $output, $returnVar);
-        exec("sudo chmod -R 755 " . escapeshellarg($extDir) . " 2>&1", $output, $returnVar);
-
-        // Recreate symlink if needed
-        $symlinkPath = '/var/www/radio-browser.php';
-        $targetPath = $extDir . '/radio-browser.php';
-        if (!is_link($symlinkPath) && file_exists($targetPath)) {
-            exec("sudo ln -sf " . escapeshellarg($targetPath) . " " . escapeshellarg($symlinkPath) . " 2>&1", $output, $returnVar);
-        }
-
-        if ($returnVar === 0) {
-            $response = ['success' => true, 'message' => 'Permissions and symlinks repaired'];
-            rb_debug_log('Repair completed successfully');
-        } else {
-            $response = ['success' => false, 'message' => 'Repair failed: ' . implode("\n", $output)];
-            rb_debug_log('Repair failed: ' . implode("\n", $output));
-        }
-        break;
-
     case 'reinstall':
         // Re-run install.sh
         rb_debug_log('Reinstall requested');
-        $extDir = dirname(__DIR__);
+        $extDir = RB_EXT_BASE;
         $installScript = $extDir . '/install.sh';
 
         if (!file_exists($installScript)) {
@@ -1375,7 +1489,7 @@ switch ($cmd) {
     case 'get_stream_url':
         // Get current playing stream URL - client-side handles m3u creation
         require_once '/var/www/inc/mpd.php';
-        $sock = openMpdSock('localhost', 6600);
+        $sock = openMpdSock(RB_MPD_HOST, RB_MPD_PORT);
         if (!$sock) {
             $response = ['success' => false, 'message' => 'Cannot connect to MPD'];
             break;
@@ -1438,7 +1552,7 @@ switch ($cmd) {
         // Uninstall Radio Browser extension
         rb_debug_log('Uninstall requested');
 
-        $installScript = dirname(__DIR__) . '/install.sh';
+        $installScript = RB_EXT_BASE . '/install.sh';
 
         if (!file_exists($installScript)) {
             $response = ['success' => false, 'message' => 'Install script not found'];
@@ -1475,34 +1589,34 @@ switch ($cmd) {
         $errors = [];
         $fixed = [];
 
-        $extBase = dirname(__DIR__);
+        $extBase = RB_EXT_BASE;
         $sysSourcesDir = $extBase . '/sys/sources';
         $sysMoodeDir = $sysSourcesDir . '/moode';
 
         // 1. Fix symlink
-        $symlink = '/var/www/radio-browser.php';
         $target = $extBase . '/radio-browser.php';
 
-        if (!is_link($symlink) || !file_exists($symlink)) {
-            @unlink($symlink);
-            if (symlink($target, $symlink)) {
+        if (!is_link(RB_SYMLINK) || !file_exists(RB_SYMLINK)) {
+            @unlink(RB_SYMLINK);
+            exec("sudo ln -sf " . escapeshellarg($target) . " " . escapeshellarg(RB_SYMLINK) . " 2>&1", $symlinkOutput, $symlinkRc);
+            if ($symlinkRc === 0) {
+                exec("sudo chown -h www-data:www-data " . escapeshellarg(RB_SYMLINK) . " 2>&1");
                 $fixed[] = 'Symlink recreated';
             } else {
-                $errors[] = 'Failed to create symlink';
+                $errors[] = 'Failed to create symlink: ' . implode(' ', $symlinkOutput);
             }
         } else {
             $fixed[] = 'Symlink OK';
         }
 
         // 2. Check/repair header.php patch
-        $headerFile = '/var/www/header.php';
-        if (file_exists($headerFile)) {
-            $headerContent = file_get_contents($headerFile);
+        if (file_exists(RB_HEADER_FILE)) {
+            $headerContent = file_get_contents(RB_HEADER_FILE);
             if (strpos($headerContent, 'RB_SHELL_BRIDGE_START') === false) {
                 // Patch missing, re-apply
                 $bridgeInclude = '<?php /* RB_SHELL_BRIDGE_START */ if (file_exists("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php")) { include_once("/var/www/extensions/installed/radio-browser/rb-shell-bridge.php"); } /* RB_SHELL_BRIDGE_END */ ?>';
                 $newContent = str_replace('</head>', $bridgeInclude . "\n</head>", $headerContent);
-                if (file_put_contents($headerFile, $newContent)) {
+                if (file_put_contents(RB_HEADER_FILE, $newContent)) {
                     $fixed[] = 'Shell bridge patch re-applied';
                 } else {
                     $errors[] = 'Failed to patch header.php';

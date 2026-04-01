@@ -1,0 +1,11 @@
+[Unit]
+Description=Radio Browser Extension Health Check Timer
+After=nginx.service
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=300
+AccuracySec=30
+
+[Install]
+WantedBy=timers.target

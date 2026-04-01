@@ -1,0 +1,12 @@
+[Unit]
+Description=Radio Browser Extension Health Check
+After=nginx.service
+
+[Service]
+Type=oneshot
+ExecStart=/var/www/extensions/installed/radio-browser/systemd/radio-browser-health.sh
+User=www-data
+Group=www-data
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=radio-browser-health

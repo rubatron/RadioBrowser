@@ -4,7 +4,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron
- * Version: 3.0.0
+ * Version: 4.0.0
 -->
 
 <div id="container">
@@ -275,18 +275,16 @@
                 </div>
                 <div class="rb-accordion-content">
                     <div class="rb-accordion-body">
-                        <form class="form-horizontal" method="post">
-                            <div class="control-group">
-                                <label class="control-label">Active API</label>
-                                <div class="controls">
-                                    <select name="radio_api_service" class="input-large">
-                                        $_radio_api_options
-                                    </select>
-                                    <button class="btn btn-primary btn-small" type="submit" name="save_radio_api"
-                                        value="1"><i class="fa-solid fa-sharp fa-check"></i> Save</button>
-                                </div>
+                        <div class="control-group">
+                            <label class="control-label">Active API</label>
+                            <div class="controls">
+                                <select id="rb-active-api" class="input-large">
+                                    $_radio_api_options
+                                </select>
+                                <button id="rb-save-api" class="btn btn-primary btn-small"><i
+                                        class="fa-solid fa-sharp fa-check"></i> Save</button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -307,35 +305,32 @@
                             </div>
                             <div class="rb-accordion-content">
                                 <div class="rb-accordion-body">
-                                    <form class="form-horizontal" method="post">
-                                        <div class="control-group">
-                                            <label class="control-label">Name</label>
-                                            <div class="controls">
-                                                <input type="text" name="custom_api_name" class="input-large"
-                                                    placeholder="My Radio API">
-                                            </div>
+                                    <div class="control-group">
+                                        <label class="control-label">Name</label>
+                                        <div class="controls">
+                                            <input type="text" id="rb-custom-api-name" class="input-large"
+                                                placeholder="My Radio API">
                                         </div>
-                                        <div class="control-group">
-                                            <label class="control-label">URL</label>
-                                            <div class="controls">
-                                                <input type="url" name="custom_api_url" class="input-xlarge"
-                                                    placeholder="https://api.example.com">
-                                            </div>
+                                    </div>
+                                    <div class="control-group">
+                                        <label class="control-label">URL</label>
+                                        <div class="controls">
+                                            <input type="url" id="rb-custom-api-url" class="input-xlarge"
+                                                placeholder="https://api.example.com">
                                         </div>
-                                        <div class="control-group">
-                                            <label class="control-label">Type</label>
-                                            <div class="controls">
-                                                <select name="custom_api_type" class="input-medium">
-                                                    <option value="radio-browser">Radio Browser</option>
-                                                    <option value="icecast">Icecast</option>
-                                                    <option value="shoutcast">Shoutcast</option>
-                                                </select>
-                                                <button class="btn btn-primary btn-small" type="submit"
-                                                    name="add_custom_api" value="1"><i
-                                                        class="fa-solid fa-sharp fa-plus"></i> Add</button>
-                                            </div>
+                                    </div>
+                                    <div class="control-group">
+                                        <label class="control-label">Type</label>
+                                        <div class="controls">
+                                            <select id="rb-custom-api-type" class="input-medium">
+                                                <option value="radio-browser">Radio Browser</option>
+                                                <option value="icecast">Icecast</option>
+                                                <option value="shoutcast">Shoutcast</option>
+                                            </select>
+                                            <button id="rb-add-custom-api" class="btn btn-primary btn-small"><i
+                                                    class="fa-solid fa-sharp fa-plus"></i> Add</button>
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -348,20 +343,17 @@
                             </div>
                             <div class="rb-accordion-content">
                                 <div class="rb-accordion-body">
-                                    <form class="form-horizontal" method="post"
-                                        onsubmit="return confirm('Remove this custom API?');">
-                                        <div class="control-group">
-                                            <label class="control-label">Service</label>
-                                            <div class="controls">
-                                                <select name="custom_api_to_remove" class="input-large">
-                                                    $_custom_api_options
-                                                </select>
-                                                <button class="btn btn-small" type="submit" name="remove_custom_api"
-                                                    value="1"><i class="fa-solid fa-sharp fa-trash"></i>
-                                                    Remove</button>
-                                            </div>
+                                    <div class="control-group">
+                                        <label class="control-label">Service</label>
+                                        <div class="controls">
+                                            <select id="rb-remove-api-select" class="input-large">
+                                                $_custom_api_options
+                                            </select>
+                                            <button id="rb-remove-custom-api" class="btn btn-small"><i
+                                                    class="fa-solid fa-sharp fa-trash"></i>
+                                                Remove</button>
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -380,7 +372,13 @@
                         <div class="rb-info-grid">
                             <div class="rb-info-item">
                                 <span class="rb-info-label">Version</span>
-                                <span class="rb-info-value">3.9.0</span>
+                                <span class="rb-info-value" id="rb-ext-version">...</span>
+                            </div>
+                            <div class="rb-info-item">
+                                <span class="rb-info-label">Service</span>
+                                <span class="rb-info-value" id="rb-service-status">
+                                    <span class="rb-status-dot rb-status-unknown"></span> Checking...
+                                </span>
                             </div>
                             <div class="rb-info-item">
                                 <span class="rb-info-label">Author</span>
