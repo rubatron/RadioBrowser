@@ -633,37 +633,6 @@ function initRadioBrowser($) {
         });
     }
 
-    function loadFavorites(callback) {
-        $.ajax({
-            url: API_URL + '?cmd=favorites',
-            type: 'GET',
-            dataType: 'json',
-            timeout: 5000,
-            success: function(data) {
-                if (data.success && data.favorites) {
-                    // Store URLs for quick lookup
-                    state.favorites = data.favorites.map(function(f) {
-                        return typeof f === 'string' ? f : f.url;
-                    });
-                    // Store names for matching when URLs differ
-                    state.favoriteNames = data.favorites.map(function(f) {
-                        return typeof f === 'object' && f.name ? f.name : '';
-                    }).filter(function(n) { return n; });
-                    // Create lookup map for faster checking
-                    state.favoritesMap = {};
-                    data.favorites.forEach(function(f) {
-                        var url = typeof f === 'string' ? f : f.url;
-                        state.favoritesMap[url] = f;
-                    });
-                }
-                if (callback) callback();
-            },
-            error: function() {
-                if (callback) callback();
-            }
-        });
-    }
-
     function checkCurrentlyPlaying() {
         // Check current playback status via API - uses currentsong.txt file URL
         $.ajax({

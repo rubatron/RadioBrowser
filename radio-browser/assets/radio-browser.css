@@ -716,43 +716,6 @@
     color: rgba(255, 255, 255, 0.85);
 }
 
-/* Status Badges */
-.rb-status-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.rb-status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    font-size: 11px;
-    font-weight: 500;
-    border-radius: 3px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.rb-status-ok {
-    background: rgba(46, 204, 113, 0.15);
-    color: #2ecc71;
-    border: 1px solid rgba(46, 204, 113, 0.3);
-}
-
-.rb-status-error {
-    background: rgba(231, 76, 60, 0.15);
-    color: #e74c3c;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-}
-
-.rb-status-info {
-    background: rgba(52, 152, 219, 0.15);
-    color: #3498db;
-    border: 1px solid rgba(52, 152, 219, 0.3);
-}
-
 /* ============================================
    Troubleshooting Section
    ============================================ */
@@ -990,57 +953,4 @@
     text-shadow: 0 0 6px rgba(197, 90, 17, 0.8);
 }
 
-/* Legacy visibility styles (for old settings panel) */
-.rb-visibility-row {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.52rem;
-    border: 1px solid transparent;
-    background: transparent;
-    border-radius: 6px;
-    padding: 0.34rem 0.5rem;
-}
 
-.rb-visibility-control {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.34rem;
-}
-
-/* Let moOde's flat-ui.css handle toggle styling completely */
-
-.rb-visibility-state {
-    display: none;
-    /* Hide state text in new design */
-}
-
-/* ============================================
-   Stream Download Section
-   ============================================ */
-
-.rb-download-controls {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.rb-download-status {
-    font-size: 0.85rem;
-    color: #888;
-}
-
-.rb-stream-info {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    padding: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.rb-stream-info .rb-info-item {
-    margin-bottom: 0.5rem;
-}
-
-.rb-stream-info .rb-info-item:last-child {
-    margin-bottom: 0;
-}
