@@ -300,6 +300,13 @@ function initRadioBrowser($) {
             e.preventDefault();
             var accordion = $(this).closest('.rb-accordion, .rb-sub-accordion');
             accordion.toggleClass('open');
+
+            // Refresh selectpicker on newly visible selects so they render correctly
+            if (accordion.hasClass('open') && $.fn.selectpicker) {
+                setTimeout(function() {
+                    accordion.find('select').selectpicker('refresh');
+                }, 50);
+            }
         });
 
         // Refresh API status button
@@ -395,101 +402,7 @@ function initRadioBrowser($) {
             });
         });
 
-        // Add custom API
-        $('#rb-add-custom-api').on('click', function(e) {
-            e.stopPropagation();
-            var name = $('#rb-custom-api-name').val().trim();
-            var url = $('#rb-custom-api-url').val().trim();
-            var type = $('#rb-custom-api-type').val();
-            if (!name) { notify('Error', 'Name is required', 'error'); return; }
-            if (!url) { notify('Error', 'URL is required', 'error'); return; }
-            var btn = $(this);
-            btn.prop('disabled', true);
-            $.ajax({
-                url: API_URL + '?cmd=custom_api_add',
-                type: 'POST',
-                data: { name: name, url: url, type: type },
-                dataType: 'json',
-                timeout: 5000,
-                success: function(data) {
-                    btn.prop('disabled', false);
-                    if (data.success) {
-                        notify('Added', 'Custom API "' + name + '" added', 'success');
-                        // Clear form
-                        $('#rb-custom-api-name').val('');
-                        $('#rb-custom-api-url').val('');
-                        // Update dropdowns with new API
-                        if (data.apis) {
-                            refreshApiDropdowns(data.apis);
-                        }
-                    } else {
-                        notify('Error', data.message || 'Failed to add API', 'error');
-                    }
-                },
-                error: function() {
-                    btn.prop('disabled', false);
-                    notify('Error', 'Failed to add custom API', 'error');
-                }
-            });
-        });
-
-        // Remove custom API
-        $('#rb-remove-custom-api').on('click', function(e) {
-            e.stopPropagation();
-            var id = $('#rb-remove-api-select').val();
-            if (!id) { notify('Error', 'Select an API to remove', 'error'); return; }
-            var label = $('#rb-remove-api-select option:selected').text();
-            if (!confirm('Remove custom API "' + label + '"?')) return;
-            var btn = $(this);
-            btn.prop('disabled', true);
-            $.ajax({
-                url: API_URL + '?cmd=custom_api_remove',
-                type: 'POST',
-                data: { id: id },
-                dataType: 'json',
-                timeout: 5000,
-                success: function(data) {
-                    btn.prop('disabled', false);
-                    if (data.success) {
-                        notify('Removed', 'Custom API removed', 'success');
-                        if (data.apis) {
-                            refreshApiDropdowns(data.apis);
-                        }
-                    } else {
-                        notify('Error', data.message || 'Failed to remove API', 'error');
-                    }
-                },
-                error: function() {
-                    btn.prop('disabled', false);
-                    notify('Error', 'Failed to remove custom API', 'error');
-                }
-            });
-        });
-    }
-
-    /**
-     * Refresh API dropdowns after add/remove
-     */
-    function refreshApiDropdowns(apis) {
-        // Update "Active API" dropdown (keep default + add customs)
-        var activeSelect = $('#rb-active-api');
-        var currentVal = activeSelect.val();
-        activeSelect.find('option[value^="custom_"]').remove();
-        $.each(apis, function(id, api) {
-            activeSelect.append('<option value="' + id + '">' + api.name + ' (Custom)</option>');
-        });
-        activeSelect.val(currentVal);
-
-        // Update "Remove" dropdown
-        var removeSelect = $('#rb-remove-api-select');
-        removeSelect.empty();
-        if ($.isEmptyObject(apis)) {
-            removeSelect.append('<option value="">No custom APIs</option>');
-        } else {
-            $.each(apis, function(id, api) {
-                removeSelect.append('<option value="' + id + '">' + api.name + '</option>');
-            });
-        }
+        // NOTE: Custom API add/remove handlers removed - feature hidden pending redesign
     }
 
     function bindEvents() {
