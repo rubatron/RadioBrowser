@@ -1,9 +1,9 @@
-# RubaTron's Radio Browser Extension for moOde Audio
+# Radio Browser 4.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-3.1.0-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/Version-4.0.0-blue?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/moOde-9.0+-orange?style=for-the-badge" alt="moOde">
-  <img src="https://img.shields.io/badge/PHP-8.4+-purple?style=for-the-badge" alt="PHP">
+  <img src="https://img.shields.io/badge/PHP-8.2+-purple?style=for-the-badge" alt="PHP">
   <img src="https://img.shields.io/badge/License-GPL--3.0-green?style=for-the-badge" alt="License">
   <img src="https://img.shields.io/github/last-commit/rubatron/RadioBrowser?style=for-the-badge" alt="Last Commit">
 </p>
@@ -13,139 +13,133 @@
 </p>
 
 <p align="center">
-  <img src="https://i.postimg.cc/3rbVZCrF/image.png" alt="Radio Browser Screenshot" width="800">
+  <img src="docs/images/01-400-rb-img.png" alt="Radio Browser - Search Stations" width="900">
 </p>
-
----
-
-## What's New in v3.1.0
-
-### Menu Visibility Options
-
-Fully customizable integration into moOde's interface:
-
-- **Library Menu Integration** - Access Radio Browser from the Library dropdown
-- **M-Menu Integration** - Access from the hamburger menu (M-menu)
-- **Flexible Visibility** - Enable/disable each menu location independently via Configure
-
-### Station Logo Support
-
-- Automatic thumbnail creation for all played stations
-- Fixed Radio Browser playlist thumbnails now show correctly
-- **Fallback for missing logos** - Shows moOde radio icon when station has no logo
-
-### Download Radio Streams
-
-- Download radio streams directly to your local device
-- Requires ffmpeg (optional)
-- Save recordings from your favorite stations
-
-### Easier Installation
-
-- **One-liner bootstrap installer** - Single command installation
-- **Automatic shell bridge** - No manual moOde patching required
-- **Clean uninstall** - Fully reversible installation
-
----
-
-## Features
-
-### Core Features
-
-| Feature | Description |
-|---------|-------------|
-| **30,000+ Stations** | Access the complete radio-browser.info database |
-| **Smart Search** | Filter by country, genre, name, codec, bitrate |
-| **Recently Played** | Quick access to your listening history |
-| **Favorites** | Save stations to moOde's Radio library |
-| **Station Logos** | Display in search results and moOde player |
-| **One-Click Play** | Instant streaming via MPD |
-
-### v3.1.0 Features
-
-| Feature | Description |
-|---------|-------------|
-| **Stream Download** | Record streams to local device |
-| **Menu Visibility** | Configurable Library & M-menu presence |
-| **Bootstrap Install** | One-command installation |
-
-### Technical Features
-
-- **Redundant API Servers** - Automatic failover for reliability
-- **Image Caching** - Local cache for faster loading
-- **Debug Logging** - Built-in troubleshooting tools
-- **Custom API Support** - Add your own radio-browser servers
 
 ---
 
 ## Installation
 
-### Quick Install (Recommended)
+Login via SSH on your moOde Audio Player (ShellInABox or terminal) and execute one of the following commands:
 
-Run this one-liner on your moOde system:
-
+**curl:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/bootstrap.sh | sudo bash
+curl -sL https://raw.githubusercontent.com/rubatron/RadioBrowser/main/radio-browser/install.sh | sudo bash
 ```
 
-Or with wget:
-
+**wget:**
 ```bash
-wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/bootstrap.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/main/radio-browser/install.sh | sudo bash
 ```
-
-The installer will:
-
-1. Download the latest version
-2. Install all files to `/var/www/extensions/installed/radio-browser/`
-3. Set correct permissions
-4. Patch moOde's header for menu integration
-5. Create symlinks for radio station thumbnails
-
-### Manual Installation
-
-```bash
-# Download the package
-wget https://github.com/rubatron/RadioBrowser/raw/refs/heads/develop/radio-browser.zip
-
-# Extract and install
-unzip radio-browser.zip
-cd radio-browser/
-chmod +x install.sh
-sudo bash install.sh
-```
-
-Select option **1** (Auto-install) from the interactive menu.
-
-### Post-Installation
-
-After installation, Radio Browser is accessible via:
-
-| Location | Description |
-|----------|-------------|
-| **Library Menu** | Click Library → Radio Browser |
-| **M-Menu** | Click hamburger menu → Radio Browser |
-
-| **Direct URL** | `http://your-moode-ip/radio-browser.php` |
 
 ---
 
-## Configuration
+## What's New in 4.0
 
-Access **Configure** from within Radio Browser to customize:
+### Easier Installation
 
-### Visibility Settings
+Refer to the [Installation](#installation) section above. One command, fully automatic.
 
-| Option | Description |
+### UI Overhaul
+
+- Radio Browser 4.0 now holds multiple dedicated sections
+- Moved **Recently Played** to a dedicated section
+- Moved **Search Stations** and results to a dedicated section
+- Moved **Settings** to a dedicated section
+- Added **Recently Played** and **Favorites** sections
+
+### Radio-Browser.info API
+
+- Improved API to utilize the **load balancing / CDN** feature instead of a single dedicated URL
+- Added a button in the API settings section to view the [API status page](https://api.radio-browser.info/net)
+
+### Troubleshooting
+
+- Updated troubleshooting section with more functions
+- **Debug Mode** toggle
+- **Uninstall / Reinstall / Repair** buttons
+- **Repair Thumbnail Cache**
+- Improved logging
+
+### General Fixes
+
+- Improved installation method
+- Logo thumbnail passthrough to moOde's Playlist if available
+- Removed Custom API functionality (hidden, pending redesign)
+
+---
+
+## moOde Menu Integration
+
+Flexible menu integration which can be configured within the Radio Browser extension. All icons act as shortcuts to the extension.
+
+### M Menu
+
+<p align="center">
+  <img src="docs/images/02-400-rb-img.png" alt="moOde M Menu with Radio Browser" width="500">
+</p>
+
+### CoverArt View
+
+<p align="center">
+  <img src="docs/images/03-400-rb-img.png" alt="moOde CoverArt View" width="600">
+</p>
+
+### Library Menu
+
+<p align="center">
+  <img src="docs/images/04-400-rb-img.png" alt="moOde Library Menu with Radio Browser" width="500">
+</p>
+
+### Player Bar
+
+<p align="center">
+  <img src="docs/images/05-400-rb-img.png" alt="moOde Player Bar with Radio Browser" width="700">
+</p>
+
+Radio Browser Activity Indicator — shows a Radio Browser logo in the moOde Player Bar. Acts as a shortcut to the extension.
+
+### Configure Tile
+
+<p align="center">
+  <img src="docs/images/06-400-rb-img.png" alt="moOde Configuration Settings with Radio Browser tile" width="500">
+</p>
+
+Once clicked, navigates directly to the Radio Browser Settings section.
+
+---
+
+## Visibility Options
+
+<p align="center">
+  <img src="docs/images/07-400-rb-img.png" alt="Radio Browser visibility toggles" width="900">
+</p>
+
+The toggles allow you to show and hide the Radio Browser menu items integrated with the moOde UI:
+
+| Toggle | Description |
 |--------|-------------|
-| **Show in Library** | Toggle Radio Browser in Library dropdown |
-| **Show in M-Menu** | Toggle Radio Browser in hamburger menu |
+| **Library Menu** | Hidden / Visible toggle |
+| **M Menu** | Hidden / Visible toggle |
+| **Configure Tile** | Hidden / Visible toggle |
+| **Playbar Icon** | Hidden / Visible toggle |
+| **Activity Light** | When colored, the activity indicator is active. Click the icon to toggle. |
+| **Download Button** | Show / hide the download button on station cards |
+| **Max Station Card View** | Limit the number of cards shown for Favorites and Recently Played |
 
-### Other Settings
+---
 
-- **Custom API** - Add alternative radio-browser.info servers
-- **Results per page** - 10 / 20 / 50 / 100 / 200
-- **Debug logging** - Enable for troubleshooting
+## Station Cards
+
+<p align="center">
+  <img src="docs/images/08-400-rb-img.png" alt="Radio Browser station card" width="250">
+</p>
+
+Each station card shows the station logo, name, country, bitrate, codec, and genre. Action buttons:
+
+- **Play** — start streaming immediately via MPD
+- **Favorite** — save the station to moOde's Radio library
+- **Download** — download the `.m3u` stream file to your local device
 
 ---
 
@@ -153,63 +147,8 @@ Access **Configure** from within Radio Browser to customize:
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
-| moOde Audio | 9.0.0+ | Required |
-| PHP | 8.4+ | With extensions |
-| PHP curl | - | Required |
-| PHP gd | - | Required for thumbnails |
-| PHP json | - | Required |
-| ffmpeg | - | Optional, for stream download |
-
----
-
-## Usage
-
-### Playing Stations
-
-1. Open Radio Browser from Library or M-menu
-2. Search or browse stations by country/genre
-3. Click **Play** on any station card
-4. The station plays immediately via MPD
-
-### Adding to Favorites
-
-- Click the **heart icon** on any station card
-- Station is saved to moOde's Radio library (`/var/lib/mpd/music/RADIO/`)
-- Access favorites from moOde's standard Radio section
-
-### Downloading Streams
-
-1. Click the **download icon** on a station card
-2. Select duration and format
-3. Stream is recorded and saved locally
-
----
-
-## Troubleshooting
-
-### Station logos not showing
-
-The installer sets permissions automatically. If logos still don't appear:
-
-```bash
-sudo chmod 777 /var/local/www/imagesw/radio-logos/
-sudo chmod 777 /var/local/www/imagesw/radio-logos/thumbs/
-```
-
-### Menu items not appearing
-
-Run the installer again to re-apply the shell bridge:
-
-```bash
-cd /var/www/extensions/installed/radio-browser
-sudo bash install.sh
-```
-
-Select option **8** (Patch header).
-
-### Configure modal shows backdrop only
-
-Clear browser cache with `Ctrl+Shift+R` after updating.
+| moOde Audio | 9.0+ | Required |
+| PHP | 8.2+ | With curl, gd, json extensions |
 
 ---
 
@@ -220,39 +159,21 @@ cd /var/www/extensions/installed/radio-browser
 sudo bash install.sh
 ```
 
-Select option **9** (Uninstall).
-
-This removes:
-
-- All extension files
-- Shell bridge from header.php
-- Symlink from /var/www/
-
-Favorites and cached logos are preserved.
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Select the **Uninstall** option. This removes all extension files and restores moOde's original configuration. Your moOde Radio favorites are preserved.
 
 ---
 
 ## License
 
-This project is licensed under the **GPL-3.0-or-later** License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GPL-3.0-or-later** License.
 
 ---
 
 ## Credits
 
-- **RubaTron** - Current maintainer
-- **radio-browser.info** - Radio station database API
-- **moOde Audio** - Audio player platform
+- **RubaTron** — Author and maintainer
+- **[radio-browser.info](https://www.radio-browser.info)** — Radio station database API
+- **[moOde Audio](https://moodeaudio.org)** — Audio player platform
 
 ---
 
