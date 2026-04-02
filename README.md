@@ -25,13 +25,13 @@ Login via SSH on your moOde Audio Player (ShellInABox or terminal) and execute o
 **curl:**
 
 ```bash
-curl -sL https://raw.githubusercontent.com/rubatron/RadioBrowser/main/radio-browser/install.sh | sudo bash
+curl -sL https://raw.githubusercontent.com/rubatron/RadioBrowser/HEAD/radio-browser/install.sh | sudo bash
 ```
 
 **wget:**
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/main/radio-browser/install.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/HEAD/radio-browser/install.sh | sudo bash
 ```
 
 ---
