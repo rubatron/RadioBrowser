@@ -5,6 +5,68 @@ All notable changes to Radio Browser will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-04-02
+
+### Highlights
+
+Major release with a **complete UI overhaul**, improved **radio-browser.info API** integration, and streamlined installation.
+
+### Added
+
+#### UI Overhaul
+
+- **Dedicated Sections** — Search Stations, Recently Played, Favorites, and Settings each have their own section
+- **Station Cards** — Redesigned station cards with logo, country, bitrate, codec, genre, and action buttons
+- **Top Stations** — Quick access to popular stations on first load
+
+#### moOde Menu Integration
+
+- **Configure Tile** — Radio Browser tile in moOde's Configuration Settings modal
+- **Playbar Icon** — Radio Browser activity indicator in the moOde player bar, acts as shortcut
+- **Activity Light** — Visual indicator when a Radio Browser stream is playing
+
+#### Visibility Toggles
+
+- **Library Menu** — Show/hide Radio Browser in Library dropdown
+- **M Menu** — Show/hide Radio Browser in hamburger menu
+- **Configure Tile** — Show/hide in Configuration Settings
+- **Playbar Icon** — Show/hide in player bar
+- **Download Button** — Show/hide download button on station cards
+- **Max Station Card View** — Limit number of cards for Favorites and Recently Played
+
+#### Troubleshooting
+
+- **Debug Mode** toggle with console logging
+- **Uninstall / Reinstall / Repair** buttons in Settings
+- **Repair Thumbnail Cache** button
+- **Flush Cache** button
+- **View / Clear Log** buttons
+
+#### System
+
+- **systemd Health Check** — Timer-based service monitoring (`radio-browser-health.service`)
+- **Service Status API** — Real-time health status with detailed checks
+- **Cache-busting** — Asset URLs versioned with file modification timestamps
+
+### Changed
+
+- **API Load Balancing** — Now uses radio-browser.info CDN/load balancer instead of single server, with automatic failover
+- **API Status** — Added button to view [radio-browser.info server status](https://api.radio-browser.info/net)
+- **`hidebroken=true`** — Search results now exclude broken stations by default
+- **Stale Cache Fallback** — Returns cached data when API is unavailable instead of failing
+- **12h Cache TTL** — Extended cache lifetime for better performance on Pi Zero
+- **Parallel Init** — Favorites and recently played load in parallel on startup
+- **Installation** — Simplified one-liner installer via `curl` or `wget`
+- **Logo Thumbnails** — Passthrough to moOde's playlist if available
+
+### Removed
+
+- **Custom API UI** — Hidden pending redesign (backend endpoints preserved)
+- **Dead CSS** — Removed ~140 lines of unused styles
+- **Dead JS** — Removed unused `loadFavorites()` function and custom API handlers
+- **`default-radio-logo.png`** — Unused asset removed
+- **`api_formatted.php`** — Removed duplicate backend file
+
 ## [3.2.0] - 2026-03-28
 
 ### Added
