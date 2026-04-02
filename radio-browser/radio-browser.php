@@ -67,11 +67,15 @@ storeBackLink($section, $tpl);
 // Include moOde header (generates <!DOCTYPE html>, <head> with CSS/JS, and header navigation)
 include('/var/www/header.php');
 
+// Cache-busting: use file modification time so browser always loads updated assets
+$cssVersion = filemtime($extPath . '/assets/radio-browser.css');
+$jsVersion  = filemtime($extPath . '/assets/radio-browser.js');
+
 // Output extension-specific CSS (after moOde's CSS so we can override)
-echo '<link rel="stylesheet" href="' . $extAssetsPath . '/radio-browser.css">' . "\n";
+echo '<link rel="stylesheet" href="' . $extAssetsPath . '/radio-browser.css?v=' . $cssVersion . '">' . "\n";
 
 // Output extension-specific JavaScript (deferred loading)
-echo '<script src="' . $extAssetsPath . '/radio-browser.js" defer></script>' . "\n";
+echo '<script src="' . $extAssetsPath . '/radio-browser.js?v=' . $jsVersion . '" defer></script>' . "\n";
 
 // NOTE: modal-fix.js removed - Configure modal loads via footer.min.php
 
