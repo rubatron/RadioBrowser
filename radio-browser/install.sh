@@ -184,7 +184,7 @@ error() {
 # ============================================================================
 press_any_key() {
     echo
-    read -n 1 -s -r -p "Press any key to continue..."
+    read -n 1 -s -r -p "Press any key to continue..." </dev/tty
     echo
 }
 
@@ -194,9 +194,9 @@ confirm() {
     local yn
 
     if [[ "$default" == "y" ]]; then
-        read -p "$prompt [Y/n]: " -n 1 -r yn
+        read -p "$prompt [Y/n]: " -n 1 -r yn </dev/tty
     else
-        read -p "$prompt [y/N]: " -n 1 -r yn
+        read -p "$prompt [y/N]: " -n 1 -r yn </dev/tty
     fi
     echo
 
@@ -918,7 +918,7 @@ main_menu() {
 
     while true; do
         show_menu
-        read -p "Select option: " -n 1 choice
+        read -p "Select option: " -n 1 choice </dev/tty
         echo
 
         case $choice in
