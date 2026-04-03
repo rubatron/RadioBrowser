@@ -1385,7 +1385,8 @@ switch ($cmd) {
         // Now restart services (connection already closed)
         exec('sudo /usr/bin/systemctl restart nginx 2>&1');
         sleep(1);
-        exec('sudo /usr/bin/systemctl restart php8.4-fpm 2>&1');
+        $phpVer = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+        exec("sudo /usr/bin/systemctl restart php{$phpVer}-fpm 2>&1");
 
         rb_debug_log('Services restart completed');
         exit; // Already sent response, don't continue

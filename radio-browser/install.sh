@@ -828,7 +828,8 @@ show_help() {
     echo -e "${BOLD}Troubleshooting:${NC}"
     echo
     echo "  ${YELLOW}Problem:${NC} API returns 500 error"
-    echo "  ${GREEN}Solution:${NC} Install PHP cURL: sudo apt install php8.4-curl"
+    local php_ver=$(php -v 2>/dev/null | head -1 | cut -d' ' -f2 | cut -d'.' -f1,2)
+  echo "  ${GREEN}Solution:${NC} Install PHP cURL: sudo apt install php${php_ver:-8.2}-curl"
     echo
     echo "  ${YELLOW}Problem:${NC} Logos not showing"
     echo "  ${GREEN}Solution:${NC} Check cache permissions: ls -la ${CACHE_DIR}/"
