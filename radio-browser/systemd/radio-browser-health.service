@@ -5,8 +5,8 @@ After=nginx.service
 [Service]
 Type=oneshot
 ExecStart=/var/www/extensions/installed/radio-browser/systemd/radio-browser-health.sh
-User=www-data
-Group=www-data
+User=root
+Group=root
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=radio-browser-health

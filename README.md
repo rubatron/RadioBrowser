@@ -68,20 +68,21 @@ Refer to the [Installation](#installation) section above. One command, fully aut
 - Improved installation method
 - Logo thumbnail passthrough to moOde's Playlist if available
 - Removed Custom API functionality (hidden, pending redesign)
+- Radio Browser as a Systemd service
 
 ---
 
-## moOde Menu Integration
+## Radio Browser MoOde Menu Integration
 
 Flexible menu integration which can be configured within the Radio Browser extension. All icons act as shortcuts to the extension.
 
-### M Menu
+### Radio Browser for MoOde M Menu visibility
 
 <p align="center">
   <img src="docs/images/02-400-rb-img.png" alt="moOde M Menu with Radio Browser" width="500">
 </p>
 
-### CoverArt View
+### Radio Browser for MoOde CoverArt View visibility
 
 <p align="center">
   <img src="docs/images/03-400-rb-img.png" alt="moOde CoverArt View" width="600">

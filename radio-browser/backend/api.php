@@ -950,6 +950,15 @@ switch ($cmd) {
             }
         }
 
+        // If logo still doesn't exist after download attempt, use moOde's default cover
+        if (!file_exists($thumbSmPath)) {
+            $defaultCover = '/var/www/images/default-notfound-cover.jpg';
+            @copy($defaultCover, $logoPath);
+            @copy($defaultCover, RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg');
+            @copy($defaultCover, $thumbSmPath);
+            rb_debug_log('Play: No favicon available, copied default cover for ' . $name);
+        }
+
         // Insert station into cfg_radio for currentsong.txt compatibility
         // This allows moOde's worker.php/enhanceMetadata() to find station info via load_radio
         $dbh = sqlConnect();
@@ -1102,6 +1111,17 @@ switch ($cmd) {
             }
         } else {
             rb_debug_log('No favicon processing for station: ' . $name . ', favicon: ' . ($favicon ?: 'empty'));
+        }
+
+        // If logo still doesn't exist after download attempt, use moOde's default cover
+        $safeName = str_replace(['/', '\0'], '', $name);
+        $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
+        if (!file_exists($thumbSmPath)) {
+            $defaultCover = '/var/www/images/default-notfound-cover.jpg';
+            @copy($defaultCover, RADIO_LOGOS_ROOT . $safeName . '.jpg');
+            @copy($defaultCover, RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg');
+            @copy($defaultCover, $thumbSmPath);
+            rb_debug_log('Import: No favicon available, copied default cover for ' . $name);
         }
 
         // Use type='f' (favorite) - integrates with moOde's native favorites system

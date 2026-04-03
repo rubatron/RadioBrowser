@@ -26,12 +26,28 @@ check() {
     fi
 }
 
-# 1. Symlink
+# 1. Symlink (auto-repair if missing)
+# moOde's worker.php runs periodic maintenance that deletes all symlinks in /var/www/
+# We auto-recreate the symlink here to make the extension self-healing
 if [[ -L "$SYMLINK" ]] && [[ -e "$SYMLINK" ]]; then
     check "symlink" "ok" "$(readlink -f $SYMLINK)"
 else
-    check "symlink" "fail" "Missing or broken"
-    STATUS="error"
+    # Auto-repair: recreate the symlink
+    TARGET="$EXT_BASE/radio-browser.php"
+    if [[ -f "$TARGET" ]]; then
+        rm -f "$SYMLINK" 2>/dev/null
+        ln -sf "$TARGET" "$SYMLINK" 2>/dev/null
+        chown -h www-data:www-data "$SYMLINK" 2>/dev/null
+        if [[ -L "$SYMLINK" ]] && [[ -e "$SYMLINK" ]]; then
+            check "symlink" "ok" "Auto-repaired -> $(readlink -f $SYMLINK)"
+        else
+            check "symlink" "fail" "Auto-repair failed"
+            STATUS="error"
+        fi
+    else
+        check "symlink" "fail" "Target missing: $TARGET"
+        STATUS="error"
+    fi
 fi
 
 # 2. Required files
