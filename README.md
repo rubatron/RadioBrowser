@@ -1,7 +1,7 @@
 # Radio Browser
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-4.0.0-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/Version-4.0.7-blue?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/moOde-9.0+-orange?style=for-the-badge" alt="moOde">
   <img src="https://img.shields.io/badge/PHP-8.2+-purple?style=for-the-badge" alt="PHP">
   <img src="https://img.shields.io/badge/License-GPL--3.0-green?style=for-the-badge" alt="License">
@@ -36,39 +36,31 @@ wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/radio-
 
 ---
 
-## What's New in 4.0
+## What's New in 4.0.7
 
-### Easier Installation
+### Loader Pattern — Symlink-Free Architecture
 
-Refer to the [Installation](#installation) section above. One command, fully automatic.
+moOde's `worker.php` deletes all symlinks in `/var/www/` every 6 hours. Radio Browser now installs a dedicated physical PHP loader file in the web root that survives this cleanup.
 
-### UI Overhaul
+### Station Thumbnail Fallback
 
-- Radio Browser 4.0 now holds multiple dedicated sections
-- Moved **Recently Played** to a dedicated section
-- Moved **Search Stations** and results to a dedicated section
-- Moved **Settings** to a dedicated section
-- Added **Recently Played** and **Favorites** sections
+Stations without a favicon from radio-browser.info now get a Radio Browser placeholder logo — visible in both the extension UI and moOde's playbar/coverview.
 
-### Radio-Browser.info API
+### moOde Favorites & Recently Played Integration
 
-- Improved API to utilize the **load balancing / CDN** feature instead of a single dedicated URL
-- Added a button in the API settings section to view the [API status page](https://api.radio-browser.info/net)
+<p align="center">
+  <img src="docs/images/01-407-rb-img.png" alt="Radio Browser moOde Integration" width="900">
+</p>
 
-### Troubleshooting
+moOde's built-in favorites and stations now appear directly in Radio Browser's Favorites section, recognizable by the orange **M** badge. Configurable via Settings → moOde Stations Radio Browser Integration.
 
-- Updated troubleshooting section with more functions
-- **Debug Mode** toggle
-- **Uninstall / Reinstall / Repair** buttons
-- **Repair Thumbnail Cache**
-- Improved logging
+### Extended Extension Info
 
-### General Fixes
+Added links to documentation, licensing, and architecture details in the Settings section.
 
-- Improved installation method
-- Logo thumbnail passthrough to moOde's Playlist if available
-- Removed Custom API functionality (hidden, pending redesign)
-- Radio Browser as a Systemd service
+### Security & Performance Hardening
+
+CSRF protection, prepared statements, ARIA accessibility, request debouncing, non-blocking polling, and systemd service hardening. See the [Changelog](CHANGELOG.md#407---2026-04-06) for the full technical breakdown.
 
 ---
 

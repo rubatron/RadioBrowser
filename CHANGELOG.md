@@ -5,6 +5,53 @@ All notable changes to Radio Browser will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.7] - 2026-04-06
+
+### Added
+
+- **Loader Pattern** — Physical PHP file in web root replaces symlink (survives moOde's 6-hour symlink cleanup in `worker.php`)
+- **Station Thumbnail Fallback** — Extension placeholder logo (`rb-default-logo.jpg`) for stations without a radio-browser.info favicon, visible in both the extension UI and moOde's playbar/coverview
+- **moOde Favorites Integration** — moOde core favorites appear in Radio Browser's Favorites section with orange M badge
+- **moOde Recently Played Integration** — Toggle to show moOde stations in the Recently Played section
+- **Extended Info** — Links to documentation, licensing, and architecture in Settings section
+- **File Manifest** — `files.txt` now includes one-liner descriptions for all extension files
+
+### Changed
+
+#### Security Hardening
+
+- **CSRF Protection** — Session-based tokens on all state-changing API endpoints via `rb_verify_csrf()` gateway
+- **Prepared Statements** — All 25 raw SQL `escapeString()` calls replaced with PDO `prepare()/execute()` via `rb_sql()` helper
+- **Path Traversal** — `realpath()` + whitelist validation on all file path operations
+- **Command Injection** — `escapeshellarg()` on all variable shell parameters
+- **CSRF Exempt List** — Read-only endpoints correctly exempted per OWASP pattern (documented in code)
+
+#### Performance & Reliability
+
+- **XHR Abort** — Previous search/top requests cancelled before launching new ones
+- **Play Debounce** — 500ms cooldown prevents rapid-fire play requests
+- **Polling over sleep()** — Blocking `sleep()` calls replaced with non-blocking polling loops (300ms intervals, early exit)
+- **Race Conditions** — File locking (`flock LOCK_SH/LOCK_EX`) on `recently_played.json`, `INSERT OR IGNORE` on `cfg_radio`
+- **Settings-Driven Limits** — Hardcoded result limits replaced with user-configurable settings
+- **Content-Type Headers** — Explicit `application/json` on all API responses
+
+#### Accessibility
+
+- **ARIA Roles** — `combobox`/`listbox`/`option` on country selector, `tablist`/`tab`/`tabpanel` on sections
+- **Live Regions** — `aria-live` announcements for search results and playback status
+- **Keyboard Navigation** — Arrow key support on country dropdown, `aria-label` on action buttons
+
+#### System
+
+- **Systemd Hardening** — Service runs as `www-data` with `ProtectSystem=strict`
+- **DOM Optimization** — Cached jQuery selectors, batch HTML string building with `.join('')`
+- **Country Debounce** — 200ms debounce on country search input
+
+### Removed
+
+- **Header Logo** — Removed moOde `radio-d.svg` icon from extension header
+- **Unused CSS** — Removed `.radio-browser-header` and `.radio-browser-logo` classes
+
 ## [4.0.0] - 2026-04-02
 
 ### Added
