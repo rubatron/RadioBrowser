@@ -426,11 +426,34 @@ copy_files() {
         fi
     done
 
-    # Create symlink for main PHP file
-    log "Creating symlink..."
-    ln -sf "${EXT_BASE}/radio-browser.php" "${WEB_ROOT}/radio-browser.php"
-    if [[ -L "${WEB_ROOT}/radio-browser.php" ]]; then
-        echo -e "  ${GREEN}✓${NC} Symlink: /var/www/radio-browser.php -> ${EXT_BASE}/radio-browser.php"
+    # Deploy web root files from loader-config.php manifest
+    # These are physical files (not symlinks) so they survive moOde's periodic
+    # maintenance that deletes all symlinks in /var/www/ (worker.php)
+    local config="${EXT_BASE}/backend/loader-config.php"
+    if [[ -f "$config" ]]; then
+        log "Deploying web root files from config manifest..."
+        local entries
+        entries=$(php -r "\$c=require '$config'; foreach(\$c['webroot_files'] as \$t=>\$e) echo \$t.'|'.\$e['source'].\"\\n\";")
+
+        while IFS='|' read -r target_name source_file; do
+            [[ -z "$target_name" ]] && continue
+            local source_path="${EXT_BASE}/${source_file}"
+            local target_path="${WEB_ROOT}/${target_name}"
+
+            if [[ -f "$source_path" ]]; then
+                # Remove any existing symlink first
+                [[ -L "$target_path" ]] && rm -f "$target_path"
+                cp -f "$source_path" "$target_path"
+                chown www-data:www-data "$target_path"
+                echo -e "  ${GREEN}✓${NC} Deployed: ${target_path}"
+            else
+                echo -e "  ${RED}✗${NC} Source missing: ${source_path}"
+                failed=$((failed + 1))
+            fi
+        done <<< "$entries"
+    else
+        error "loader-config.php not found"
+        failed=$((failed + 1))
     fi
 
     if [[ $failed -eq 0 ]]; then
@@ -686,10 +709,22 @@ uninstall() {
 
     log "Removing files..."
 
-    # Remove symlink
-    if [[ -L "${WEB_ROOT}/radio-browser.php" ]]; then
-        rm "${WEB_ROOT}/radio-browser.php"
-        echo -e "  ${GREEN}✓${NC} Removed symlink"
+    # Remove web root files (from config if available, fallback to known file)
+    local config="${EXT_BASE}/backend/loader-config.php"
+    if [[ -f "$config" ]]; then
+        local entries
+        entries=$(php -r "\$c=require '$config'; foreach(\$c['webroot_files'] as \$t=>\$e) echo \$t.\"\\n\";")
+        while IFS= read -r target_name; do
+            [[ -z "$target_name" ]] && continue
+            local target_path="${WEB_ROOT}/${target_name}"
+            if [[ -f "$target_path" || -L "$target_path" ]]; then
+                rm -f "$target_path"
+                echo -e "  ${GREEN}✓${NC} Removed ${target_path}"
+            fi
+        done <<< "$entries"
+    elif [[ -f "${WEB_ROOT}/radio-browser.php" || -L "${WEB_ROOT}/radio-browser.php" ]]; then
+        rm -f "${WEB_ROOT}/radio-browser.php"
+        echo -e "  ${GREEN}✓${NC} Removed /var/www/radio-browser.php"
     fi
 
     # Remove extension directory
@@ -823,7 +858,7 @@ show_help() {
     echo -e "${BOLD}File Locations:${NC}"
     echo "  Extension:  ${EXT_BASE}/"
     echo "  Cache:      ${CACHE_DIR}/"
-    echo "  Symlink:    ${WEB_ROOT}/radio-browser.php"
+    echo "  Web root:   ${WEB_ROOT}/radio-browser.php"
     echo
     echo -e "${BOLD}Troubleshooting:${NC}"
     echo

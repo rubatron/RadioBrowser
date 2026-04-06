@@ -315,6 +315,12 @@ function initRadioBrowser($) {
             checkApiStatus();
         });
 
+        // radio-browser.info Status - open in new tab
+        $('#rb-network-status').on('click', function(e) {
+            e.stopPropagation();
+            window.open('https://api.radio-browser.info/net', '_blank');
+        });
+
         // Troubleshooting buttons
         $('#rb-flush-cache').on('click', function(e) {
             e.stopPropagation();
@@ -357,12 +363,18 @@ function initRadioBrowser($) {
         });
 
         // Debug mode toggle
-        var debugCheckbox = $('#rb-debug-mode');
-        // Initialize checkbox state from localStorage
-        debugCheckbox.prop('checked', localStorage.getItem('rb_debug_mode') === 'true');
-        debugCheckbox.on('change', function(e) {
+        var debugToggle = $('#rb-debug-mode-toggle');
+        // Initialize toggle state from localStorage
+        var debugEnabled = localStorage.getItem('rb_debug_mode') === 'true';
+        if (debugEnabled) {
+            $('#rb-debug-mode-on').prop('checked', true);
+        } else {
+            $('#rb-debug-mode-off').prop('checked', true);
+        }
+        debugToggle.on('click', 'label.toggle-radio', function(e) {
             e.stopPropagation();
-            var enabled = $(this).prop('checked');
+            var forId = $(this).attr('for');
+            var enabled = forId === 'rb-debug-mode-off';
             localStorage.setItem('rb_debug_mode', enabled ? 'true' : 'false');
             if (enabled) {
                 notify('Debug mode ENABLED', 'Check browser console (F12) for [RB DEBUG] messages. This is resource intensive!', 'warning', 5000);
@@ -374,34 +386,6 @@ function initRadioBrowser($) {
         });
 
         // === Custom API Management (AJAX) ===
-
-        // Save active API
-        $('#rb-save-api').on('click', function(e) {
-            e.stopPropagation();
-            var apiId = $('#rb-active-api').val();
-            var btn = $(this);
-            btn.prop('disabled', true);
-            $.ajax({
-                url: API_URL + '?cmd=set_active_api',
-                type: 'POST',
-                data: { id: apiId },
-                dataType: 'json',
-                timeout: 5000,
-                success: function(data) {
-                    btn.prop('disabled', false);
-                    if (data.success) {
-                        notify('API Updated', 'Active API changed. New searches will use this server.', 'success');
-                    } else {
-                        notify('Error', data.message || 'Failed to save API', 'error');
-                    }
-                },
-                error: function() {
-                    btn.prop('disabled', false);
-                    notify('Error', 'Failed to save API setting', 'error');
-                }
-            });
-        });
-
         // NOTE: Custom API add/remove handlers removed - feature hidden pending redesign
     }
 
@@ -607,70 +591,33 @@ function initRadioBrowser($) {
         // Using separate array from search results
         state.recentStationData = [];
 
-        stations.forEach(function(s, index) {
-            // Logo field from our API is 'logo', can be 'local', cached path, or external URL
-            var logoUrl = '';
-            if (s.logo === 'local') {
-                // Local logo stored in moOde's radio-logos thumbs folder
-                logoUrl = '/imagesw/radio-logos/thumbs/' + encodeURIComponent(s.name) + '.jpg';
-            } else if (s.logo && s.logo.startsWith('/extensions/')) {
-                // Cached logo in extension cache
-                logoUrl = s.logo;
-            } else if (s.logo && (s.logo.startsWith('http://') || s.logo.startsWith('https://'))) {
-                // External URL - use directly
-                logoUrl = s.logo;
-            } else if (s.logo) {
-                // Assume it's a local path or try moOde logo folder
-                logoUrl = '/imagesw/radio-logos/thumbs/' + encodeURIComponent(s.name) + '.jpg';
-            }
+        // Filter moOde stations if setting is off
+        var filteredStations = stations;
+        if (!visibilityState.moode_recently) {
+            filteredStations = stations.filter(function(s) { return !s.is_moode; });
+        }
 
-            var logoHtml = logoUrl ?
-                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/default-notfound-cover.jpg\'">' :
-                '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
+        filteredStations.forEach(function(s, index) {
+            var logoUrl = resolveLogoUrl(s.logo, s.name);
 
-            // Store in recentStationData with index for playback (include metadata)
-            var storeIndex = index;
             var stationData = {
                 url: s.url,
                 url_fallback: s.url,
                 name: s.name,
+                stationuuid: s.stationuuid || '',
                 favicon: logoUrl,
                 country: s.country || '',
                 tags: s.tags || '',
                 bitrate: s.bitrate || 0,
-                codec: s.codec || ''
+                codec: s.codec || '',
+                is_moode: s.is_moode || false
             };
             state.recentStationData.push(stationData);
 
-            // Check if this station is in favorites (by URL or name)
-            var isFavorite = isInFavorites(s.url, s.name);
-            var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
-            var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
-            var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
-
-            html.push(
-                '<div class="rb-station-card rb-recent-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '" data-name="' + escapeHtml(s.name) + '">' +
-                    logoHtml +
-                    '<div class="rb-info">' +
-                        '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta-lines">' +
-                            '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
-                            '<div class="rb-meta rb-meta-bitrate">' +
-                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' ' + s.codec : '')) +
-                                (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
-                            '</div>' +
-                            '<div class="rb-meta rb-meta-genre">' +
-                                (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="rb-actions">' +
-                        '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
-                        '<button class="' + addBtnClass + '" title="' + addBtnTitle + '">' + addBtnIcon + '</button>' +
-                        '<button class="btn rb-download-btn" title="Download .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
-                    '</div>' +
-                '</div>'
-            );
+            html.push(buildStationCard(
+                { url: s.url, name: s.name, stationuuid: s.stationuuid, logoUrl: logoUrl, country: s.country, tags: s.tags, bitrate: s.bitrate, codec: s.codec, is_moode: s.is_moode },
+                index, 'rb-recent-card', isInFavorites(s.url, s.name)
+            ));
         });
 
         container.html(html.join(''));
@@ -694,6 +641,10 @@ function initRadioBrowser($) {
             success: function(data) {
                 if (data.success && data.favorites && data.favorites.length > 0) {
                     var favs = data.favorites;
+                    // Filter moOde stations if setting is off
+                    if (!visibilityState.moode_favorites) {
+                        favs = favs.filter(function(s) { return !s.is_moode; });
+                    }
                     // Apply limit if set
                     if (limitsState.favorites > 0 && favs.length > limitsState.favorites) {
                         favs = favs.slice(0, limitsState.favorites);
@@ -717,58 +668,25 @@ function initRadioBrowser($) {
         state.favoriteStationData = [];
 
         favStations.forEach(function(s, index) {
-            // Logo field: 'local' means moOde's radio-logos folder
-            var logoUrl = '';
-            if (s.logo === 'local') {
-                logoUrl = '/imagesw/radio-logos/thumbs/' + encodeURIComponent(s.name) + '.jpg';
-            } else if (s.logo && s.logo.startsWith('/extensions/')) {
-                logoUrl = s.logo;
-            } else if (s.logo && (s.logo.startsWith('http://') || s.logo.startsWith('https://'))) {
-                logoUrl = s.logo;
-            } else if (s.logo) {
-                logoUrl = '/imagesw/radio-logos/thumbs/' + encodeURIComponent(s.name) + '.jpg';
-            }
+            var logoUrl = resolveLogoUrl(s.logo, s.name);
 
-            var logoHtml = logoUrl ?
-                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/images/default-notfound-cover.jpg\'">' :
-                '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
-
-            var storeIndex = index;
-            var stationData = {
+            state.favoriteStationData.push({
                 url: s.url,
                 url_fallback: s.url,
                 name: s.name,
+                stationuuid: s.stationuuid || '',
                 favicon: logoUrl,
                 country: '',
                 tags: '',
                 bitrate: 0,
-                codec: ''
-            };
-            state.favoriteStationData.push(stationData);
+                codec: '',
+                is_moode: s.is_moode || false
+            });
 
-            html.push(
-                '<div class="rb-station-card rb-favorite-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(s.url) + '" data-name="' + escapeHtml(s.name) + '">' +
-                    logoHtml +
-                    '<div class="rb-info">' +
-                        '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta-lines">' +
-                            '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
-                            '<div class="rb-meta rb-meta-bitrate">' +
-                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' ' + s.codec : '')) +
-                                (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
-                            '</div>' +
-                            '<div class="rb-meta rb-meta-genre">' +
-                                (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="rb-actions">' +
-                        '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
-                        '<button class="btn rb-add-btn added" title="Remove from Favorites"><i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i></button>' +
-                        '<button class="btn rb-download-btn" title="Download .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
-                    '</div>' +
-                '</div>'
-            );
+            html.push(buildStationCard(
+                { url: s.url, name: s.name, stationuuid: s.stationuuid, logoUrl: logoUrl, country: s.country, tags: s.tags, bitrate: s.bitrate, codec: s.codec, is_moode: s.is_moode },
+                index, 'rb-favorite-card', true
+            ));
         });
 
         container.html(html.join(''));
@@ -884,64 +802,38 @@ function initRadioBrowser($) {
         $('#rb-loading').addClass('hide');
         $('#rb-no-results').addClass('hide');
         container.removeClass('hide');
-        $('#rb-result-count').text('(' + stations.length + ' stations)');
 
         // Reset stationData array to prevent memory growth
         state.stationData = [];
-        var startIndex = 0;
 
-        stations.forEach(function(s, index) {
-            var logoHtml = s.favicon ?
-                '<img class="rb-logo" src="' + escapeHtml(s.favicon) + '" alt="" onerror="this.src=\'/images/default-notfound-cover.jpg\'">' :
-                '<div class="rb-logo rb-logo-placeholder"><i class="fa-solid fa-sharp fa-radio"></i></div>';
+        // Filter moOde stations if setting is off
+        var filteredStations = stations;
+        if (!visibilityState.moode_search) {
+            filteredStations = stations.filter(function(s) { return !s.is_moode; });
+        }
 
-            var metaParts = [];
-            if (s.country) metaParts.push(escapeHtml(s.country));
-            if (s.tags) metaParts.push(escapeHtml(s.tags.split(',')[0]));
-            if (s.bitrate > 0) metaParts.push(s.bitrate + 'k');
+        $('#rb-result-count').text('(' + filteredStations.length + ' stations)');
 
+        filteredStations.forEach(function(s, index) {
             var stationData = {
                 url: (s.url_resolved || s.url).trim(),
                 url_fallback: s.url.trim(),
                 name: s.name,
+                stationuuid: s.stationuuid || '',
                 favicon: s.favicon || '',
                 country: s.country || '',
                 tags: s.tags || '',
                 bitrate: s.bitrate || 0,
-                codec: s.codec || ''
+                codec: s.codec || '',
+                is_moode: s.is_moode || false
             };
 
             state.stationData.push(stationData);
-            var storeIndex = startIndex + index;
 
-            var isFavorite = isInFavorites(stationData.url, stationData.name);
-            var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
-            var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
-            var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
-
-            html.push(
-                '<div class="rb-station-card" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(stationData.url) + '" data-name="' + escapeHtml(s.name) + '">' +
-                    logoHtml +
-                    '<div class="rb-info">' +
-                        '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                        '<div class="rb-meta-lines">' +
-                            '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
-                            '<div class="rb-meta rb-meta-bitrate">' +
-                                ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' ' + s.codec : '')) +
-                                (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
-                            '</div>' +
-                            '<div class="rb-meta rb-meta-genre">' +
-                                (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="rb-actions">' +
-                        '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
-                        '<button class="' + addBtnClass + '" title="' + addBtnTitle + '">' + addBtnIcon + '</button>' +
-                        '<button class="btn rb-download-btn" title="Download .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
-                    '</div>' +
-                '</div>'
-            );
+            html.push(buildStationCard(
+                { url: stationData.url, name: s.name, stationuuid: s.stationuuid, favicon: s.favicon, country: s.country, tags: s.tags, bitrate: s.bitrate, codec: s.codec, is_moode: s.is_moode },
+                index, '', isInFavorites(stationData.url, stationData.name)
+            ));
         });
 
         container.html(html.join(''));
@@ -1226,6 +1118,75 @@ function initRadioBrowser($) {
         }
     }
 
+    /**
+     * Resolve logo URL from a station's logo field (used by recently played & favorites).
+     * Returns a URL string or empty string if no logo.
+     */
+    function resolveLogoUrl(logo, name) {
+        if (!logo) return '';
+        if (logo === 'local') {
+            return '/imagesw/radio-logos/thumbs/' + encodeURIComponent(name) + '.jpg';
+        }
+        if (logo.startsWith('/extensions/')) return logo;
+        if (logo.startsWith('http://') || logo.startsWith('https://')) return logo;
+        return '/imagesw/radio-logos/thumbs/' + encodeURIComponent(name) + '.jpg';
+    }
+
+    /**
+     * Build station card HTML string.
+     * @param {Object} s Station data {url, name, favicon/logoUrl, country, tags, bitrate, codec}
+     * @param {number} storeIndex Index for data-station-index attribute
+     * @param {string} extraClass Optional extra CSS class (e.g. 'rb-recent-card', 'rb-favorite-card')
+     * @param {boolean} isFavorite Whether station is in favorites
+     */
+    function buildStationCard(s, storeIndex, extraClass, isFavorite) {
+        var logoUrl = s.logoUrl || s.favicon || '';
+        var isMoode = s.is_moode || false;
+        var logoHtml;
+
+        if (isMoode) {
+            // Wrap logo in container for M badge overlay
+            var imgTag = logoUrl ?
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
+                '<img class="rb-logo" src="/extensions/installed/radio-browser/assets/rb-default-logo.jpg" alt="">';
+            logoHtml = '<div class="rb-logo-wrapper">' + imgTag + '<span class="rb-moode-badge">m</span></div>';
+        } else {
+            logoHtml = logoUrl ?
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
+                '<img class="rb-logo" src="/extensions/installed/radio-browser/assets/rb-default-logo.jpg" alt="">';
+        }
+
+        var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';
+        var addBtnIcon = isFavorite ? '<i class="fa-solid fa-sharp fa-heart" style="color: #d35400;"></i>' : '<i class="fa-solid fa-sharp fa-heart"></i>';
+        var addBtnTitle = isFavorite ? 'Remove from Favorites' : 'Add to Favorites';
+
+        var cardClass = 'rb-station-card' + (extraClass ? ' ' + extraClass : '');
+        var url = s.url || '';
+        var uuid = s.stationuuid || '';
+
+        return '<div class="' + cardClass + '" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(url) + '" data-name="' + escapeHtml(s.name) + '" data-stationuuid="' + escapeHtml(uuid) + '">' +
+            logoHtml +
+            '<div class="rb-info">' +
+                '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
+                '<div class="rb-meta-lines">' +
+                    '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
+                    '<div class="rb-meta rb-meta-bitrate">' +
+                        ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' ' + s.codec : '')) +
+                        (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
+                    '</div>' +
+                    '<div class="rb-meta rb-meta-genre">' +
+                        (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="rb-actions">' +
+                '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
+                '<button class="' + addBtnClass + '" title="' + addBtnTitle + '">' + addBtnIcon + '</button>' +
+                '<button class="btn rb-download-btn" title="Download .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
+            '</div>' +
+        '</div>';
+    }
+
     // Troubleshooting functions
     function flushCache() {
         var btn = $('#rb-flush-cache');
@@ -1407,7 +1368,7 @@ function initRadioBrowser($) {
     }
 
     function reinstallExtension() {
-        if (!confirm('Re-run install script? This will refresh all symlinks and permissions.')) {
+        if (!confirm('Re-run install script? This will refresh permissions and web root files.')) {
             return;
         }
 
@@ -1444,7 +1405,10 @@ function initRadioBrowser($) {
         system: true,
         playbar: true,
         download: true,
-        activityglow: true
+        activityglow: true,
+        moode_favorites: true,
+        moode_recently: true,
+        moode_search: true
     };
 
     var limitsState = {
@@ -1467,6 +1431,9 @@ function initRadioBrowser($) {
             : area === 'system' ? 'M Configuration Tile'
             : area === 'download' ? 'Download Button'
             : area === 'activityglow' ? 'Activity Glow'
+            : area === 'moode_favorites' ? 'moOde Stations in Favorites'
+            : area === 'moode_recently' ? 'moOde Stations in Recently Played'
+            : area === 'moode_search' ? 'moOde Stations in Search'
             : 'Playbar Icon';
     }
 
@@ -1517,12 +1484,18 @@ function initRadioBrowser($) {
         visibilityState.playbar = v.playbar !== false;
         visibilityState.download = v.download !== false;
         visibilityState.activityglow = v.activityglow !== false;
+        visibilityState.moode_favorites = v.moode_favorites !== false;
+        visibilityState.moode_recently = v.moode_recently !== false;
+        visibilityState.moode_search = v.moode_search !== false;
 
         applyVisibilityButtonState($('#rb-visibility-library-btn'), $('#rb-visibility-library-state'), 'library', visibilityState.library);
         applyVisibilityButtonState($('#rb-visibility-m-btn'), $('#rb-visibility-m-state'), 'm', visibilityState.m);
         applyVisibilityButtonState($('#rb-visibility-system-btn'), $('#rb-visibility-system-state'), 'system', visibilityState.system);
         applyVisibilityButtonState($('#rb-visibility-playbar-btn'), $('#rb-visibility-playbar-state'), 'playbar', visibilityState.playbar);
         applyVisibilityButtonState($('#rb-visibility-download-btn'), $('#rb-visibility-download-state'), 'download', visibilityState.download);
+        applyVisibilityButtonState($('#rb-visibility-moode-search-btn'), null, 'moode_search', visibilityState.moode_search);
+        applyVisibilityButtonState($('#rb-visibility-moode-favorites-btn'), null, 'moode_favorites', visibilityState.moode_favorites);
+        applyVisibilityButtonState($('#rb-visibility-moode-recently-btn'), null, 'moode_recently', visibilityState.moode_recently);
 
         // Update playbar mockup preview
         updatePlaybarMockup();
@@ -1653,7 +1626,10 @@ function initRadioBrowser($) {
             ['rb-visibility-m-btn', 'm'],
             ['rb-visibility-system-btn', 'system'],
             ['rb-visibility-playbar-btn', 'playbar'],
-            ['rb-visibility-download-btn', 'download']
+            ['rb-visibility-download-btn', 'download'],
+            ['rb-visibility-moode-search-btn', 'moode_search'],
+            ['rb-visibility-moode-favorites-btn', 'moode_favorites'],
+            ['rb-visibility-moode-recently-btn', 'moode_recently']
         ];
 
         areas.forEach(function(e) {
@@ -1684,6 +1660,8 @@ function initRadioBrowser($) {
                 timeout: 10000
             });
         });
+
+        // moOde station filter checkboxes replaced with toggles in areas[] above
 
         // Limit input handlers
         $('#rb-limit-recently').on('change', function() {

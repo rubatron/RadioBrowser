@@ -19,6 +19,64 @@ require_once '/var/www/inc/common.php';
 require_once '/var/www/inc/session.php';
 require_once '/var/www/inc/sql.php';
 
+/**
+ * Sanitize station name for use as a safe filename.
+ * Strips characters invalid on Linux filesystems (/ and null byte) and trims whitespace.
+ * Falls back to md5 hash if result is empty.
+ */
+function rb_sanitize_station_name($name)
+{
+    $safe = trim(str_replace(['/', '\0'], '', $name));
+    return $safe !== '' ? $safe : 'station_' . md5($name);
+}
+
+/**
+ * Download an image from URL via curl.
+ * Returns raw image data on success, false on failure.
+ */
+function rb_fetch_image($url, $timeout = 10)
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => $timeout,
+        CURLOPT_USERAGENT => RB_UA,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 3
+    ]);
+    $data = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($data !== false && $httpCode == 200 && strlen($data) > 100) {
+        return $data;
+    }
+    rb_debug_log("rb_fetch_image: Failed to fetch $url (HTTP $httpCode)");
+    return false;
+}
+
+/**
+ * Resize a source GD image to a square with white background, save as JPG.
+ * Returns true on success, false on failure.
+ */
+function rb_resize_and_save($srcImage, $srcWidth, $srcHeight, $size, $outputPath, $quality = 85)
+{
+    $canvas = imagecreatetruecolor($size, $size);
+    $white = imagecolorallocate($canvas, 255, 255, 255);
+    imagefill($canvas, 0, 0, $white);
+
+    $scale = min($size / $srcWidth, $size / $srcHeight);
+    $newWidth = (int)($srcWidth * $scale);
+    $newHeight = (int)($srcHeight * $scale);
+    $x = (int)(($size - $newWidth) / 2);
+    $y = (int)(($size - $newHeight) / 2);
+
+    imagecopyresampled($canvas, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
+    $saved = @imagejpeg($canvas, $outputPath, $quality);
+    imagedestroy($canvas);
+    return $saved;
+}
+
 // --- CONFIG ---
 // Primary API: DNS load-balanced (auto-routes to nearest mirror: de1, nl1, etc.)
 define('RB_API_PRIMARY', 'all.api.radio-browser.info');
@@ -48,6 +106,9 @@ if (!defined('DEFAULT_NOTFOUND_COVER')) {
     define('DEFAULT_NOTFOUND_COVER', '/var/www/images/radio-logo.png');
 }
 
+// Radio Browser's own default logo (used instead of moOde's generic cover)
+define('RB_DEFAULT_LOGO', __DIR__ . '/../assets/rb-default-logo.jpg');
+
 // File-based recently played (persistent, ordered by play time)
 define('RB_RECENTLY_PLAYED_FILE', RB_CACHE . '/recently_played.json');
 
@@ -60,7 +121,6 @@ define('RB_SETTINGS_FILE', RB_DATA_DIR . '/settings.json');
 
 // --- PATH CONSTANTS ---
 define('RB_EXT_BASE', dirname(__DIR__));
-define('RB_SYMLINK', '/var/www/radio-browser.php');
 define('RB_HEADER_FILE', '/var/www/header.php');
 define('RB_MPD_HOST', 'localhost');
 define('RB_MPD_PORT', 6600);
@@ -127,7 +187,7 @@ function rb_remove_custom_api($id)
 }
 
 // ============================================================================
-// SETTINGS / VISIBILITY FUNCTIONS (Standalone - no ext-mgr dependency)
+// SETTINGS / VISIBILITY FUNCTIONS
 // ============================================================================
 
 function rb_get_default_settings()
@@ -139,7 +199,10 @@ function rb_get_default_settings()
             'system' => true,
             'playbar' => true,
             'download' => true,
-            'activityglow' => true
+            'activityglow' => true,
+            'moode_favorites' => true,
+            'moode_recently' => true,
+            'moode_search' => true
         ],
         'limits' => [
             'recentlyPlayed' => 0,  // 0 = no limit (show all)
@@ -175,9 +238,9 @@ function rb_save_settings($settings)
 
 function rb_set_visibility($area, $visible)
 {
-    $allowed = ['library', 'm', 'system', 'playbar', 'download', 'activityglow'];
+    $allowed = ['library', 'm', 'system', 'playbar', 'download', 'activityglow', 'moode_favorites', 'moode_recently', 'moode_search'];
     if (!in_array($area, $allowed, true)) {
-        return ['success' => false, 'error' => 'Invalid area. Use library, m, system, playbar, download, or activityglow.'];
+        return ['success' => false, 'error' => 'Invalid area.'];
     }
 
     $settings = rb_get_settings();
@@ -227,6 +290,20 @@ function rb_add_recently_played($station)
     });
     $list = array_values($list); // Re-index
 
+    // Check if this is a moOde core station (has metadata like broadcaster/country/region, not an RB import)
+    $is_moode = false;
+    $dbh = sqlConnect();
+    if ($dbh) {
+        $result = sqlQuery("SELECT home_page, broadcaster, country, region FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1", $dbh);
+        if (is_array($result) && count($result) > 0) {
+            $hp = trim($result[0]['home_page'] ?? '');
+            $bc = trim($result[0]['broadcaster'] ?? '');
+            $co = trim($result[0]['country'] ?? '');
+            $rg = trim($result[0]['region'] ?? '');
+            $is_moode = ($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '');
+        }
+    }
+
     // Add to beginning (most recent first)
     array_unshift($list, [
         'url' => $url,
@@ -236,6 +313,7 @@ function rb_add_recently_played($station)
         'tags' => $station['tags'] ?? '',
         'bitrate' => $station['bitrate'] ?? 0,
         'codec' => $station['codec'] ?? '',
+        'is_moode' => $is_moode,
         'played_at' => time()
     ]);
 
@@ -253,10 +331,7 @@ function rb_add_recently_played($station)
 $cmd = $_GET['cmd'] ?? $_POST['cmd'] ?? '';
 rb_debug_log('IN: cmd=' . $cmd . ', params=' . json_encode($_REQUEST) . ', IP=' . $_SERVER['REMOTE_ADDR']);
 
-function rb_log($msg)
-{
-    @file_put_contents(RB_LOG, '[' . date('c') . '] ' . $msg . "\n", FILE_APPEND);
-}
+// rb_log() removed — use rb_debug_log() for all logging
 
 function rb_cache_get($key, $ttl)
 {
@@ -329,13 +404,7 @@ function rb_save_permanent_logo($stationName, $imageData)
         return false;
     }
 
-    // Use station name exactly as-is (matching moOde behavior)
-    // Only remove characters that are truly invalid for Linux filenames
-    $safeName = str_replace(['/', '\0'], '', $stationName);
-    $safeName = trim($safeName);
-    if (empty($safeName)) {
-        $safeName = 'station_' . md5($stationName);
-    }
+    $safeName = rb_sanitize_station_name($stationName);
 
     $logoPath = RADIO_LOGOS_ROOT . $safeName . '.jpg';
     $thumbPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg';
@@ -365,52 +434,14 @@ function rb_save_permanent_logo($stationName, $imageData)
         @mkdir(RADIO_LOGOS_ROOT . 'thumbs/', 0755, true);
     }
 
-    // Save main logo (resize to 400x400 max)
-    $mainSize = 400;
-    $mainImage = imagecreatetruecolor($mainSize, $mainSize);
-    $white = imagecolorallocate($mainImage, 255, 255, 255);
-    imagefill($mainImage, 0, 0, $white);
-
-    // Calculate scaling to fit in square
-    $scale = min($mainSize / $srcWidth, $mainSize / $srcHeight);
-    $newWidth = (int)($srcWidth * $scale);
-    $newHeight = (int)($srcHeight * $scale);
-    $x = (int)(($mainSize - $newWidth) / 2);
-    $y = (int)(($mainSize - $newHeight) / 2);
-
-    imagecopyresampled($mainImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
-    $mainSaved = @imagejpeg($mainImage, $logoPath, 85);
-    imagedestroy($mainImage);
+    // Save main logo (400x400), thumbnail (200x200), small thumbnail (80x80 - required by moOde playbar)
+    $mainSaved = rb_resize_and_save($srcImage, $srcWidth, $srcHeight, 400, $logoPath);
     rb_debug_log('rb_save_permanent_logo: Main logo saved: ' . ($mainSaved ? 'YES' : 'NO'));
 
-    // Save thumbnail (200x200)
-    $thumbSize = 200;
-    $thumbImage = imagecreatetruecolor($thumbSize, $thumbSize);
-    $whiteThumb = imagecolorallocate($thumbImage, 255, 255, 255);
-    imagefill($thumbImage, 0, 0, $whiteThumb);
-    $scale = min($thumbSize / $srcWidth, $thumbSize / $srcHeight);
-    $newWidth = (int)($srcWidth * $scale);
-    $newHeight = (int)($srcHeight * $scale);
-    $x = (int)(($thumbSize - $newWidth) / 2);
-    $y = (int)(($thumbSize - $newHeight) / 2);
-    imagecopyresampled($thumbImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
-    $thumbSaved = @imagejpeg($thumbImage, $thumbPath, 85);
-    imagedestroy($thumbImage);
+    $thumbSaved = rb_resize_and_save($srcImage, $srcWidth, $srcHeight, 200, $thumbPath);
     rb_debug_log('rb_save_permanent_logo: Thumbnail saved: ' . ($thumbSaved ? 'YES' : 'NO'));
 
-    // Save small thumbnail (80x80) - REQUIRED by moOde playbar
-    $smallSize = 80;
-    $smallImage = imagecreatetruecolor($smallSize, $smallSize);
-    $whiteSmall = imagecolorallocate($smallImage, 255, 255, 255);
-    imagefill($smallImage, 0, 0, $whiteSmall);
-    $scale = min($smallSize / $srcWidth, $smallSize / $srcHeight);
-    $newWidth = (int)($srcWidth * $scale);
-    $newHeight = (int)($srcHeight * $scale);
-    $x = (int)(($smallSize - $newWidth) / 2);
-    $y = (int)(($smallSize - $newHeight) / 2);
-    imagecopyresampled($smallImage, $srcImage, $x, $y, 0, 0, $newWidth, $newHeight, $srcWidth, $srcHeight);
-    $smallSaved = @imagejpeg($smallImage, $thumbSmPath, 85);
-    imagedestroy($smallImage);
+    $smallSaved = rb_resize_and_save($srcImage, $srcWidth, $srcHeight, 80, $thumbSmPath);
     rb_debug_log('rb_save_permanent_logo: Small thumb (_sm) saved: ' . ($smallSaved ? 'YES' : 'NO'));
 
     imagedestroy($srcImage);
@@ -531,12 +562,12 @@ function rb_api($endpoint, $params = [], $timeout = 10)
         $err = curl_error($ch);
         curl_close($ch);
 
-        rb_log("API $url [$code] " . ($err ?: 'OK'));
+        rb_debug_log("API $url [$code] " . ($err ?: 'OK'));
 
         if ($code === 200 && $resp) {
             $data = json_decode($resp, true);
             if ($data !== null) return $data;
-            rb_log("Invalid JSON from $srv");
+            rb_debug_log("Invalid JSON from $srv");
         }
         // Continue to next server on failure
     }
@@ -639,10 +670,16 @@ switch ($cmd) {
         $checks = [];
         $overall = 'running'; // running, warning, error, inactive
 
-        // 1. Check symlink
-        $symlinkOk = is_link(RB_SYMLINK) && file_exists(RB_SYMLINK);
-        $checks['symlink'] = ['ok' => $symlinkOk, 'detail' => $symlinkOk ? 'OK' : 'Missing or broken'];
-        if (!$symlinkOk) $overall = 'error';
+        // Load config for webroot file checks
+        $loaderConfig = require __DIR__ . '/loader-config.php';
+
+        // 1. Check web root files (from config manifest)
+        foreach ($loaderConfig['webroot_files'] as $targetName => $entry) {
+            $targetPath = $loaderConfig['web_root'] . '/' . $targetName;
+            $ok = file_exists($targetPath);
+            $checks['webroot_' . $targetName] = ['ok' => $ok, 'detail' => $ok ? 'OK' : 'Missing'];
+            if (!$ok) $overall = 'error';
+        }
 
         // 2. Check PHP files exist
         $extBase = RB_EXT_BASE;
@@ -714,7 +751,7 @@ switch ($cmd) {
         break;
 
     case 'test_search':
-        // Return mock data for testing
+        // DEBUG ONLY: Return mock data for testing (not called by frontend)
         $response = [
             'success' => true,
             'stations' => [
@@ -765,33 +802,7 @@ switch ($cmd) {
         }
         $response = ['success' => true, 'servers' => $results];
         break;
-    case 'get_logo':
-        $url = $_GET['url'] ?? '';
-        if (empty($url)) {
-            $response = ['success' => false, 'message' => 'No URL provided'];
-            break;
-        }
-
-        try {
-            // Query database for station logo
-            $dbh = sqlConnect();
-            $sql = "SELECT logo FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' AND type='u'";
-            $result = sqlQuery($sql, $dbh);
-
-            if ($result && count($result) > 0 && isset($result[0]['logo']) && !empty($result[0]['logo'])) {
-                $logo = $result[0]['logo'];
-                // If logo is a relative path, make it absolute
-                if (!preg_match('/^https?:\/\//', $logo)) {
-                    $logo = '/images/radio-logos/' . $logo;
-                }
-                $response = ['success' => true, 'logo' => $logo];
-            } else {
-                $response = ['success' => false, 'message' => 'No logo found for this station'];
-            }
-        } catch (Exception $e) {
-            $response = ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
-        }
-        break;
+    // get_logo case removed — no frontend calls it (dead code)
     case 'countries':
         $data = rb_cache_get('countries', RB_CACHE_TTL_STATIC);
         if ($data === false) {
@@ -847,6 +858,23 @@ switch ($cmd) {
             }
         }
         if ($data !== false) {
+            // Load moOde station URLs for is_moode marking
+            $moodeUrls = [];
+            $dbh = sqlConnect();
+            if ($dbh) {
+                $rows = sqlQuery("SELECT station, home_page, broadcaster, country, region FROM cfg_radio", $dbh);
+                if (is_array($rows)) {
+                    foreach ($rows as $r) {
+                        $hp = trim($r['home_page'] ?? '');
+                        $bc = trim($r['broadcaster'] ?? '');
+                        $co = trim($r['country'] ?? '');
+                        $rg = trim($r['region'] ?? '');
+                        if (($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '')) {
+                            $moodeUrls[trim($r['station'])] = true;
+                        }
+                    }
+                }
+            }
             // Process favicons for caching
             foreach ($data as &$station) {
                 if (!empty($station['favicon']) && !str_contains($station['favicon'], 'encrypted-tbn0.gstatic.com')) {
@@ -855,6 +883,9 @@ switch ($cmd) {
                         $station['favicon'] = $cached_image;
                     }
                 }
+                // Mark moOde core stations
+                $stUrl = trim($station['url_resolved'] ?? $station['url'] ?? '');
+                $station['is_moode'] = isset($moodeUrls[$stUrl]);
             }
             $response = ['success' => true, 'stations' => $data];
         } else {
@@ -875,6 +906,23 @@ switch ($cmd) {
             }
         }
         if ($data !== false) {
+            // Load moOde station URLs for is_moode marking
+            $moodeUrls = [];
+            $dbh = sqlConnect();
+            if ($dbh) {
+                $rows = sqlQuery("SELECT station, home_page, broadcaster, country, region FROM cfg_radio", $dbh);
+                if (is_array($rows)) {
+                    foreach ($rows as $r) {
+                        $hp = trim($r['home_page'] ?? '');
+                        $bc = trim($r['broadcaster'] ?? '');
+                        $co = trim($r['country'] ?? '');
+                        $rg = trim($r['region'] ?? '');
+                        if (($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '')) {
+                            $moodeUrls[trim($r['station'])] = true;
+                        }
+                    }
+                }
+            }
             // Process favicons for caching
             foreach ($data as &$station) {
                 if (!empty($station['favicon']) && !str_contains($station['favicon'], 'encrypted-tbn0.gstatic.com')) {
@@ -883,6 +931,9 @@ switch ($cmd) {
                         $station['favicon'] = $cached_image;
                     }
                 }
+                // Mark moOde core stations
+                $stUrl = trim($station['url_resolved'] ?? $station['url'] ?? '');
+                $station['is_moode'] = isset($moodeUrls[$stUrl]);
             }
             $response = ['success' => true, 'stations' => $data];
         } else {
@@ -903,44 +954,38 @@ switch ($cmd) {
         $logo = 'local'; // Use 'local' to indicate we save logos locally
         $bitrate = isset($station['bitrate']) && $station['bitrate'] > 0 ? (string)$station['bitrate'] : '';
         $format = $station['codec'] ?? '';
+        // Map radio-browser.info fields to cfg_radio columns
+        $genre = trim($station['tags'] ?? '');
+        $language = trim($station['language'] ?? '');
+        $country = trim($station['country'] ?? '');
+        $region = trim($station['state'] ?? '');
 
         // Check if logo files exist for this station, if not download them
-        $safeName = str_replace(['/', '\0'], '', $name);
+        $safeName = rb_sanitize_station_name($name);
         $logoPath = RADIO_LOGOS_ROOT . $safeName . '.jpg';
+        $thumbPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg';
         $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
 
-        if (!empty($favicon) && !str_contains($favicon, 'encrypted-tbn0.gstatic.com') && !file_exists($thumbSmPath)) {
+        if (!file_exists($thumbSmPath) && !empty($favicon) && !str_contains($favicon, 'encrypted-tbn0.gstatic.com')) {
             rb_debug_log('Play: Getting logo for ' . $name . ' from ' . $favicon);
             $imageData = false;
 
-            // Check if favicon is a local cached file (starts with / but not http)
+            // Resolve local paths to filesystem paths
             if (str_starts_with($favicon, '/') && !str_starts_with($favicon, 'http')) {
-                // Local file - could be our cache or web root path
-                $localPath = $favicon;
                 if (str_starts_with($favicon, '/extensions/')) {
+                    $localPath = '/var/www' . $favicon;
+                } elseif (str_starts_with($favicon, '/imagesw/')) {
+                    $localPath = '/var/local/www' . $favicon;
+                } else {
                     $localPath = '/var/www' . $favicon;
                 }
                 if (file_exists($localPath)) {
                     $imageData = file_get_contents($localPath);
-                    rb_debug_log('Play: Read local cache file: ' . $localPath);
+                    rb_debug_log('Play: Read local file: ' . $localPath);
                 }
             } else {
-                // External URL - use curl
-                $ch = curl_init($favicon);
-                curl_setopt_array($ch, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT => 5,
-                    CURLOPT_USERAGENT => RB_UA,
-                    CURLOPT_FOLLOWLOCATION => true,
-                    CURLOPT_MAXREDIRS => 3
-                ]);
-                $imageData = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-
-                if ($httpCode != 200) {
-                    $imageData = false;
-                }
+                // External URL
+                $imageData = rb_fetch_image($favicon, 5);
             }
 
             if ($imageData !== false && strlen($imageData) > 100) {
@@ -950,13 +995,13 @@ switch ($cmd) {
             }
         }
 
-        // If logo still doesn't exist after download attempt, use moOde's default cover
+        // If logo still doesn't exist after download attempt, use Radio Browser default logo
         if (!file_exists($thumbSmPath)) {
-            $defaultCover = '/var/www/images/default-notfound-cover.jpg';
+            $defaultCover = RB_DEFAULT_LOGO;
             @copy($defaultCover, $logoPath);
-            @copy($defaultCover, RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg');
+            @copy($defaultCover, $thumbPath);
             @copy($defaultCover, $thumbSmPath);
-            rb_debug_log('Play: No favicon available, copied default cover for ' . $name);
+            rb_debug_log('Play: No favicon available, copied RB default logo for ' . $name);
         }
 
         // Insert station into cfg_radio for currentsong.txt compatibility
@@ -965,13 +1010,17 @@ switch ($cmd) {
         $checkSql = "SELECT 1 FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
         $exists = sqlQuery($checkSql, $dbh);
         if (!is_array($exists) || count($exists) == 0) {
-            // Station not in database, insert it
+            // Station not in database, insert with mapped radio-browser.info metadata
             $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" .
                 SQLite3::escapeString($url) . "', '" .
                 SQLite3::escapeString($name) . "', 'u', '" .
-                SQLite3::escapeString($logo) . "', '', '', '', '', '', '" .
+                SQLite3::escapeString($logo) . "', '" .
+                SQLite3::escapeString($genre) . "', '', '" .
+                SQLite3::escapeString($language) . "', '" .
+                SQLite3::escapeString($country) . "', '" .
+                SQLite3::escapeString($region) . "', '" .
                 SQLite3::escapeString($bitrate) . "', '" .
-                SQLite3::escapeString($format) . "', 'No', '', 'No')";
+                SQLite3::escapeString($format) . "', 'No', 'radio-browser', 'No')";
             sqlQuery($sql, $dbh);
             rb_debug_log('Inserted station into cfg_radio: ' . $name . ', URL: ' . $url);
         }
@@ -999,7 +1048,8 @@ switch ($cmd) {
             'country' => $station['country'] ?? '',
             'tags' => $station['tags'] ?? '',
             'bitrate' => $bitrate,
-            'codec' => $format
+            'codec' => $format,
+            'stationuuid' => $station['stationuuid'] ?? ''
         ]);
 
         $sock = openMpdSock(RB_MPD_HOST, RB_MPD_PORT);
@@ -1026,6 +1076,24 @@ switch ($cmd) {
             break;
         }
         closeMpdSock($sock);
+
+        // Click tracking: notify radio-browser.info that this station was played
+        // This keeps global statistics accurate (fire-and-forget, non-blocking)
+        $stationUuid = $station['stationuuid'] ?? '';
+        if (!empty($stationUuid) && preg_match('/^[0-9a-f\-]{36}$/i', $stationUuid)) {
+            $ch = curl_init('https://all.api.radio-browser.info/json/url/' . $stationUuid);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_USERAGENT => RB_UA,
+                CURLOPT_TIMEOUT => 3,
+                CURLOPT_CONNECTTIMEOUT => 2,
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
+            rb_debug_log('Click tracking: notified radio-browser.info for ' . $name . ' (UUID: ' . $stationUuid . ')');
+        }
+
         $response = ['success' => true, 'message' => 'Playing: ' . $name];
         break;
     case 'import':
@@ -1077,20 +1145,9 @@ switch ($cmd) {
         if (!empty($favicon) && !str_contains($favicon, 'encrypted-tbn0.gstatic.com')) {
             rb_debug_log('Processing favicon for station: ' . $name . ', URL: ' . $favicon);
 
-            // Download favicon
-            $ch = curl_init($favicon);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 10,
-                CURLOPT_USERAGENT => RB_UA,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS => 3
-            ]);
-            $imageData = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            $imageData = rb_fetch_image($favicon);
 
-            if ($imageData !== false && $httpCode == 200 && strlen($imageData) > 100) {
+            if ($imageData !== false) {
                 rb_debug_log('Downloaded favicon, size: ' . strlen($imageData) . ' bytes');
 
                 // Use our own PNG->JPG conversion and save directly
@@ -1107,25 +1164,42 @@ switch ($cmd) {
                     }
                 }
             } else {
-                rb_debug_log('Failed to download favicon for station: ' . $name . ', HTTP: ' . $httpCode);
+                rb_debug_log('Failed to download favicon for station: ' . $name);
             }
         } else {
             rb_debug_log('No favicon processing for station: ' . $name . ', favicon: ' . ($favicon ?: 'empty'));
         }
 
-        // If logo still doesn't exist after download attempt, use moOde's default cover
-        $safeName = str_replace(['/', '\0'], '', $name);
+        // If logo still doesn't exist after download attempt, use Radio Browser default logo
+        $safeName = rb_sanitize_station_name($name);
         $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
         if (!file_exists($thumbSmPath)) {
-            $defaultCover = '/var/www/images/default-notfound-cover.jpg';
+            $defaultCover = RB_DEFAULT_LOGO;
             @copy($defaultCover, RADIO_LOGOS_ROOT . $safeName . '.jpg');
             @copy($defaultCover, RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg');
             @copy($defaultCover, $thumbSmPath);
-            rb_debug_log('Import: No favicon available, copied default cover for ' . $name);
+            rb_debug_log('Import: No favicon available, copied RB default logo for ' . $name);
         }
 
         // Use type='f' (favorite) - integrates with moOde's native favorites system
-        $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" . SQLite3::escapeString($url) . "', '" . SQLite3::escapeString($name) . "', 'f', '" . SQLite3::escapeString($logo) . "', '', '', '', '', '', '', '', 'No', '', '')";
+        // home_page='radio-browser' marks this as imported by Radio Browser (vs moOde core stations)
+        // Map radio-browser.info fields to cfg_radio columns
+        $genre = trim($station['tags'] ?? '');
+        $language = trim($station['language'] ?? '');
+        $country = trim($station['country'] ?? '');
+        $region = trim($station['state'] ?? '');
+        $bitrate = isset($station['bitrate']) && $station['bitrate'] > 0 ? (string)$station['bitrate'] : '';
+        $format = trim($station['codec'] ?? '');
+        $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" .
+            SQLite3::escapeString($url) . "', '" .
+            SQLite3::escapeString($name) . "', 'f', '" .
+            SQLite3::escapeString($logo) . "', '" .
+            SQLite3::escapeString($genre) . "', '', '" .
+            SQLite3::escapeString($language) . "', '" .
+            SQLite3::escapeString($country) . "', '" .
+            SQLite3::escapeString($region) . "', '" .
+            SQLite3::escapeString($bitrate) . "', '" .
+            SQLite3::escapeString($format) . "', 'No', 'radio-browser', '')";
         $result = sqlQuery($sql, $dbh);
         if ($result !== true) {
             $response = ['success' => false, 'message' => 'Failed to add station to database'];
@@ -1186,14 +1260,19 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'Database connection failed'];
             break;
         }
-        $result = sqlQuery("SELECT station, name, logo FROM cfg_radio WHERE type='f'", $dbh);
+        $result = sqlQuery("SELECT station, name, logo, home_page, broadcaster, country, region FROM cfg_radio WHERE type='f'", $dbh);
         $favorites = [];
         if (is_array($result)) {
             foreach ($result as $row) {
+                $hp = trim($row['home_page'] ?? '');
+                $bc = trim($row['broadcaster'] ?? '');
+                $co = trim($row['country'] ?? '');
+                $rg = trim($row['region'] ?? '');
                 $favorites[] = [
                     'url' => trim($row['station']),
                     'name' => trim($row['name']),
-                    'logo' => trim($row['logo'])
+                    'logo' => trim($row['logo']),
+                    'is_moode' => ($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '')
                 ];
             }
         }
@@ -1262,7 +1341,8 @@ switch ($cmd) {
                     'country' => $entry['country'] ?? '',
                     'tags' => $entry['tags'] ?? '',
                     'bitrate' => $entry['bitrate'] ?? 0,
-                    'codec' => $entry['codec'] ?? ''
+                    'codec' => $entry['codec'] ?? '',
+                    'is_moode' => $entry['is_moode'] ?? false
                 ];
                 $count++;
             }
@@ -1322,9 +1402,7 @@ switch ($cmd) {
                     $skipped++;
                     continue;
                 }
-                // Build safe filename same way as rb_save_permanent_logo
-                $safeName = str_replace(['/', '\0'], '', $name);
-                $safeName = trim($safeName);
+                $safeName = rb_sanitize_station_name($name);
                 $thumbPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg';
                 $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
                 // Skip if thumbnails already exist
@@ -1334,18 +1412,8 @@ switch ($cmd) {
                 }
                 // Fetch logo and save
                 rb_debug_log('Repair: Fetching logo for "' . $name . '" from ' . $logoUrl);
-                $ch = curl_init($logoUrl);
-                curl_setopt_array($ch, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT => 10,
-                    CURLOPT_USERAGENT => RB_UA,
-                    CURLOPT_FOLLOWLOCATION => true,
-                    CURLOPT_MAXREDIRS => 3
-                ]);
-                $imageData = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                curl_close($ch);
-                if ($imageData && $httpCode == 200 && strlen($imageData) > 100) {
+                $imageData = rb_fetch_image($logoUrl);
+                if ($imageData) {
                     if (rb_save_permanent_logo($name, $imageData)) {
                         $repaired++;
                         rb_debug_log('Repair: Saved thumbnails for "' . $name . '"');
@@ -1355,7 +1423,7 @@ switch ($cmd) {
                     }
                 } else {
                     $failed++;
-                    rb_debug_log('Repair: Failed to fetch logo for "' . $name . '" (HTTP ' . $httpCode . ')');
+                    rb_debug_log('Repair: Failed to fetch logo for "' . $name . '"');
                 }
             }
         }
@@ -1539,35 +1607,6 @@ switch ($cmd) {
     // ============================================================================
     // SYSTEM MANAGEMENT API
     // ============================================================================
-    case 'service_status':
-        // Check status of PHP-FPM and nginx
-        rb_debug_log('Service status check requested');
-
-        $phpVersion = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
-        $phpFpmService = "php{$phpVersion}-fpm";
-
-        // Check nginx
-        $nginxActive = trim(shell_exec('systemctl is-active nginx 2>/dev/null')) === 'active';
-
-        // Check PHP-FPM
-        $phpFpmActive = trim(shell_exec("systemctl is-active {$phpFpmService} 2>/dev/null")) === 'active';
-
-        $response = [
-            'success' => true,
-            'services' => [
-                'nginx' => [
-                    'name' => 'nginx',
-                    'active' => $nginxActive,
-                    'status' => $nginxActive ? 'running' : 'stopped'
-                ],
-                'php_fpm' => [
-                    'name' => $phpFpmService,
-                    'active' => $phpFpmActive,
-                    'status' => $phpFpmActive ? 'running' : 'stopped'
-                ]
-            ]
-        ];
-        break;
 
     case 'uninstall':
         // Uninstall Radio Browser extension
@@ -1614,20 +1653,26 @@ switch ($cmd) {
         $sysSourcesDir = $extBase . '/sys/sources';
         $sysMoodeDir = $sysSourcesDir . '/moode';
 
-        // 1. Fix symlink
-        $target = $extBase . '/radio-browser.php';
+        // 1. Fix web root files (from config manifest)
+        // moOde's worker.php deletes all symlinks in /var/www/ during maintenance
+        // The loader is a physical file so it survives that cleanup
+        $loaderConfig = require __DIR__ . '/loader-config.php';
 
-        if (!is_link(RB_SYMLINK) || !file_exists(RB_SYMLINK)) {
-            @unlink(RB_SYMLINK);
-            exec("sudo ln -sf " . escapeshellarg($target) . " " . escapeshellarg(RB_SYMLINK) . " 2>&1", $symlinkOutput, $symlinkRc);
-            if ($symlinkRc === 0) {
-                exec("sudo chown -h www-data:www-data " . escapeshellarg(RB_SYMLINK) . " 2>&1");
-                $fixed[] = 'Symlink recreated';
+        foreach ($loaderConfig['webroot_files'] as $targetName => $entry) {
+            $targetPath = $loaderConfig['web_root'] . '/' . $targetName;
+            $sourcePath = $extBase . '/' . $entry['source'];
+
+            if (!file_exists($targetPath)) {
+                exec("sudo cp " . escapeshellarg($sourcePath) . " " . escapeshellarg($targetPath) . " 2>&1", $cpOut, $cpRc);
+                if ($cpRc === 0) {
+                    exec("sudo chown www-data:www-data " . escapeshellarg($targetPath) . " 2>&1");
+                    $fixed[] = "Web root restored: $targetName";
+                } else {
+                    $errors[] = "Failed to deploy $targetName: " . implode(' ', $cpOut);
+                }
             } else {
-                $errors[] = 'Failed to create symlink: ' . implode(' ', $symlinkOutput);
+                $fixed[] = "Web root OK: $targetName";
             }
-        } else {
-            $fixed[] = 'Symlink OK';
         }
 
         // 2. Check/repair header.php patch
@@ -1701,7 +1746,7 @@ function putStationCover($stName)
     $stCoverImageThm = RADIO_LOGOS_ROOT . 'thumbs/' .  $stName . '.jpg';
     $stCoverImageThmSm = RADIO_LOGOS_ROOT . 'thumbs/' .  $stName . '_sm.jpg';
 
-    $defaultImage = DEFAULT_NOTFOUND_COVER;
+    $defaultImage = RB_DEFAULT_LOGO;
     sendFECmd('set_cover_image1'); // Show spinner
     sleep(3); // Allow time for set_ralogo_image job to create __tmp__ image file
 

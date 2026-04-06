@@ -22,6 +22,7 @@
     "repository": "https://github.com/rubatron/RadioBrowser",
     "help_url": "https://github.com/rubatron/RadioBrowser/wiki",
     "changelog": {
+        "4.1.0": "Major backend refactor: extracted helpers, removed dead code and duplicates, extracted JS buildStationCard/resolveLogoUrl, cleaner settings UI, added ARCHITECTURE.md",
         "4.0.0": "Dynamic activity glow, moOde native fallback thumbnails, dynamic hostname in installer",
         "3.9.0": "Activity Light (radio icon glows when playing), playbar & coverview buttons, cache flush notifications",
         "3.1.0": "Menu visibility options, stream download, easier installation",

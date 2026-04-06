@@ -7,7 +7,7 @@
     "author": "Rubatron",
     "license": "GPL-3.0-or-later",
     "requires": {
-        "moode": ">=8.0.0",
+        "moode": ">=9.0.0",
         "php": ">=7.4"
     },
     "assets": {

@@ -7,12 +7,12 @@
 # Version: 4.0.0
 #
 # Called by systemd timer every 5 minutes
-# Checks: symlink, PHP files, cache, nginx, php-fpm, API, MPD
+# Checks: web root file, PHP files, cache, nginx, php-fpm, API, MPD
 # Results logged to journald: journalctl -u radio-browser-health
 # ============================================================================
 
 EXT_BASE="/var/www/extensions/installed/radio-browser"
-SYMLINK="/var/www/radio-browser.php"
+CONFIG="$EXT_BASE/backend/loader-config.php"
 STATUS="running"
 ERRORS=0
 
@@ -26,28 +26,40 @@ check() {
     fi
 }
 
-# 1. Symlink (auto-repair if missing)
-# moOde's worker.php runs periodic maintenance that deletes all symlinks in /var/www/
-# We auto-recreate the symlink here to make the extension self-healing
-if [[ -L "$SYMLINK" ]] && [[ -e "$SYMLINK" ]]; then
-    check "symlink" "ok" "$(readlink -f $SYMLINK)"
-else
-    # Auto-repair: recreate the symlink
-    TARGET="$EXT_BASE/radio-browser.php"
-    if [[ -f "$TARGET" ]]; then
-        rm -f "$SYMLINK" 2>/dev/null
-        ln -sf "$TARGET" "$SYMLINK" 2>/dev/null
-        chown -h www-data:www-data "$SYMLINK" 2>/dev/null
-        if [[ -L "$SYMLINK" ]] && [[ -e "$SYMLINK" ]]; then
-            check "symlink" "ok" "Auto-repaired -> $(readlink -f $SYMLINK)"
+# 1. Web root files (auto-repair from config manifest)
+# moOde's worker.php deletes all symlinks in /var/www/ during maintenance
+# The config defines which files must exist in the web root
+if [[ -f "$CONFIG" ]]; then
+    # Read webroot_files from config: outputs "target_name|source_file" per line
+    WEBROOT_ENTRIES=$(php -r "\$c=require '$CONFIG'; foreach(\$c['webroot_files'] as \$t=>\$e) echo \$t.'|'.\$e['source'].\"\\n\";")
+
+    while IFS='|' read -r TARGET_NAME SOURCE_FILE; do
+        [[ -z "$TARGET_NAME" ]] && continue
+        TARGET_PATH="/var/www/$TARGET_NAME"
+        SOURCE_PATH="$EXT_BASE/$SOURCE_FILE"
+
+        if [[ -f "$TARGET_PATH" ]]; then
+            check "webroot:$TARGET_NAME" "ok" "$TARGET_PATH"
         else
-            check "symlink" "fail" "Auto-repair failed"
-            STATUS="error"
+            # Auto-repair: deploy from source
+            if [[ -f "$SOURCE_PATH" ]]; then
+                cp -f "$SOURCE_PATH" "$TARGET_PATH" 2>/dev/null
+                chown www-data:www-data "$TARGET_PATH" 2>/dev/null
+                if [[ -f "$TARGET_PATH" ]]; then
+                    check "webroot:$TARGET_NAME" "ok" "Auto-repaired from $SOURCE_FILE"
+                else
+                    check "webroot:$TARGET_NAME" "fail" "Auto-repair failed"
+                    STATUS="error"
+                fi
+            else
+                check "webroot:$TARGET_NAME" "fail" "Source missing: $SOURCE_PATH"
+                STATUS="error"
+            fi
         fi
-    else
-        check "symlink" "fail" "Target missing: $TARGET"
-        STATUS="error"
-    fi
+    done <<< "$WEBROOT_ENTRIES"
+else
+    check "config" "fail" "loader-config.php missing"
+    STATUS="error"
 fi
 
 # 2. Required files
