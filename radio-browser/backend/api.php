@@ -274,7 +274,8 @@ function rb_get_default_settings()
         ],
         'limits' => [
             'recentlyPlayed' => 0,  // 0 = no limit (show all)
-            'favorites' => 0        // 0 = no limit (show all)
+            'favorites' => 0,       // 0 = no limit (show all)
+            'search' => 30          // Default search/top_click results
         ],
         'active_api' => 'radio-browser-info',  // default or custom_* ID
         'version' => '4.0.0',
@@ -341,6 +342,17 @@ function rb_set_visibility($area, $visible)
 function rb_get_recently_played()
 {
     if (file_exists(RB_RECENTLY_PLAYED_FILE)) {
+        // Use shared lock for reads to prevent reading partial writes
+        $fp = @fopen(RB_RECENTLY_PLAYED_FILE, 'r');
+        if ($fp && flock($fp, LOCK_SH)) {
+            $content = stream_get_contents($fp);
+            flock($fp, LOCK_UN);
+            fclose($fp);
+            $data = @json_decode($content, true);
+            return is_array($data) ? $data : [];
+        }
+        if ($fp) fclose($fp);
+        // Fallback without lock
         $data = @json_decode(file_get_contents(RB_RECENTLY_PLAYED_FILE), true);
         return is_array($data) ? $data : [];
     }
@@ -349,14 +361,31 @@ function rb_get_recently_played()
 
 function rb_add_recently_played($station)
 {
-    $list = rb_get_recently_played();
+    // Atomic read-modify-write under exclusive lock
+    $fp = @fopen(RB_RECENTLY_PLAYED_FILE, 'c+');
+    if (!$fp) {
+        rb_debug_log('Cannot open recently_played.json for writing');
+        return [];
+    }
+    if (!flock($fp, LOCK_EX)) {
+        fclose($fp);
+        rb_debug_log('Cannot acquire lock on recently_played.json');
+        return [];
+    }
+
+    // Read inside the lock
+    $content = stream_get_contents($fp);
+    $list = [];
+    if ($content !== false && $content !== '') {
+        $data = @json_decode($content, true);
+        if (is_array($data)) $list = $data;
+    }
 
     // Remove existing entry with same URL (to move it to top)
     $url = trim($station['url']);
-    $list = array_filter($list, function ($item) use ($url) {
+    $list = array_values(array_filter($list, function ($item) use ($url) {
         return $item['url'] !== $url;
-    });
-    $list = array_values($list); // Re-index
+    }));
 
     // Check if this is a moOde core station (has metadata like broadcaster/country/region, not an RB import)
     $is_moode = false;
@@ -381,21 +410,19 @@ function rb_add_recently_played($station)
         'played_at' => time()
     ]);
 
-    // Keep only last 30 (enough for display limits)
-    $list = array_slice($list, 0, 30);
+    // Keep only last N entries
+    $settings = rb_get_settings();
+    $maxRecent = 50; // Storage limit (display limit is separate via settings)
+    $list = array_slice($list, 0, $maxRecent);
 
-    // Save to file with locking to prevent race conditions
-    $fp = @fopen(RB_RECENTLY_PLAYED_FILE, 'c');
-    if ($fp && flock($fp, LOCK_EX)) {
-        ftruncate($fp, 0);
-        rewind($fp);
-        fwrite($fp, json_encode($list, JSON_PRETTY_PRINT));
-        fflush($fp);
-        flock($fp, LOCK_UN);
-        fclose($fp);
-    } elseif ($fp) {
-        fclose($fp);
-    }
+    // Write inside the lock
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($list, JSON_PRETTY_PRINT));
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+
     rb_debug_log('Recently played updated: ' . ($station['name'] ?? 'Unknown') . ' now first, total: ' . count($list));
 
     return $list;
@@ -936,7 +963,7 @@ switch ($cmd) {
             'countrycode' => $_REQUEST['countrycode'] ?? '',
             'tag' => $_REQUEST['tag'] ?? '',
             'offset' => $_REQUEST['offset'] ?? 0,
-            'limit' => $_REQUEST['limit'] ?? 30,
+            'limit' => $_REQUEST['limit'] ?? rb_get_settings()['limits']['search'] ?? 30,
             'order' => $_REQUEST['order'] ?? 'clickcount',
             'reverse' => $_REQUEST['reverse'] ?? 'true',
             'hidebroken' => 'true',
@@ -987,7 +1014,7 @@ switch ($cmd) {
         }
         break;
     case 'top_click':
-        $limit = $_POST['limit'] ?? 30;
+        $limit = $_POST['limit'] ?? rb_get_settings()['limits']['search'] ?? 30;
         $cache_key = 'top_click_' . $limit;
         $data = rb_cache_get($cache_key, RB_CACHE_TTL_STATIC);
         if ($data === false) {
@@ -1104,17 +1131,14 @@ switch ($cmd) {
 
         // Insert station into cfg_radio for currentsong.txt compatibility
         // This allows moOde's worker.php/enhanceMetadata() to find station info via load_radio
+        // Use INSERT OR IGNORE to handle concurrent requests atomically
         $dbh = sqlConnect();
-        $exists = rb_sql("SELECT 1 FROM cfg_radio WHERE station = ? LIMIT 1", [$url], $dbh);
-        if (!is_array($exists) || count($exists) == 0) {
-            // Station not in database, insert with mapped radio-browser.info metadata
-            rb_sql(
-                "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES (?, ?, 'u', ?, ?, '', ?, ?, ?, ?, ?, 'No', 'radio-browser', 'No')",
-                [$url, $name, $logo, $genre, $language, $country, $region, $bitrate, $format],
-                $dbh
-            );
-            rb_debug_log('Inserted station into cfg_radio: ' . $name . ', URL: ' . $url);
-        }
+        rb_sql(
+            "INSERT OR IGNORE INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES (?, ?, 'u', ?, ?, '', ?, ?, ?, ?, ?, 'No', 'radio-browser', 'No')",
+            [$url, $name, $logo, $genre, $language, $country, $region, $bitrate, $format],
+            $dbh
+        );
+        rb_debug_log('Upserted station into cfg_radio: ' . $name . ', URL: ' . $url);
 
         // Add station to shared session file so worker.php's enhanceMetadata() can find it
         // worker.php periodically opens/closes the session, so it will pick up this data
@@ -1249,7 +1273,16 @@ switch ($cmd) {
                     $base64Data = base64_encode($imageData);
                     if (submitJob('set_ralogo_image', $name . ',' . $base64Data, '', '')) {
                         rb_debug_log('Job submitted for station: ' . $name);
-                        sleep(2);
+                        // Poll for file creation instead of fixed sleep
+                        $pollName = rb_sanitize_station_name($name);
+                        $pollPath = RADIO_LOGOS_ROOT . 'thumbs/' . $pollName . '_sm.jpg';
+                        for ($i = 0; $i < 10; $i++) {
+                            usleep(300000); // 300ms intervals, max 3s total
+                            if (file_exists($pollPath)) {
+                                rb_debug_log('Logo created by job after ' . (($i + 1) * 300) . 'ms');
+                                break;
+                            }
+                        }
                     }
                 }
             } else {
@@ -1273,15 +1306,22 @@ switch ($cmd) {
         // Use type='f' (favorite) - integrates with moOde's native favorites system
         // home_page='radio-browser' marks this as imported by Radio Browser (vs moOde core stations)
         // Map radio-browser.info fields to cfg_radio columns
+        // Use INSERT OR IGNORE + UPDATE to handle concurrent imports atomically
         $genre = trim($station['tags'] ?? '');
         $language = trim($station['language'] ?? '');
         $country = trim($station['country'] ?? '');
         $region = trim($station['state'] ?? '');
         $bitrate = isset($station['bitrate']) && $station['bitrate'] > 0 ? (string)$station['bitrate'] : '';
         $format = trim($station['codec'] ?? '');
-        $result = rb_sql(
-            "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES (?, ?, 'f', ?, ?, '', ?, ?, ?, ?, ?, 'No', 'radio-browser', '')",
+        rb_sql(
+            "INSERT OR IGNORE INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES (?, ?, 'f', ?, ?, '', ?, ?, ?, ?, ?, 'No', 'radio-browser', '')",
             [$url, $name, $logo, $genre, $language, $country, $region, $bitrate, $format],
+            $dbh
+        );
+        // Ensure type is 'f' (favorite) even if already existed as 'u' (played)
+        $result = rb_sql(
+            "UPDATE cfg_radio SET type = 'f', name = ?, logo = ?, genre = ?, language = ?, country = ?, region = ?, bitrate = ?, format = ? WHERE station = ?",
+            [$name, $logo, $genre, $language, $country, $region, $bitrate, $format, $url],
             $dbh
         );
         if ($result !== true) {
@@ -1402,7 +1442,7 @@ switch ($cmd) {
     case 'recently_played':
         // Recently played: Get from file-based storage (tracks play order) with fallback to database
         $stations = [];
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 30;  // Default to 30 if no limit
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 0;  // 0 = use all from file (display limit via JS)
 
         // First try file-based recently played (ordered by play time)
         $fileBasedList = rb_get_recently_played();
@@ -1643,7 +1683,7 @@ switch ($cmd) {
         $type = strtolower(trim($_POST['type'] ?? $_GET['type'] ?? ''));
         $value = (int)($_POST['value'] ?? $_GET['value'] ?? 0);
 
-        $allowed = ['recentlyPlayed', 'favorites'];
+        $allowed = ['recentlyPlayed', 'favorites', 'search'];
         if (!in_array($type, $allowed, true)) {
             $response = ['success' => false, 'message' => 'Invalid type'];
             break;
@@ -1651,9 +1691,9 @@ switch ($cmd) {
 
         $settings = rb_get_settings();
         if (!isset($settings['limits'])) {
-            $settings['limits'] = ['recentlyPlayed' => 0, 'favorites' => 0];
+            $settings['limits'] = ['recentlyPlayed' => 0, 'favorites' => 0, 'search' => 30];
         }
-        $settings['limits'][$type] = max(0, min(30, $value));  // 0-30 range
+        $settings['limits'][$type] = max(0, min(100, $value));  // 0-100 range
 
         if (rb_save_settings($settings)) {
             rb_debug_log('Limit updated: ' . $type . ' = ' . $value);
@@ -1841,9 +1881,18 @@ function putStationCover($stName)
 
     $defaultImage = RB_DEFAULT_LOGO;
     sendFECmd('set_cover_image1'); // Show spinner
-    sleep(3); // Allow time for set_ralogo_image job to create __tmp__ image file
 
-    if (file_exists($stTmpImage)) {
+    // Poll for __tmp__ image file instead of fixed sleep
+    $found = false;
+    for ($i = 0; $i < 15; $i++) {
+        usleep(300000); // 300ms intervals, max 4.5s total
+        if (file_exists($stTmpImage)) {
+            $found = true;
+            break;
+        }
+    }
+
+    if ($found) {
         sysCmd('mv "' . $stTmpImage . '" "' . $stCoverImage . '"');
         sysCmd('mv "' . $stTmpImageThm . '" "' . $stCoverImageThm . '"');
         sysCmd('mv "' . $stTmpImageThmSm . '" "' . $stCoverImageThmSm . '"');
