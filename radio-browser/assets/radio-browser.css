@@ -733,7 +733,6 @@
 .rb-accordion-content {
     display: none;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
-    background-color: #000;
 }
 
 .rb-accordion.open .rb-accordion-content {
