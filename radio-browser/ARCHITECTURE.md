@@ -358,4 +358,4 @@ On successful play, the backend sends a fire-and-forget POST to `https://all.api
 
 `version.txt` is the single source of truth for the runtime version, read by `api.php` and `radio-browser.sh`.
 
-A local helper script (`scripts/bump-version.sh`, not shipped) synchronizes version across all project files during development.
+A local helper script (`tools/bump-version.ps1`, not shipped) synchronizes version across all project files during development.

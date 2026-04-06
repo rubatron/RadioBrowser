@@ -4,5 +4,4 @@ tools/
 .vscode/
 
 # Legacy entries
-radio-browser/scripts/bump-version.sh
 radio-browser/generate-logo.php
