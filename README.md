@@ -38,29 +38,50 @@ wget -qO- https://raw.githubusercontent.com/rubatron/RadioBrowser/develop/radio-
 
 ## What's New in 4.0.7
 
-### Loader Pattern — Symlink-Free Architecture
+### Easier Installation
 
-moOde's `worker.php` deletes all symlinks in `/var/www/` every 6 hours. Radio Browser now installs a dedicated physical PHP loader file in the web root that survives this cleanup.
+One command, fully automatic. Refer to the [Installation](#installation) section above.
 
-### Station Thumbnail Fallback
+### UI Overhaul
 
-Stations without a favicon from radio-browser.info now get a Radio Browser placeholder logo — visible in both the extension UI and moOde's playbar/coverview.
+- Dedicated sections for **Search Stations**, **Recently Played**, **Favorites**, and **Settings**
+- Redesigned station cards with logo, country, bitrate, codec, genre, and action buttons
+- moOde core radio favorites now appear in the Favorites section, identified by an orange **M** badge
+- Stations without a favicon display the Radio Browser placeholder logo instead of a broken image
 
-### moOde Favorites & Recently Played Integration
+### Resilient Loading
 
-<p align="center">
-  <img src="docs/images/01-407-rb-img.png" alt="Radio Browser moOde Integration" width="900">
-</p>
+Radio Browser now uses a physical loader file that survives moOde's periodic maintenance. No more broken links after the 6-hour cleanup cycle.
 
-moOde's built-in favorites and stations now appear directly in Radio Browser's Favorites section, recognizable by the orange **M** badge. Configurable via Settings → moOde Stations Radio Browser Integration.
+### Radio-Browser.info API
 
-### Extended Extension Info
+- Utilizes the **load balancing / CDN** feature instead of a single dedicated URL
+- Added a button in the API settings section to view the [API status page](https://api.radio-browser.info/net)
 
-Added links to documentation, licensing, and architecture details in the Settings section.
+### Security & Performance
 
-### Security & Performance Hardening
+CSRF protection, prepared SQL statements, path validation, XHR abort on new searches, play debounce, and optimized polling — making the extension faster and more secure.
 
-CSRF protection, prepared statements, ARIA accessibility, request debouncing, non-blocking polling, and systemd service hardening. See the [Changelog](CHANGELOG.md#407---2026-04-06) for the full technical breakdown.
+### Accessibility
+
+ARIA roles, live regions, and keyboard navigation on the country selector and station sections.
+
+### Troubleshooting
+
+- **Debug Mode** toggle
+- **Uninstall / Reinstall / Repair** buttons
+- **Repair Thumbnail Cache**
+- Improved logging
+
+### General
+
+- Logo thumbnail passthrough to moOde's Playlist if available
+- Removed the moOde radio icon from the extension header for a simpler look
+- Radio Browser as a Systemd service
+
+### Detailed Changes
+
+For the full technical breakdown of all changes, see the [Changelog](CHANGELOG.md).
 
 ---
 
@@ -173,5 +194,5 @@ This project is licensed under the **GPL-3.0-or-later** License.
 ---
 
 <p align="center">
-  Made with ❤️ for the moOde community
+ <i>No clue, but always seems to work somehow.</i>
 </p>
