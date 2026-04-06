@@ -229,10 +229,15 @@ function initRadioBrowser($) {
             showCountryList('');
         });
 
-        // Filter on input
+        // Filter on input (debounced to avoid excessive DOM updates)
+        var countryDebounceTimer;
         input.on('input', function() {
-            var val = $(this).val().toLowerCase();
-            showCountryList(val);
+            clearTimeout(countryDebounceTimer);
+            var self = this;
+            countryDebounceTimer = setTimeout(function() {
+                var val = $(self).val().toLowerCase();
+                showCountryList(val);
+            }, 200);
         });
 
         // Handle Enter key - trigger search
@@ -554,25 +559,23 @@ function initRadioBrowser($) {
             dataType: 'json',
             timeout: 5000,
             success: function(data) {
-                // First, reset all cards to not playing
-                $('.rb-station-card').removeClass('playing');
-                $('.rb-play-btn').removeClass('playing').html('<i class="fa-solid fa-sharp fa-play"></i>');
+                // Cache DOM query once — avoid repeated full-DOM traversals
+                var cards = $('.rb-station-card');
+                var playIcon = '<i class="fa-solid fa-sharp fa-play"></i>';
+                var stopIcon = '<i class="fa-solid fa-sharp fa-stop"></i>';
+
+                // Reset all cards
+                cards.removeClass('playing').find('.rb-play-btn').removeClass('playing').html(playIcon);
                 state.currentPlaying = null;
 
                 if (data.success && data.is_playing && data.current_url) {
-                    // Find ALL station cards that match the current URL (in Recently Played AND Search Results)
-                    $('.rb-station-card').each(function() {
+                    var normalizedUrl = data.current_url.replace(/^https?:/, '');
+                    cards.each(function() {
                         var card = $(this);
                         var cardUrl = card.data('url');
-
-                        // Match URL (handle http/https and trailing slashes)
-                        if (cardUrl && (cardUrl === data.current_url ||
-                            cardUrl.replace(/^https?:/, '') === data.current_url.replace(/^https?:/, ''))) {
-                            // This station is currently playing - mark ALL matching cards
-                            card.addClass('playing');
-                            card.find('.rb-play-btn').addClass('playing').html('<i class="fa-solid fa-sharp fa-stop"></i>');
+                        if (cardUrl && cardUrl.replace(/^https?:/, '') === normalizedUrl) {
+                            card.addClass('playing').find('.rb-play-btn').addClass('playing').html(stopIcon);
                             state.currentPlaying = data.current_url;
-                            // DON'T break - continue to find all cards with same URL
                         }
                     });
                 }
@@ -1180,16 +1183,17 @@ function initRadioBrowser($) {
         var isMoode = s.is_moode || false;
         var logoHtml;
 
+        var altText = escapeHtml(s.name || 'Station logo');
         if (isMoode) {
             // Wrap logo in container for M badge overlay
             var imgTag = logoUrl ?
-                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
-                '<img class="rb-logo" src="/extensions/installed/radio-browser/assets/rb-default-logo.jpg" alt="">';
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="' + altText + '" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
+                '<img class="rb-logo" src="/extensions/installed/radio-browser/assets/rb-default-logo.jpg" alt="' + altText + '">';
             logoHtml = '<div class="rb-logo-wrapper">' + imgTag + '<span class="rb-moode-badge">m</span></div>';
         } else {
             logoHtml = logoUrl ?
-                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
-                '<img class="rb-logo" src="/extensions/installed/radio-browser/assets/rb-default-logo.jpg" alt="">';
+                '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="' + altText + '" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
+                '<img class="rb-logo" src="/extensions/installed/radio-browser/assets/rb-default-logo.jpg" alt="' + altText + '">';
         }
 
         var addBtnClass = isFavorite ? 'btn rb-add-btn added' : 'btn rb-add-btn';

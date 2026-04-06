@@ -1857,4 +1857,5 @@ function putStationCover($stName)
 }
 
 rb_debug_log('OUT: ' . json_encode($response));
+header('Content-Type: application/json; charset=UTF-8');
 echo json_encode($response);

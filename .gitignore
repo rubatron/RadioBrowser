@@ -1,6 +1,7 @@
 # Workspace-only folders (not published to GitHub)
 mcp/
 tools/
+.vscode/
 
 # Legacy entries
 radio-browser/scripts/bump-version.sh
