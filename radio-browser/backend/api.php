@@ -684,14 +684,17 @@ if ($cmd === 'csrf_token') {
 }
 
 // State-changing commands require CSRF validation
+// Read-only endpoints are exempt (used by rb-menu-inject.js without CSRF token)
 $csrfExempt = [
     'search',
     'countries',
     'recently_played',
     'favorites',
-    'current_station',
-    'settings',
+    'current_status',
+    'get_settings',
+    'service_status',
     'status',
+    'view_log',
     'custom_apis_list',
     'download_m3u',
     'csrf_token'

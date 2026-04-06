@@ -18,10 +18,14 @@
 
         <!-- Section Header with Menu Buttons -->
         <div class="rb-section-header" role="tablist" aria-label="Radio Browser sections">
-            <button type="button" class="rb-section-btn active" data-section="search" role="tab" aria-selected="true" aria-controls="rb-search-section">Search Stations</button>
-            <button type="button" class="rb-section-btn" data-section="recently-played" role="tab" aria-selected="false" aria-controls="rb-recently-played-section">Recently Played</button>
-            <button type="button" class="rb-section-btn" data-section="favorites" role="tab" aria-selected="false" aria-controls="rb-favorites-section">Favorites</button>
-            <button type="button" class="rb-section-btn" data-section="settings" role="tab" aria-selected="false" aria-controls="rb-settings-section">Settings</button>
+            <button type="button" class="rb-section-btn active" data-section="search" role="tab" aria-selected="true"
+                aria-controls="rb-search-section">Search Stations</button>
+            <button type="button" class="rb-section-btn" data-section="recently-played" role="tab" aria-selected="false"
+                aria-controls="rb-recently-played-section">Recently Played</button>
+            <button type="button" class="rb-section-btn" data-section="favorites" role="tab" aria-selected="false"
+                aria-controls="rb-favorites-section">Favorites</button>
+            <button type="button" class="rb-section-btn" data-section="settings" role="tab" aria-selected="false"
+                aria-controls="rb-settings-section">Settings</button>
         </div>
 
         <!-- Search Section -->
@@ -45,8 +49,10 @@
                     <label class="control-label" for="rb-country">Country</label>
                     <div class="controls" style="position: relative;">
                         <input type="text" id="rb-country" class="input-medium" placeholder="Type to search..."
-                            autocomplete="off" maxlength="100" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rb-country-list">
-                        <div id="rb-country-list" class="rb-autocomplete-list hide" role="listbox" aria-label="Country suggestions"></div>
+                            autocomplete="off" maxlength="100" role="combobox" aria-autocomplete="list"
+                            aria-expanded="false" aria-controls="rb-country-list">
+                        <div id="rb-country-list" class="rb-autocomplete-list hide" role="listbox"
+                            aria-label="Country suggestions"></div>
                     </div>
                 </div>
 
@@ -121,14 +127,16 @@
         </div>
 
         <!-- Recently Played Section -->
-        <div id="rb-recently-played-section" class="rb-section-panel hide" role="tabpanel" aria-labelledby="rb-recently-played-section">
+        <div id="rb-recently-played-section" class="rb-section-panel hide" role="tabpanel"
+            aria-labelledby="rb-recently-played-section">
             <div id="rb-recently-played" class="rb-results-grid" aria-label="Recently played stations">
                 <p class="rb-no-results">No recently played stations yet.</p>
             </div>
         </div>
 
         <!-- Favorites Section -->
-        <div id="rb-favorites-section" class="rb-section-panel hide" role="tabpanel" aria-labelledby="rb-favorites-section">
+        <div id="rb-favorites-section" class="rb-section-panel hide" role="tabpanel"
+            aria-labelledby="rb-favorites-section">
             <div id="rb-favorites" class="rb-results-grid" aria-label="Favorite stations">
                 <p class="rb-no-results">Loading favorites...</p>
             </div>
