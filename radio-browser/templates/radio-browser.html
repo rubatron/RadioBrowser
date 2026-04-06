@@ -17,16 +17,16 @@
             radio-browser.info</p>
 
         <!-- Section Header with Menu Buttons -->
-        <div class="rb-section-header">
-            <button type="button" class="rb-section-btn active" data-section="search">Search Stations</button>
-            <button type="button" class="rb-section-btn" data-section="recently-played">Recently Played</button>
-            <button type="button" class="rb-section-btn" data-section="favorites">Favorites</button>
-            <button type="button" class="rb-section-btn" data-section="settings">Settings</button>
+        <div class="rb-section-header" role="tablist" aria-label="Radio Browser sections">
+            <button type="button" class="rb-section-btn active" data-section="search" role="tab" aria-selected="true" aria-controls="rb-search-section">Search Stations</button>
+            <button type="button" class="rb-section-btn" data-section="recently-played" role="tab" aria-selected="false" aria-controls="rb-recently-played-section">Recently Played</button>
+            <button type="button" class="rb-section-btn" data-section="favorites" role="tab" aria-selected="false" aria-controls="rb-favorites-section">Favorites</button>
+            <button type="button" class="rb-section-btn" data-section="settings" role="tab" aria-selected="false" aria-controls="rb-settings-section">Settings</button>
         </div>
 
         <!-- Search Section -->
-        <div id="rb-search-section" class="rb-section-panel">
-            <form class="form-horizontal" id="radio-search-form">
+        <div id="rb-search-section" class="rb-section-panel" role="tabpanel" aria-labelledby="rb-search-section">
+            <form class="form-horizontal" id="radio-search-form" role="search">
 
                 <div class="control-group">
                     <label class="control-label" for="rb-name">Station Name</label>
@@ -45,8 +45,8 @@
                     <label class="control-label" for="rb-country">Country</label>
                     <div class="controls" style="position: relative;">
                         <input type="text" id="rb-country" class="input-medium" placeholder="Type to search..."
-                            autocomplete="off" maxlength="100">
-                        <div id="rb-country-list" class="rb-autocomplete-list hide"></div>
+                            autocomplete="off" maxlength="100" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rb-country-list">
+                        <div id="rb-country-list" class="rb-autocomplete-list hide" role="listbox" aria-label="Country suggestions"></div>
                     </div>
                 </div>
 
@@ -101,7 +101,7 @@
                     <p>Searching stations...</p>
                 </div>
 
-                <div id="rb-results" class="rb-results-grid"></div>
+                <div id="rb-results" class="rb-results-grid" aria-label="Search results"></div>
 
                 <div id="rb-no-results" class="rb-no-results hide">
                     <i class="fa-solid fa-sharp fa-radio fa-2x"></i>
@@ -121,15 +121,15 @@
         </div>
 
         <!-- Recently Played Section -->
-        <div id="rb-recently-played-section" class="rb-section-panel hide">
-            <div id="rb-recently-played" class="rb-results-grid">
+        <div id="rb-recently-played-section" class="rb-section-panel hide" role="tabpanel" aria-labelledby="rb-recently-played-section">
+            <div id="rb-recently-played" class="rb-results-grid" aria-label="Recently played stations">
                 <p class="rb-no-results">No recently played stations yet.</p>
             </div>
         </div>
 
         <!-- Favorites Section -->
-        <div id="rb-favorites-section" class="rb-section-panel hide">
-            <div id="rb-favorites" class="rb-results-grid">
+        <div id="rb-favorites-section" class="rb-section-panel hide" role="tabpanel" aria-labelledby="rb-favorites-section">
+            <div id="rb-favorites" class="rb-results-grid" aria-label="Favorite stations">
                 <p class="rb-no-results">Loading favorites...</p>
             </div>
         </div>

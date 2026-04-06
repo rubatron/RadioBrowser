@@ -50,7 +50,9 @@ function initRadioBrowser($) {
         countries: [],
         hasSearched: false,  // Track if user has searched (prevents init overwriting)
         initComplete: false, // Track if initial load is done
-        searchXhr: null      // Active search AJAX request (aborted on new search)
+        searchXhr: null,     // Active search AJAX request (aborted on new search)
+        topXhr: null,        // Active top stations AJAX request (aborted on search)
+        playDebounce: false  // Prevents rapid play clicks
     };
 
     /**
@@ -240,17 +242,44 @@ function initRadioBrowser($) {
             }, 200);
         });
 
-        // Handle Enter key - trigger search
+        // Handle keyboard navigation
         input.on('keydown', function(e) {
-            if (e.keyCode === 13) {
+            var items = list.find('.rb-country-item');
+            var active = list.find('.rb-country-item.active');
+            var index = items.index(active);
+
+            if (e.keyCode === 40) { // Down arrow
                 e.preventDefault();
+                if (!list.hasClass('hide')) {
+                    items.removeClass('active').removeAttr('aria-selected');
+                    var next = index < items.length - 1 ? index + 1 : 0;
+                    $(items[next]).addClass('active').attr('aria-selected', 'true');
+                    items[next].scrollIntoView({ block: 'nearest' });
+                    input.attr('aria-activedescendant', $(items[next]).attr('id') || '');
+                } else {
+                    showCountryList('');
+                }
+            } else if (e.keyCode === 38) { // Up arrow
+                e.preventDefault();
+                if (!list.hasClass('hide')) {
+                    items.removeClass('active').removeAttr('aria-selected');
+                    var prev = index > 0 ? index - 1 : items.length - 1;
+                    $(items[prev]).addClass('active').attr('aria-selected', 'true');
+                    items[prev].scrollIntoView({ block: 'nearest' });
+                    input.attr('aria-activedescendant', $(items[prev]).attr('id') || '');
+                }
+            } else if (e.keyCode === 13) { // Enter
+                e.preventDefault();
+                if (active.length) {
+                    active.trigger('click');
+                } else {
+                    list.addClass('hide');
+                    state.offset = 0;
+                    searchStations();
+                }
+            } else if (e.keyCode === 27) { // Escape
                 list.addClass('hide');
-                state.offset = 0;
-                searchStations();
-            }
-            // Escape closes list
-            if (e.keyCode === 27) {
-                list.addClass('hide');
+                input.removeAttr('aria-activedescendant');
             }
         });
 
@@ -270,17 +299,21 @@ function initRadioBrowser($) {
         $(document).on('click', function(e) {
             if (!$(e.target).closest('#rb-country, #rb-country-list').length) {
                 list.addClass('hide');
+                input.attr('aria-expanded', 'false').removeAttr('aria-activedescendant');
             }
         });
 
         function showCountryList(filter) {
             var html = '';
+            var idx = 0;
             COUNTRIES.forEach(function(c) {
                 if (!filter || c.name.toLowerCase().indexOf(filter) !== -1 || c.code.toLowerCase().indexOf(filter) !== -1) {
-                    html += '<div class="rb-country-item" data-code="' + c.code + '">' + escapeHtml(c.name) + '</div>';
+                    html += '<div class="rb-country-item" role="option" id="rb-country-opt-' + idx + '" data-code="' + c.code + '">' + escapeHtml(c.name) + '</div>';
+                    idx++;
                 }
             });
             list.html(html).removeClass('hide');
+            input.attr('aria-expanded', 'true');
         }
     }
 
@@ -291,8 +324,8 @@ function initRadioBrowser($) {
             var section = $(this).data('section');
 
             // Update active button
-            $('.rb-section-btn').removeClass('active');
-            $(this).addClass('active');
+            $('.rb-section-btn').removeClass('active').attr('aria-selected', 'false');
+            $(this).addClass('active').attr('aria-selected', 'true');
 
             // Show corresponding section panel, hide all others
             $('.rb-section-panel').addClass('hide');
@@ -721,10 +754,14 @@ function initRadioBrowser($) {
         state.loading = true;
         state.hasSearched = true;  // Mark that user has searched
 
-        // Abort any pending search request to prevent race conditions
+        // Abort any pending search/top request to prevent race conditions
         if (state.searchXhr) {
             state.searchXhr.abort();
             state.searchXhr = null;
+        }
+        if (state.topXhr) {
+            state.topXhr.abort();
+            state.topXhr = null;
         }
 
         // Get country code from autocomplete
@@ -792,13 +829,20 @@ function initRadioBrowser($) {
 
         showLoading(true);
 
-        $.ajax({
+        // Abort any pending top stations request
+        if (state.topXhr) {
+            state.topXhr.abort();
+            state.topXhr = null;
+        }
+
+        state.topXhr = $.ajax({
             url: API_URL + '?cmd=top_click',
             type: 'POST',
             data: { limit: state.limit },
             dataType: 'json',
             timeout: 20000,
             success: function(data) {
+                state.topXhr = null;
                 state.loading = false;
                 showLoading(false);
 
@@ -816,6 +860,8 @@ function initRadioBrowser($) {
                 }
             },
             error: function(xhr, status) {
+                state.topXhr = null;
+                if (status === 'abort') return;
                 state.loading = false;
                 showLoading(false);
                 var msg = status === 'timeout' ? 'Request timed out.' : 'Failed to load top stations.';
@@ -844,6 +890,7 @@ function initRadioBrowser($) {
         }
 
         $('#rb-result-count').text('(' + filteredStations.length + ' stations)');
+        announceToScreenReader(filteredStations.length + ' stations found');
 
         filteredStations.forEach(function(s, index) {
             var stationData = {
@@ -877,8 +924,10 @@ function initRadioBrowser($) {
 
     function playStation(card) {
         var btn = card.find('.rb-play-btn');
-        // Prevent double-click race condition
-        if (btn.hasClass('disabled')) return;
+        // Prevent double-click race condition (class guard + timer debounce)
+        if (btn.hasClass('disabled') || state.playDebounce) return;
+        state.playDebounce = true;
+        setTimeout(function() { state.playDebounce = false; }, 500);
 
         var stationIndex = parseInt(card.data('station-index'));
 
@@ -1118,6 +1167,7 @@ function initRadioBrowser($) {
         $('#rb-no-results').removeClass('hide').find('p').text(msg || 'No stations found.');
         $('#rb-pagination').addClass('hide');
         $('#rb-result-count').text('');
+        announceToScreenReader(msg || 'No stations found');
     }
 
     function updatePagination(count) {
@@ -1155,6 +1205,27 @@ function initRadioBrowser($) {
         } else {
             console.log('[' + type + '] ' + title + ': ' + text);
         }
+    }
+
+    /**
+     * Announce a message to screen readers via a live region.
+     * Creates the live region lazily on first use.
+     */
+    function announceToScreenReader(message) {
+        var el = document.getElementById('rb-sr-announce');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'rb-sr-announce';
+            el.setAttribute('role', 'status');
+            el.setAttribute('aria-live', 'polite');
+            el.setAttribute('aria-atomic', 'true');
+            el.className = 'sr-only';
+            el.style.cssText = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0';
+            document.body.appendChild(el);
+        }
+        // Clear then set to ensure screen readers re-announce
+        el.textContent = '';
+        setTimeout(function() { el.textContent = message; }, 100);
     }
 
     /**
@@ -1220,9 +1291,9 @@ function initRadioBrowser($) {
                 '</div>' +
             '</div>' +
             '<div class="rb-actions">' +
-                '<button class="btn rb-play-btn" title="Play"><i class="fa-solid fa-sharp fa-play"></i></button>' +
-                '<button class="' + addBtnClass + '" title="' + addBtnTitle + '">' + addBtnIcon + '</button>' +
-                '<button class="btn rb-download-btn" title="Download .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
+                '<button class="btn rb-play-btn" title="Play" aria-label="Play ' + escapeHtml(s.name) + '"><i class="fa-solid fa-sharp fa-play"></i></button>' +
+                '<button class="' + addBtnClass + '" title="' + addBtnTitle + '" aria-label="' + addBtnTitle + ' ' + escapeHtml(s.name) + '">' + addBtnIcon + '</button>' +
+                '<button class="btn rb-download-btn" title="Download .m3u" aria-label="Download ' + escapeHtml(s.name) + ' as .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
             '</div>' +
         '</div>';
     }

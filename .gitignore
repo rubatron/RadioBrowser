@@ -2,6 +2,7 @@
 mcp/
 tools/
 .vscode/
+parkinglot.md
 
 # Legacy entries
 radio-browser/generate-logo.php
