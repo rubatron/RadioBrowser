@@ -34,6 +34,33 @@ function rb_require_auth()
 }
 
 /**
+ * Generate or retrieve CSRF token for the current session.
+ */
+function rb_csrf_token()
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        @session_start();
+    }
+    if (empty($_SESSION['rb_csrf_token'])) {
+        $_SESSION['rb_csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['rb_csrf_token'];
+}
+
+/**
+ * Validate CSRF token from request header or POST parameter.
+ * Returns true if token matches, false otherwise.
+ */
+function rb_verify_csrf()
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        @session_start();
+    }
+    $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    return !empty($token) && hash_equals($_SESSION['rb_csrf_token'] ?? '', $token);
+}
+
+/**
  * Sanitize station name for use as a safe filename.
  * Strips characters invalid on Linux filesystems (/ and null byte) and trims whitespace.
  * Falls back to md5 hash if result is empty.
@@ -42,6 +69,33 @@ function rb_sanitize_station_name($name)
 {
     $safe = trim(str_replace(['/', '\0'], '', $name));
     return $safe !== '' ? $safe : 'station_' . md5($name);
+}
+
+/**
+ * Execute a parameterized SQL query via PDO prepared statement.
+ * Returns array of rows for SELECT, true/false for INSERT/UPDATE/DELETE.
+ */
+function rb_sql($sql, $params, $dbh)
+{
+    $stmt = $dbh->prepare($sql);
+    $result = $stmt->execute($params);
+    if (stripos(trim($sql), 'SELECT') === 0) {
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    return $result;
+}
+
+/**
+ * Detect if a cfg_radio row is a moOde core station (not imported by Radio Browser).
+ * Core stations have metadata (broadcaster/country/region) and home_page != 'radio-browser'.
+ */
+function rb_is_moode_station($row)
+{
+    $hp = trim($row['home_page'] ?? '');
+    $bc = trim($row['broadcaster'] ?? '');
+    $co = trim($row['country'] ?? '');
+    $rg = trim($row['region'] ?? '');
+    return ($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '');
 }
 
 /**
@@ -308,13 +362,9 @@ function rb_add_recently_played($station)
     $is_moode = false;
     $dbh = sqlConnect();
     if ($dbh) {
-        $result = sqlQuery("SELECT home_page, broadcaster, country, region FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1", $dbh);
+        $result = rb_sql("SELECT home_page, broadcaster, country, region FROM cfg_radio WHERE station = ? LIMIT 1", [$url], $dbh);
         if (is_array($result) && count($result) > 0) {
-            $hp = trim($result[0]['home_page'] ?? '');
-            $bc = trim($result[0]['broadcaster'] ?? '');
-            $co = trim($result[0]['country'] ?? '');
-            $rg = trim($result[0]['region'] ?? '');
-            $is_moode = ($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '');
+            $is_moode = rb_is_moode_station($result[0]);
         }
     }
 
@@ -599,6 +649,30 @@ function rb_api($endpoint, $params = [], $timeout = 10)
 }
 
 $response = ['success' => false, 'message' => 'Unknown command'];
+
+// CSRF token endpoint — return token for JS to use (read-only, no validation needed)
+if ($cmd === 'csrf_token') {
+    echo json_encode(['success' => true, 'token' => rb_csrf_token()]);
+    exit;
+}
+
+// State-changing commands require CSRF validation
+$csrfExempt = [
+    'search',
+    'countries',
+    'recently_played',
+    'favorites',
+    'current_station',
+    'settings',
+    'status',
+    'custom_apis_list',
+    'download_m3u',
+    'csrf_token'
+];
+if (!in_array($cmd, $csrfExempt, true) && !rb_verify_csrf()) {
+    echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+    exit;
+}
 
 switch ($cmd) {
     // === Download M3U File ===
@@ -889,11 +963,7 @@ switch ($cmd) {
                 $rows = sqlQuery("SELECT station, home_page, broadcaster, country, region FROM cfg_radio", $dbh);
                 if (is_array($rows)) {
                     foreach ($rows as $r) {
-                        $hp = trim($r['home_page'] ?? '');
-                        $bc = trim($r['broadcaster'] ?? '');
-                        $co = trim($r['country'] ?? '');
-                        $rg = trim($r['region'] ?? '');
-                        if (($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '')) {
+                        if (rb_is_moode_station($r)) {
                             $moodeUrls[trim($r['station'])] = true;
                         }
                     }
@@ -937,11 +1007,7 @@ switch ($cmd) {
                 $rows = sqlQuery("SELECT station, home_page, broadcaster, country, region FROM cfg_radio", $dbh);
                 if (is_array($rows)) {
                     foreach ($rows as $r) {
-                        $hp = trim($r['home_page'] ?? '');
-                        $bc = trim($r['broadcaster'] ?? '');
-                        $co = trim($r['country'] ?? '');
-                        $rg = trim($r['region'] ?? '');
-                        if (($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '')) {
+                        if (rb_is_moode_station($r)) {
                             $moodeUrls[trim($r['station'])] = true;
                         }
                     }
@@ -994,18 +1060,26 @@ switch ($cmd) {
             rb_debug_log('Play: Getting logo for ' . $name . ' from ' . $favicon);
             $imageData = false;
 
-            // Resolve local paths to filesystem paths
+            // Resolve local paths to filesystem paths (whitelist allowed prefixes, validate with realpath)
             if (str_starts_with($favicon, '/') && !str_starts_with($favicon, 'http')) {
                 if (str_starts_with($favicon, '/extensions/')) {
                     $localPath = '/var/www' . $favicon;
+                    $allowedBase = '/var/www/extensions/';
                 } elseif (str_starts_with($favicon, '/imagesw/')) {
                     $localPath = '/var/local/www' . $favicon;
+                    $allowedBase = '/var/local/www/imagesw/';
                 } else {
-                    $localPath = '/var/www' . $favicon;
+                    $localPath = false; // Block non-whitelisted paths
+                    $allowedBase = '';
                 }
-                if (file_exists($localPath)) {
-                    $imageData = file_get_contents($localPath);
-                    rb_debug_log('Play: Read local file: ' . $localPath);
+                if ($localPath !== false) {
+                    $realPath = realpath($localPath);
+                    if ($realPath !== false && str_starts_with($realPath, $allowedBase) && is_file($realPath)) {
+                        $imageData = file_get_contents($realPath);
+                        rb_debug_log('Play: Read local file: ' . $realPath);
+                    } else {
+                        rb_debug_log('Play: Blocked path traversal attempt or invalid path: ' . $favicon);
+                    }
                 }
             } else {
                 // External URL
@@ -1031,21 +1105,14 @@ switch ($cmd) {
         // Insert station into cfg_radio for currentsong.txt compatibility
         // This allows moOde's worker.php/enhanceMetadata() to find station info via load_radio
         $dbh = sqlConnect();
-        $checkSql = "SELECT 1 FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
-        $exists = sqlQuery($checkSql, $dbh);
+        $exists = rb_sql("SELECT 1 FROM cfg_radio WHERE station = ? LIMIT 1", [$url], $dbh);
         if (!is_array($exists) || count($exists) == 0) {
             // Station not in database, insert with mapped radio-browser.info metadata
-            $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" .
-                SQLite3::escapeString($url) . "', '" .
-                SQLite3::escapeString($name) . "', 'u', '" .
-                SQLite3::escapeString($logo) . "', '" .
-                SQLite3::escapeString($genre) . "', '', '" .
-                SQLite3::escapeString($language) . "', '" .
-                SQLite3::escapeString($country) . "', '" .
-                SQLite3::escapeString($region) . "', '" .
-                SQLite3::escapeString($bitrate) . "', '" .
-                SQLite3::escapeString($format) . "', 'No', 'radio-browser', 'No')";
-            sqlQuery($sql, $dbh);
+            rb_sql(
+                "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES (?, ?, 'u', ?, ?, '', ?, ?, ?, ?, ?, 'No', 'radio-browser', 'No')",
+                [$url, $name, $logo, $genre, $language, $country, $region, $bitrate, $format],
+                $dbh
+            );
             rb_debug_log('Inserted station into cfg_radio: ' . $name . ', URL: ' . $url);
         }
 
@@ -1136,8 +1203,7 @@ switch ($cmd) {
         $favicon = !empty($station['favicon']) ? trim($station['favicon']) : '';
 
         // Check if station already exists in moOde (by URL, any type)
-        $checkSql = "SELECT station, name, type FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
-        $checkResult = sqlQuery($checkSql, $dbh);
+        $checkResult = rb_sql("SELECT station, name, type FROM cfg_radio WHERE station = ? LIMIT 1", [$url], $dbh);
         $stationExists = is_array($checkResult) && count($checkResult) > 0;
 
         if ($stationExists) {
@@ -1152,8 +1218,7 @@ switch ($cmd) {
 
             // Station exists with type 'r' or 'u' - promote to favorite
             rb_debug_log('Promoting existing station to favorite: ' . $existingName . ' (type: ' . $existingType . ' -> f)');
-            $updateSql = "UPDATE cfg_radio SET type='f' WHERE station = '" . SQLite3::escapeString($url) . "'";
-            $result = sqlQuery($updateSql, $dbh);
+            $result = rb_sql("UPDATE cfg_radio SET type='f' WHERE station = ?", [$url], $dbh);
             if ($result === true) {
                 $response = ['success' => true, 'message' => 'Station added to favorites'];
             } else {
@@ -1214,17 +1279,11 @@ switch ($cmd) {
         $region = trim($station['state'] ?? '');
         $bitrate = isset($station['bitrate']) && $station['bitrate'] > 0 ? (string)$station['bitrate'] : '';
         $format = trim($station['codec'] ?? '');
-        $sql = "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES ('" .
-            SQLite3::escapeString($url) . "', '" .
-            SQLite3::escapeString($name) . "', 'f', '" .
-            SQLite3::escapeString($logo) . "', '" .
-            SQLite3::escapeString($genre) . "', '', '" .
-            SQLite3::escapeString($language) . "', '" .
-            SQLite3::escapeString($country) . "', '" .
-            SQLite3::escapeString($region) . "', '" .
-            SQLite3::escapeString($bitrate) . "', '" .
-            SQLite3::escapeString($format) . "', 'No', 'radio-browser', '')";
-        $result = sqlQuery($sql, $dbh);
+        $result = rb_sql(
+            "INSERT INTO cfg_radio (station, name, type, logo, genre, broadcaster, language, country, region, bitrate, format, geo_fenced, home_page, monitor) VALUES (?, ?, 'f', ?, ?, '', ?, ?, ?, ?, ?, 'No', 'radio-browser', '')",
+            [$url, $name, $logo, $genre, $language, $country, $region, $bitrate, $format],
+            $dbh
+        );
         if ($result !== true) {
             $response = ['success' => false, 'message' => 'Failed to add station to database'];
             break;
@@ -1288,15 +1347,11 @@ switch ($cmd) {
         $favorites = [];
         if (is_array($result)) {
             foreach ($result as $row) {
-                $hp = trim($row['home_page'] ?? '');
-                $bc = trim($row['broadcaster'] ?? '');
-                $co = trim($row['country'] ?? '');
-                $rg = trim($row['region'] ?? '');
                 $favorites[] = [
                     'url' => trim($row['station']),
                     'name' => trim($row['name']),
                     'logo' => trim($row['logo']),
-                    'is_moode' => ($hp !== 'radio-browser') && ($bc !== '' || $co !== '' || $rg !== '')
+                    'is_moode' => rb_is_moode_station($row)
                 ];
             }
         }
@@ -1318,8 +1373,7 @@ switch ($cmd) {
         rb_debug_log('Remove station request for URL: ' . $url);
 
         // Check if station exists before removing (type='f' = favorite)
-        $checkSql = "SELECT name, type FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
-        $checkResult = sqlQuery($checkSql, $dbh);
+        $checkResult = rb_sql("SELECT name, type FROM cfg_radio WHERE station = ? LIMIT 1", [$url], $dbh);
         if (!is_array($checkResult) || count($checkResult) === 0) {
             rb_debug_log('Remove failed: Station not found: ' . $url);
             $response = ['success' => false, 'message' => 'Station not found'];
@@ -1335,8 +1389,7 @@ switch ($cmd) {
         }
 
         // Downgrade from favorite to regular (keeps station in moOde Radio but removes favorite status)
-        $sql = "UPDATE cfg_radio SET type='r' WHERE station = '" . SQLite3::escapeString($url) . "'";
-        $result = sqlQuery($sql, $dbh);
+        $result = rb_sql("UPDATE cfg_radio SET type='r' WHERE station = ?", [$url], $dbh);
         if ($result !== true) {
             rb_debug_log('Remove failed: Database update error for: ' . $url);
             $response = ['success' => false, 'message' => 'Failed to update station'];
@@ -1628,8 +1681,7 @@ switch ($cmd) {
             // Try to get station name from database
             $dbh = sqlConnect();
             $url = $current['file'];
-            $sql = "SELECT name FROM cfg_radio WHERE station = '" . SQLite3::escapeString($url) . "' LIMIT 1";
-            $result = sqlQuery($sql, $dbh);
+            $result = rb_sql("SELECT name FROM cfg_radio WHERE station = ? LIMIT 1", [$url], $dbh);
             $name = (is_array($result) && count($result) > 0) ? $result[0]['name'] : 'Radio Stream';
 
             $response = [
@@ -1753,9 +1805,9 @@ switch ($cmd) {
         }
 
         // 4. Fix permissions
-        exec("sudo chown -R www-data:www-data {$extBase} 2>&1");
-        exec("sudo chmod 775 {$extBase}/cache 2>&1");
-        exec("sudo chmod 775 {$extBase}/cache/images 2>&1");
+        exec("sudo chown -R www-data:www-data " . escapeshellarg($extBase) . " 2>&1");
+        exec("sudo chmod 775 " . escapeshellarg($extBase . "/cache") . " 2>&1");
+        exec("sudo chmod 775 " . escapeshellarg($extBase . "/cache/images") . " 2>&1");
         $fixed[] = 'Permissions fixed';
 
         // 5. Restart services

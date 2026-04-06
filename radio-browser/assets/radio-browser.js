@@ -26,6 +26,15 @@ function initRadioBrowser($) {
     'use strict';
 
     var API_URL = '/extensions/installed/radio-browser/backend/api.php';
+    var csrfToken = $('meta[name="csrf-token"]').attr('content') || '';
+
+    // Include CSRF token in all AJAX requests
+    $.ajaxSetup({
+        beforeSend: function(xhr) {
+            if (csrfToken) xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+        }
+    });
+
     var state = {
         offset: 0,
         limit: 30,

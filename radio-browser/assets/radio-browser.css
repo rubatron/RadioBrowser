@@ -298,11 +298,6 @@
     object-fit: cover;
 }
 
-.rb-logo-placeholder {
-    background: var(--config-toggleoff-bg-color);
-    border: 1px solid rgba(128, 128, 128, 0.3);
-}
-
 /* moOde station badge overlay on logo */
 .rb-logo-wrapper {
     position: relative;

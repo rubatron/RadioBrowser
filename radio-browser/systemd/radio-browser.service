@@ -1,11 +1,11 @@
 [Unit]
-Description=Radio Browser Health Check
+Description=Radio Browser Service Check
 After=nginx.service mpd.service
 Wants=nginx.service
 
 [Service]
 Type=oneshot
-ExecStart=/var/www/extensions/installed/radio-browser/systemd/radio-browser-health.sh
+ExecStart=/var/www/extensions/installed/radio-browser/systemd/radio-browser.sh
 User=www-data
 Group=www-data
 ProtectSystem=strict
@@ -14,4 +14,4 @@ ProtectHome=true
 NoNewPrivileges=true
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=radio-browser-health
+SyslogIdentifier=radio-browser

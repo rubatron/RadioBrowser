@@ -9,7 +9,7 @@
 # Called by systemd timer every 5 minutes
 # Runs as www-data (no root needed — all checks are read-only)
 # Checks: web root loader, PHP files, cache, nginx, php-fpm, API, MPD
-# Results logged to journald: journalctl -u radio-browser-health
+# Results logged to journald: journalctl -u radio-browser
 # ============================================================================
 
 EXT_BASE="/var/www/extensions/installed/radio-browser"

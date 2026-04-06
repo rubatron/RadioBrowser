@@ -1,5 +1,5 @@
 [Unit]
-Description=Radio Browser Health Check Timer
+Description=Radio Browser Timer
 After=nginx.service mpd.service
 
 [Timer]

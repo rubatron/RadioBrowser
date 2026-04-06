@@ -28,7 +28,7 @@ scripts/test-api.sh
 scripts/flush-cache.sh
 scripts/clear-recently-played.sh
 
-# Systemd health check
-systemd/radio-browser-health.service
-systemd/radio-browser-health.sh
-systemd/radio-browser-health.timer
+# Systemd service
+systemd/radio-browser.service
+systemd/radio-browser.sh
+systemd/radio-browser.timer

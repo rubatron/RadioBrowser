@@ -1,4 +1,7 @@
-RadioBrowser/
-parkinglot.md
+# Workspace-only folders (not published to GitHub)
+mcp/
+tools/
+
+# Legacy entries
 radio-browser/scripts/bump-version.sh
 radio-browser/generate-logo.php

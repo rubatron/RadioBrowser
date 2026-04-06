@@ -71,8 +71,16 @@ include('/var/www/header.php');
 $cssVersion = filemtime($extPath . '/assets/radio-browser.css');
 $jsVersion  = filemtime($extPath . '/assets/radio-browser.js');
 
+// Generate CSRF token for API requests
+if (empty($_SESSION['rb_csrf_token'])) {
+    $_SESSION['rb_csrf_token'] = bin2hex(random_bytes(32));
+}
+
 // Output extension-specific CSS (after moOde's CSS so we can override)
 echo '<link rel="stylesheet" href="' . $extAssetsPath . '/radio-browser.css?v=' . $cssVersion . '">' . "\n";
+
+// Embed CSRF token for JavaScript
+echo '<meta name="csrf-token" content="' . $_SESSION['rb_csrf_token'] . '">' . "\n";
 
 // Output extension-specific JavaScript (deferred loading)
 echo '<script src="' . $extAssetsPath . '/radio-browser.js?v=' . $jsVersion . '" defer></script>' . "\n";

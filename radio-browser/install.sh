@@ -123,9 +123,9 @@ declare -A SOURCE_FILES=(
     ["scripts/test-api.sh"]="${SCRIPT_DIR}/scripts/test-api.sh"
     ["scripts/flush-cache.sh"]="${SCRIPT_DIR}/scripts/flush-cache.sh"
     ["scripts/clear-recently-played.sh"]="${SCRIPT_DIR}/scripts/clear-recently-played.sh"
-    ["systemd/radio-browser-health.sh"]="${SCRIPT_DIR}/systemd/radio-browser-health.sh"
-    ["systemd/radio-browser-health.service"]="${SCRIPT_DIR}/systemd/radio-browser-health.service"
-    ["systemd/radio-browser-health.timer"]="${SCRIPT_DIR}/systemd/radio-browser-health.timer"
+    ["systemd/radio-browser.sh"]="${SCRIPT_DIR}/systemd/radio-browser.sh"
+    ["systemd/radio-browser.service"]="${SCRIPT_DIR}/systemd/radio-browser.service"
+    ["systemd/radio-browser.timer"]="${SCRIPT_DIR}/systemd/radio-browser.timer"
     ["info.json"]="${SCRIPT_DIR}/info.json"
     ["version.txt"]="${SCRIPT_DIR}/version.txt"
     ["README.md"]="${SCRIPT_DIR}/README.md"
@@ -626,11 +626,11 @@ cleanup_shell_bridge() {
 # SYSTEMD SERVICE INSTALLATION
 # ============================================================================
 install_systemd_service() {
-    log "Installing systemd health check service..."
+    log "Installing systemd service..."
 
-    local service_src="${EXT_BASE}/systemd/radio-browser-health.service"
-    local timer_src="${EXT_BASE}/systemd/radio-browser-health.timer"
-    local script_src="${EXT_BASE}/systemd/radio-browser-health.sh"
+    local service_src="${EXT_BASE}/systemd/radio-browser.service"
+    local timer_src="${EXT_BASE}/systemd/radio-browser.timer"
+    local script_src="${EXT_BASE}/systemd/radio-browser.sh"
 
     if [[ ! -f "$service_src" ]] || [[ ! -f "$timer_src" ]] || [[ ! -f "$script_src" ]]; then
         warning "Systemd files not found, skipping service installation"
@@ -641,17 +641,17 @@ install_systemd_service() {
     chmod +x "$script_src"
 
     # Copy unit files to systemd directory
-    cp "$service_src" /etc/systemd/system/radio-browser-health.service
-    cp "$timer_src" /etc/systemd/system/radio-browser-health.timer
+    cp "$service_src" /etc/systemd/system/radio-browser.service
+    cp "$timer_src" /etc/systemd/system/radio-browser.timer
 
     # Reload systemd and enable timer
     systemctl daemon-reload
-    systemctl enable radio-browser-health.timer
-    systemctl start radio-browser-health.timer
+    systemctl enable radio-browser.timer
+    systemctl start radio-browser.timer
 
-    if systemctl is-active --quiet radio-browser-health.timer; then
-        success "Health check timer installed and running (every 5 minutes)"
-        echo -e "  ${CYAN}→${NC} View logs: journalctl -u radio-browser-health"
+    if systemctl is-active --quiet radio-browser.timer; then
+        success "Service timer installed and running (every 5 minutes)"
+        echo -e "  ${CYAN}→${NC} View logs: journalctl -u radio-browser"
         return 0
     else
         warning "Timer installed but not started"
@@ -660,15 +660,16 @@ install_systemd_service() {
 }
 
 remove_systemd_service() {
-    log "Removing systemd health check service..."
+    log "Removing systemd service..."
 
-    systemctl stop radio-browser-health.timer 2>/dev/null
-    systemctl disable radio-browser-health.timer 2>/dev/null
-    rm -f /etc/systemd/system/radio-browser-health.service
-    rm -f /etc/systemd/system/radio-browser-health.timer
+    # Remove old health-named units (pre-4.1) and current units
+    systemctl stop radio-browser-health.timer radio-browser.timer 2>/dev/null
+    systemctl disable radio-browser-health.timer radio-browser.timer 2>/dev/null
+    rm -f /etc/systemd/system/radio-browser-health.service /etc/systemd/system/radio-browser.service
+    rm -f /etc/systemd/system/radio-browser-health.timer /etc/systemd/system/radio-browser.timer
     systemctl daemon-reload
 
-    success "Health check service removed"
+    success "Systemd service removed"
     return 0
 }
 

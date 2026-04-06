@@ -41,9 +41,9 @@ Radio Browser is a standalone extension for [moOde audio player](https://moodeau
 │   ├── flush-cache.sh
 │   └── test-api.sh
 ├── systemd/
-│   ├── radio-browser-health.sh      # Health check script
-│   ├── radio-browser-health.service # Oneshot unit
-│   └── radio-browser-health.timer   # Runs every 5 minutes
+│   ├── radio-browser.sh              # Service check script
+│   ├── radio-browser.service         # Oneshot unit
+│   └── radio-browser.timer           # Runs every 5 minutes
 ├── cache/                      # API response cache + image cache
 │   └── images/                 # Cached station logos (PNG)
 └── data/                       # Persistent user data
@@ -198,7 +198,7 @@ Radio-browser.info station fields are mapped to moOde's `cfg_radio` columns on b
 
 ## Health Monitoring
 
-Systemd timer runs `radio-browser-health.sh` every 5 minutes:
+Systemd timer runs `radio-browser.sh` every 5 minutes:
 
 1. Checks `/var/www/radio-browser.php` exists (auto-repairs from loader template)
 2. Validates PHP files are readable
@@ -207,7 +207,7 @@ Systemd timer runs `radio-browser-health.sh` every 5 minutes:
 5. Tests API endpoint reachability
 6. Verifies MPD is running
 
-Logs to journald: `journalctl -u radio-browser-health`
+Logs to journald: `journalctl -u radio-browser`
 
 ---
 
@@ -356,6 +356,6 @@ On successful play, the backend sends a fire-and-forget POST to `https://all.api
 
 ## Version Management
 
-`version.txt` is the single source of truth for the runtime version, read by `api.php` and `radio-browser-health.sh`.
+`version.txt` is the single source of truth for the runtime version, read by `api.php` and `radio-browser.sh`.
 
 A local helper script (`scripts/bump-version.sh`, not shipped) synchronizes version across all project files during development.

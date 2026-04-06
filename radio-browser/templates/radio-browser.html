@@ -31,8 +31,8 @@
                 <div class="control-group">
                     <label class="control-label" for="rb-name">Station Name</label>
                     <div class="controls">
-                        <input type="text" id="rb-name" class="input-xlarge"
-                            placeholder="e.g. Jazz, Classical, News...">
+                        <input type="text" id="rb-name" class="input-xlarge" placeholder="e.g. Jazz, Classical, News..."
+                            maxlength="200">
                         <a class="info-toggle" data-cmd="info-rb-name" href="#notarget"><i
                                 class="fa-solid fa-sharp fa-info-circle"></i></a>
                         <span id="info-rb-name" class="config-help-info hide">Search by station name or
@@ -45,7 +45,7 @@
                     <label class="control-label" for="rb-country">Country</label>
                     <div class="controls" style="position: relative;">
                         <input type="text" id="rb-country" class="input-medium" placeholder="Type to search..."
-                            autocomplete="off">
+                            autocomplete="off" maxlength="100">
                         <div id="rb-country-list" class="rb-autocomplete-list hide"></div>
                     </div>
                 </div>
@@ -390,14 +390,14 @@
                                         <label class="control-label">Name</label>
                                         <div class="controls">
                                             <input type="text" id="rb-custom-api-name" class="input-large"
-                                                placeholder="My Radio API">
+                                                placeholder="My Radio API" maxlength="100">
                                         </div>
                                     </div>
                                     <div class="control-group">
                                         <label class="control-label">URL</label>
                                         <div class="controls">
                                             <input type="url" id="rb-custom-api-url" class="input-xlarge"
-                                                placeholder="https://api.example.com">
+                                                placeholder="https://api.example.com" maxlength="500">
                                         </div>
                                     </div>
                                     <div class="control-group">
