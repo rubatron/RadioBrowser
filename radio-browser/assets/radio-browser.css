@@ -218,18 +218,7 @@
    Radio Browser Header
    ============================================ */
 
-.radio-browser-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
 
-.radio-browser-logo {
-    width: 48px;
-    height: 48px;
-    opacity: 0.8;
-}
 
 /* ============================================
    Panels
