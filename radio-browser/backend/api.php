@@ -683,8 +683,18 @@ if ($cmd === 'csrf_token') {
     exit;
 }
 
-// State-changing commands require CSRF validation
-// Read-only endpoints are exempt (used by rb-menu-inject.js without CSRF token)
+// CSRF validation — state-changing commands only (OWASP best practice)
+//
+// WHY these are exempt: CSRF protects against unauthorized state changes, not reads.
+// Read-only endpoints return data without modifying server state, so CSRF is unnecessary.
+//
+// WHO uses these without CSRF: rb-menu-inject.js runs on every moOde page (index.php etc.)
+// where the <meta name="csrf-token"> tag does not exist. It only calls get_settings and
+// current_status — both read-only. If rb-menu-inject.js ever needs state-changing calls,
+// it must fetch a token first via the csrf_token endpoint.
+//
+// radio-browser.js sends CSRF on ALL requests (including GETs) via $.ajaxSetup, so these
+// exemptions don't weaken its protection — they just don't require what isn't needed.
 $csrfExempt = [
     'search',
     'countries',
