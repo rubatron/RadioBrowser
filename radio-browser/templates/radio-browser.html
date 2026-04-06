@@ -347,8 +347,7 @@
                                     class="fa-solid fa-sharp fa-sync"></i> Refresh</button>
                             <button type="button" id="rb-network-status"
                                 class="btn btn-small rb-btn-discrete">radio-browser.info status
-                                <i class="fa-solid fa-sharp fa-up-right-from-square"
-                                    style="font-size: 0.65rem; margin-left: 0.3rem; opacity: 0.7;"></i></button>
+                                <i class="fa-solid fa-sharp fa-up-right-from-square rb-ext-icon"></i></button>
                         </div>
                     </div>
                 </div>
@@ -468,39 +467,64 @@
                         <div class="rb-info-section">
                             <h5 class="rb-info-section-title"><i class="fa-solid fa-sharp fa-scale-balanced"></i> Legal
                                 & Attribution</h5>
-                            <p class="rb-info-legal">Station data provided by <a href="https://www.radio-browser.info/"
-                                    target="_blank" rel="noopener">radio-browser.info</a> — a free, open,
-                                community-driven radio station index. Data license: <strong>Public Domain</strong>. API:
-                                free for all, no key required</p>
-                            <p class="rb-info-legal">Extension license: <strong>GPL-3.0-or-later</strong> · Not
-                                affiliated with or endorsed by moOde audio</p>
+                            <ul class="rb-info-legal-list">
+                                <li>Data license: <strong>Public Domain</strong></li>
+                                <li>API license: free for all, no key required</li>
+                                <li>Extension license: <strong>GPL-3.0-or-later</strong></li>
+                            </ul>
+                            <p class="rb-info-legal rb-info-thanks">Great thanks to
+                                <a href="https://moodeaudio.org/" target="_blank" rel="noopener">moOde audio player</a>
+                                &
+                                <a href="https://www.radio-browser.info/" target="_blank"
+                                    rel="noopener">radio-browser.info</a>
+                            </p>
                         </div>
 
                         <!-- Documentation -->
                         <div class="rb-info-section">
                             <h5 class="rb-info-section-title"><i class="fa-solid fa-sharp fa-book"></i> Documentation
                             </h5>
-                            <div class="rb-info-docs">
-                                <a href="https://github.com/rubatron/RadioBrowser#readme" target="_blank" rel="noopener"
-                                    class="rb-doc-link">
-                                    <i class="fa-solid fa-sharp fa-file-lines"></i> README
-                                </a>
-                                <a href="https://github.com/rubatron/RadioBrowser/blob/main/CHANGELOG.md"
-                                    target="_blank" rel="noopener" class="rb-doc-link">
-                                    <i class="fa-solid fa-sharp fa-clock-rotate-left"></i> Changelog
-                                </a>
-                                <a href="https://github.com/rubatron/RadioBrowser/blob/main/radio-browser/ARCHITECTURE.md"
-                                    target="_blank" rel="noopener" class="rb-doc-link">
-                                    <i class="fa-solid fa-sharp fa-sitemap"></i> Architecture
-                                </a>
-                                <a href="https://github.com/rubatron/RadioBrowser/blob/main/radio-browser/LEGAL.md"
-                                    target="_blank" rel="noopener" class="rb-doc-link">
-                                    <i class="fa-solid fa-sharp fa-scale-balanced"></i> Legal
-                                </a>
-                                <a href="https://github.com/rubatron/RadioBrowser" target="_blank" rel="noopener"
-                                    class="rb-doc-link">
-                                    <i class="fa-brands fa-github"></i> GitHub
-                                </a>
+                            <div class="rb-troubleshoot-actions">
+                                <div class="rb-action-item">
+                                    <button type="button" class="btn btn-small rb-btn-discrete rb-ext-link"
+                                        data-url="https://github.com/rubatron/RadioBrowser#readme">
+                                        <i class="fa-solid fa-sharp fa-file-lines"></i> README
+                                        <i class="fa-solid fa-sharp fa-up-right-from-square rb-ext-icon"></i>
+                                    </button>
+                                    <span class="rb-action-desc">Quick start and usage guide</span>
+                                </div>
+                                <div class="rb-action-item">
+                                    <button type="button" class="btn btn-small rb-btn-discrete rb-ext-link"
+                                        data-url="https://github.com/rubatron/RadioBrowser/blob/main/CHANGELOG.md">
+                                        <i class="fa-solid fa-sharp fa-clock-rotate-left"></i> Changelog
+                                        <i class="fa-solid fa-sharp fa-up-right-from-square rb-ext-icon"></i>
+                                    </button>
+                                    <span class="rb-action-desc">Version history and release notes</span>
+                                </div>
+                                <div class="rb-action-item">
+                                    <button type="button" class="btn btn-small rb-btn-discrete rb-ext-link"
+                                        data-url="https://github.com/rubatron/RadioBrowser/blob/main/radio-browser/ARCHITECTURE.md">
+                                        <i class="fa-solid fa-sharp fa-sitemap"></i> Architecture
+                                        <i class="fa-solid fa-sharp fa-up-right-from-square rb-ext-icon"></i>
+                                    </button>
+                                    <span class="rb-action-desc">System design and file structure</span>
+                                </div>
+                                <div class="rb-action-item">
+                                    <button type="button" class="btn btn-small rb-btn-discrete rb-ext-link"
+                                        data-url="https://github.com/rubatron/RadioBrowser/blob/main/radio-browser/LEGAL.md">
+                                        <i class="fa-solid fa-sharp fa-scale-balanced"></i> Legal
+                                        <i class="fa-solid fa-sharp fa-up-right-from-square rb-ext-icon"></i>
+                                    </button>
+                                    <span class="rb-action-desc">License and attribution details</span>
+                                </div>
+                                <div class="rb-action-item">
+                                    <button type="button" class="btn btn-small rb-btn-discrete rb-ext-link"
+                                        data-url="https://github.com/rubatron/RadioBrowser">
+                                        <i class="fa-brands fa-github"></i> GitHub
+                                        <i class="fa-solid fa-sharp fa-up-right-from-square rb-ext-icon"></i>
+                                    </button>
+                                    <span class="rb-action-desc">Source code repository</span>
+                                </div>
                             </div>
                         </div>
 

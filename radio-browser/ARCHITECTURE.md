@@ -358,13 +358,4 @@ On successful play, the backend sends a fire-and-forget POST to `https://all.api
 
 `version.txt` is the single source of truth for the runtime version, read by `api.php` and `radio-browser-health.sh`.
 
-### bump-version.sh
-
-Helper script at `scripts/bump-version.sh` synchronizes version across all files:
-
-```bash
-./scripts/bump-version.sh 4.1.0           # Update version only
-./scripts/bump-version.sh 4.1.0 --branch main  # Also update branch references
-```
-
-Updates: `version.txt`, `manifest.json`, `info.json`, header comments in all source files, `ARCHITECTURE.md`, `README.md` badge, `install.sh` branch variable, README install URLs.
+A local helper script (`scripts/bump-version.sh`, not shipped) synchronizes version across all project files during development.

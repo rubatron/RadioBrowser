@@ -1,9 +1,9 @@
 [Unit]
-Description=Radio Browser Extension Health Check Timer
-After=nginx.service
+Description=Radio Browser Health Check Timer
+After=nginx.service mpd.service
 
 [Timer]
-OnBootSec=60
+OnBootSec=90
 OnUnitActiveSec=300
 AccuracySec=30
 

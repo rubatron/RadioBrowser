@@ -871,6 +871,32 @@
     margin-bottom: 0.35rem;
 }
 
+.rb-info-legal-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.5rem 0;
+}
+
+.rb-info-legal-list li {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.8;
+}
+
+.rb-info-legal-list li::before {
+    content: "";
+}
+
+.rb-info-legal-list li strong {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.rb-info-thanks {
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
 .rb-info-legal a {
     color: var(--rb-accent);
     text-decoration: none;
@@ -891,28 +917,11 @@
     gap: 0.4rem;
 }
 
-.rb-doc-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.25rem 0.6rem;
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
-    text-decoration: none;
-    transition: all 0.15s;
-}
-
-.rb-doc-link:hover {
-    color: var(--rb-accent);
-    border-color: rgba(213, 84, 0, 0.3);
-    background: rgba(213, 84, 0, 0.06);
-}
-
-.rb-doc-link i {
+/* External link icon (new-tab indicator on buttons) */
+.rb-ext-icon {
     font-size: 0.65rem;
+    margin-left: 0.3rem;
+    opacity: 0.7;
 }
 
 /* ============================================

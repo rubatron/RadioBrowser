@@ -20,6 +20,20 @@ require_once '/var/www/inc/session.php';
 require_once '/var/www/inc/sql.php';
 
 /**
+ * Verify request originates from an active moOde session.
+ * Returns true if valid session exists, false otherwise.
+ */
+function rb_require_auth()
+{
+    // moOde runs on a local network — verify there's an active PHP session
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        @session_start();
+    }
+    // Check moOde's session marker (set by header.php / common.php)
+    return !empty($_SESSION);
+}
+
+/**
  * Sanitize station name for use as a safe filename.
  * Strips characters invalid on Linux filesystems (/ and null byte) and trims whitespace.
  * Falls back to md5 hash if result is empty.
@@ -198,11 +212,11 @@ function rb_get_default_settings()
             'm' => true,
             'system' => true,
             'playbar' => true,
-            'download' => true,
+            'download' => false,
             'activityglow' => true,
-            'moode_favorites' => true,
-            'moode_recently' => true,
-            'moode_search' => true
+            'moode_favorites' => false,
+            'moode_recently' => false,
+            'moode_search' => false
         ],
         'limits' => [
             'recentlyPlayed' => 0,  // 0 = no limit (show all)
@@ -320,8 +334,18 @@ function rb_add_recently_played($station)
     // Keep only last 30 (enough for display limits)
     $list = array_slice($list, 0, 30);
 
-    // Save to file
-    @file_put_contents(RB_RECENTLY_PLAYED_FILE, json_encode($list, JSON_PRETTY_PRINT));
+    // Save to file with locking to prevent race conditions
+    $fp = @fopen(RB_RECENTLY_PLAYED_FILE, 'c');
+    if ($fp && flock($fp, LOCK_EX)) {
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($list, JSON_PRETTY_PRINT));
+        fflush($fp);
+        flock($fp, LOCK_UN);
+        fclose($fp);
+    } elseif ($fp) {
+        fclose($fp);
+    }
     rb_debug_log('Recently played updated: ' . ($station['name'] ?? 'Unknown') . ' now first, total: ' . count($list));
 
     return $list;
@@ -344,7 +368,7 @@ function rb_cache_get($key, $ttl)
 }
 function rb_cache_set($key, $data)
 {
-    if (!is_dir(RB_CACHE)) @mkdir(RB_CACHE, 0777, true);
+    if (!is_dir(RB_CACHE)) @mkdir(RB_CACHE, 0775, true);
     $file = RB_CACHE . '/' . md5($key) . '.json';
     @file_put_contents($file, json_encode($data));
 }
@@ -377,7 +401,7 @@ function rb_cache_image($url)
     curl_close($ch);
 
     if ($image_data && $http_code == 200 && strlen($image_data) < 50000) { // Max 50KB per image
-        if (!is_dir(RB_IMAGE_CACHE)) @mkdir(RB_IMAGE_CACHE, 0777, true);
+        if (!is_dir(RB_IMAGE_CACHE)) @mkdir(RB_IMAGE_CACHE, 0775, true);
 
         // Check cache size before adding new image
         rb_cleanup_image_cache();
@@ -1433,6 +1457,10 @@ switch ($cmd) {
     case 'restart_services':
         // Restart nginx and PHP-FPM using background process
         // We need to send response first, then restart in background so connection doesn't die
+        if (!rb_require_auth()) {
+            $response = ['success' => false, 'message' => 'Unauthorized'];
+            break;
+        }
         rb_debug_log('Services restart requested');
 
         // Send success response immediately before restarting
@@ -1454,7 +1482,9 @@ switch ($cmd) {
         exec('sudo /usr/bin/systemctl restart nginx 2>&1');
         sleep(1);
         $phpVer = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
-        exec("sudo /usr/bin/systemctl restart php{$phpVer}-fpm 2>&1");
+        if (preg_match('/^\d+\.\d+$/', $phpVer)) {
+            exec("sudo /usr/bin/systemctl restart php{$phpVer}-fpm 2>&1");
+        }
 
         rb_debug_log('Services restart completed');
         exit; // Already sent response, don't continue
@@ -1479,6 +1509,10 @@ switch ($cmd) {
         break;
     case 'reboot':
         // Reboot the system
+        if (!rb_require_auth()) {
+            $response = ['success' => false, 'message' => 'Unauthorized'];
+            break;
+        }
         rb_debug_log('System reboot requested');
 
         // Send success response immediately before rebooting
@@ -1505,6 +1539,10 @@ switch ($cmd) {
 
     case 'reinstall':
         // Re-run install.sh
+        if (!rb_require_auth()) {
+            $response = ['success' => false, 'message' => 'Unauthorized'];
+            break;
+        }
         rb_debug_log('Reinstall requested');
         $extDir = RB_EXT_BASE;
         $installScript = $extDir . '/install.sh';
@@ -1610,6 +1648,10 @@ switch ($cmd) {
 
     case 'uninstall':
         // Uninstall Radio Browser extension
+        if (!rb_require_auth()) {
+            $response = ['success' => false, 'message' => 'Unauthorized'];
+            break;
+        }
         rb_debug_log('Uninstall requested');
 
         $installScript = RB_EXT_BASE . '/install.sh';
@@ -1635,8 +1677,7 @@ switch ($cmd) {
         usleep(200000); // 200ms
 
         // Run uninstall with auto-confirm (non-interactive)
-        // Use 'yes' piped to handle any confirmation prompts
-        exec("yes | sudo /bin/bash {$installScript} --uninstall 2>&1", $output, $exitCode);
+        exec("yes | sudo /bin/bash " . escapeshellarg($installScript) . " --uninstall 2>&1", $output, $exitCode);
 
         rb_debug_log('Uninstall completed, exit code: ' . $exitCode);
         exit;
@@ -1713,8 +1754,8 @@ switch ($cmd) {
 
         // 4. Fix permissions
         exec("sudo chown -R www-data:www-data {$extBase} 2>&1");
-        exec("sudo chmod 777 {$extBase}/cache 2>&1");
-        exec("sudo chmod 777 {$extBase}/cache/images 2>&1");
+        exec("sudo chmod 775 {$extBase}/cache 2>&1");
+        exec("sudo chmod 775 {$extBase}/cache/images 2>&1");
         $fixed[] = 'Permissions fixed';
 
         // 5. Restart services

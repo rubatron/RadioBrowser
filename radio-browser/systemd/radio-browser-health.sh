@@ -7,12 +7,12 @@
 # Version: 4.0.0
 #
 # Called by systemd timer every 5 minutes
-# Checks: web root file, PHP files, cache, nginx, php-fpm, API, MPD
+# Runs as www-data (no root needed — all checks are read-only)
+# Checks: web root loader, PHP files, cache, nginx, php-fpm, API, MPD
 # Results logged to journald: journalctl -u radio-browser-health
 # ============================================================================
 
 EXT_BASE="/var/www/extensions/installed/radio-browser"
-CONFIG="$EXT_BASE/backend/loader-config.php"
 STATUS="running"
 ERRORS=0
 
@@ -26,43 +26,15 @@ check() {
     fi
 }
 
-# 1. Web root files (auto-repair from config manifest)
-# moOde's worker.php deletes all symlinks in /var/www/ during maintenance
-# The config defines which files must exist in the web root
-if [[ -f "$CONFIG" ]]; then
-    # Read webroot_files from config: outputs "target_name|source_file" per line
-    WEBROOT_ENTRIES=$(php -r "\$c=require '$CONFIG'; foreach(\$c['webroot_files'] as \$t=>\$e) echo \$t.'|'.\$e['source'].\"\\n\";")
-
-    while IFS='|' read -r TARGET_NAME SOURCE_FILE; do
-        [[ -z "$TARGET_NAME" ]] && continue
-        TARGET_PATH="/var/www/$TARGET_NAME"
-        SOURCE_PATH="$EXT_BASE/$SOURCE_FILE"
-
-        if [[ -f "$TARGET_PATH" ]]; then
-            check "webroot:$TARGET_NAME" "ok" "$TARGET_PATH"
-        else
-            # Auto-repair: deploy from source
-            if [[ -f "$SOURCE_PATH" ]]; then
-                cp -f "$SOURCE_PATH" "$TARGET_PATH" 2>/dev/null
-                chown www-data:www-data "$TARGET_PATH" 2>/dev/null
-                if [[ -f "$TARGET_PATH" ]]; then
-                    check "webroot:$TARGET_NAME" "ok" "Auto-repaired from $SOURCE_FILE"
-                else
-                    check "webroot:$TARGET_NAME" "fail" "Auto-repair failed"
-                    STATUS="error"
-                fi
-            else
-                check "webroot:$TARGET_NAME" "fail" "Source missing: $SOURCE_PATH"
-                STATUS="error"
-            fi
-        fi
-    done <<< "$WEBROOT_ENTRIES"
+# 1. Web root loader file (physical file, NOT a symlink — survives moOde cleanup)
+if [[ -f "/var/www/radio-browser.php" ]]; then
+    check "webroot-loader" "ok" "/var/www/radio-browser.php present"
 else
-    check "config" "fail" "loader-config.php missing"
+    check "webroot-loader" "fail" "/var/www/radio-browser.php missing (run: sudo bash install.sh)"
     STATUS="error"
 fi
 
-# 2. Required files
+# 2. Required extension files
 REQUIRED=("radio-browser.php" "backend/api.php" "assets/radio-browser.js" "assets/rb-menu-inject.js")
 MISSING=()
 for f in "${REQUIRED[@]}"; do
@@ -134,8 +106,6 @@ echo "Version: $(cat $EXT_BASE/version.txt 2>/dev/null || echo 'unknown')"
 # Exit code signals status to systemd
 if [[ "$STATUS" == "error" ]]; then
     exit 1
-elif [[ "$STATUS" == "warning" ]]; then
-    exit 0  # Warnings don't fail the service
 else
     exit 0
 fi

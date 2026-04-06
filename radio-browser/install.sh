@@ -478,19 +478,17 @@ set_permissions() {
     # Set file permissions (644)
     find "${EXT_BASE}" -type f -exec chmod 644 {} \;
 
-    # Make cache writable
-    chmod 777 "${CACHE_DIR}"
-    chmod 777 "${IMAGE_CACHE_DIR}"
+    # Make cache writable by www-data
+    chmod 775 "${CACHE_DIR}"
+    chmod 775 "${IMAGE_CACHE_DIR}"
 
-    # Create symlink for imagesw (moOde stores images in /var/local/www/imagesw)
-    if [[ ! -L "/var/www/imagesw" ]]; then
-        ln -sf /var/local/www/imagesw /var/www/imagesw 2>/dev/null || true
-        echo -e "  ${GREEN}✓${NC} Symlink: /var/www/imagesw -> /var/local/www/imagesw"
-    fi
-
-    # Make moOde radio-logos directory writable for thumbnail creation
-    chmod 777 /var/local/www/imagesw/radio-logos 2>/dev/null || true
-    chmod 777 /var/local/www/imagesw/radio-logos/thumbs 2>/dev/null || true
+    # Ensure moOde radio-logos directories are writable for thumbnail creation
+    # nginx serves /imagesw/ directly from /var/local/www (moode-locations.conf)
+    # so no symlink is needed in /var/www/
+    chown www-data:www-data /var/local/www/imagesw/radio-logos 2>/dev/null || true
+    chown www-data:www-data /var/local/www/imagesw/radio-logos/thumbs 2>/dev/null || true
+    chmod 775 /var/local/www/imagesw/radio-logos 2>/dev/null || true
+    chmod 775 /var/local/www/imagesw/radio-logos/thumbs 2>/dev/null || true
 
     success "Permissions set correctly"
     return 0

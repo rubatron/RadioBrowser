@@ -40,7 +40,8 @@ function initRadioBrowser($) {
         recentlyPlayed: [],
         countries: [],
         hasSearched: false,  // Track if user has searched (prevents init overwriting)
-        initComplete: false  // Track if initial load is done
+        initComplete: false, // Track if initial load is done
+        searchXhr: null      // Active search AJAX request (aborted on new search)
     };
 
     /**
@@ -321,6 +322,12 @@ function initRadioBrowser($) {
             window.open('https://api.radio-browser.info/net', '_blank');
         });
 
+        // External link buttons (docs, etc.) - open in new tab
+        $(document).on('click', '.rb-ext-link[data-url]', function(e) {
+            e.stopPropagation();
+            window.open($(this).data('url'), '_blank');
+        });
+
         // Troubleshooting buttons
         $('#rb-flush-cache').on('click', function(e) {
             e.stopPropagation();
@@ -560,6 +567,9 @@ function initRadioBrowser($) {
                         }
                     });
                 }
+            },
+            error: function() {
+                // Silent fail — playback status check is non-critical
             }
         });
     }
@@ -699,6 +709,12 @@ function initRadioBrowser($) {
         state.loading = true;
         state.hasSearched = true;  // Mark that user has searched
 
+        // Abort any pending search request to prevent race conditions
+        if (state.searchXhr) {
+            state.searchXhr.abort();
+            state.searchXhr = null;
+        }
+
         // Get country code from autocomplete
         var countryInput = $('#rb-country');
         var countryCode = countryInput.data('selected-code') || '';
@@ -725,13 +741,14 @@ function initRadioBrowser($) {
 
         showLoading(true);
 
-        $.ajax({
+        state.searchXhr = $.ajax({
             url: API_URL + '?cmd=search',
             type: 'GET',
             data: params,
             dataType: 'json',
             timeout: 15000,
             success: function(data) {
+                state.searchXhr = null;
                 state.loading = false;
                 showLoading(false);
                 if (data.success && data.stations && data.stations.length > 0) {
@@ -742,6 +759,8 @@ function initRadioBrowser($) {
                 }
             },
             error: function(xhr, status) {
+                state.searchXhr = null;
+                if (status === 'abort') return; // Aborted by new search — ignore
                 state.loading = false;
                 showLoading(false);
                 var msg = status === 'timeout' ? 'Request timed out.' : 'Failed to search.';
@@ -845,6 +864,10 @@ function initRadioBrowser($) {
     }
 
     function playStation(card) {
+        var btn = card.find('.rb-play-btn');
+        // Prevent double-click race condition
+        if (btn.hasClass('disabled')) return;
+
         var stationIndex = parseInt(card.data('station-index'));
 
         // Check card type to get correct station data
@@ -865,7 +888,11 @@ function initRadioBrowser($) {
         }
 
         var btn = card.find('.rb-play-btn');
+        // Prevent double-click race condition
+        if (btn.hasClass('disabled')) return;
+
         btn.html('<i class="fa-solid fa-sharp fa-spinner fa-spin"></i>');
+        btn.addClass('disabled');
 
         $.ajax({
             url: API_URL + '?cmd=play',
@@ -884,7 +911,7 @@ function initRadioBrowser($) {
 
                     // Mark ALL cards with this URL as playing (both recently played and search results)
                     $('.rb-station-card').removeClass('playing');
-                    $('.rb-play-btn').removeClass('playing').html('<i class="fa-solid fa-sharp fa-play"></i>');
+                    $('.rb-play-btn').removeClass('playing disabled').html('<i class="fa-solid fa-sharp fa-play"></i>');
 
                     // Find all cards with matching URL and mark as playing
                     $('.rb-station-card').each(function() {
@@ -902,12 +929,12 @@ function initRadioBrowser($) {
                     // Refresh recently played to show new order
                     loadRecentlyPlayed();
                 } else {
-                    btn.html('<i class="fa-solid fa-sharp fa-play"></i>');
+                    btn.removeClass('disabled').html('<i class="fa-solid fa-sharp fa-play"></i>');
                     notify('Error', data.message || 'Failed to play', 'error');
                 }
             },
             error: function() {
-                btn.html('<i class="fa-solid fa-sharp fa-play"></i>');
+                btn.removeClass('disabled').html('<i class="fa-solid fa-sharp fa-play"></i>');
                 notify('Error', 'Failed to play station', 'error');
             }
         });
@@ -1572,6 +1599,9 @@ function initRadioBrowser($) {
                         $('#rb-limit-favorites').val(limitsState.favorites || '');
                     }
                 }
+            },
+            error: function() {
+                // Settings load failed — defaults remain active
             }
         });
         // Load service status for Extension Info badge
