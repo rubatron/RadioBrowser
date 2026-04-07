@@ -428,6 +428,100 @@ function rb_add_recently_played($station)
     return $list;
 }
 
+// ============================================================================
+// CURRENTSONG.TXT INTEGRATION
+// ============================================================================
+// Reads moOde's currentsong.txt (written by worker.php) to detect radio stations
+// playing outside of Radio Browser (e.g. via moOde's native UI).
+// Uses a marker file to avoid duplicate entries in recently_played.json.
+
+define('RB_CURRENTSONG_FILE', '/var/local/www/currentsong.txt');
+define('RB_LAST_SEEN_MARKER', RB_CACHE . '/last_seen_station.txt');
+
+/**
+ * Check currentsong.txt and add the currently playing radio station to recently played.
+ * Only adds if:
+ * - The station is actually playing (state=play)
+ * - The file= is a stream URL (http)
+ * - It's different from the last seen station (marker file dedup)
+ *
+ * @return array Status info about what was found/done
+ */
+function rb_check_currentsong()
+{
+    if (!file_exists(RB_CURRENTSONG_FILE)) {
+        return ['checked' => true, 'found' => false, 'reason' => 'currentsong.txt not found'];
+    }
+
+    $content = @file_get_contents(RB_CURRENTSONG_FILE);
+    if ($content === false || $content === '') {
+        return ['checked' => true, 'found' => false, 'reason' => 'currentsong.txt empty'];
+    }
+
+    // Parse key=value pairs
+    $data = [];
+    foreach (explode("\n", $content) as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '=') === false) continue;
+        $pos = strpos($line, '=');
+        $key = substr($line, 0, $pos);
+        $value = substr($line, $pos + 1);
+        $data[$key] = $value;
+    }
+
+    // Must be playing a stream
+    if (empty($data['file']) || !str_starts_with($data['file'], 'http')) {
+        return ['checked' => true, 'found' => false, 'reason' => 'not a stream'];
+    }
+    if (empty($data['state']) || $data['state'] !== 'play') {
+        return ['checked' => true, 'found' => false, 'reason' => 'not playing'];
+    }
+
+    $streamUrl = trim($data['file']);
+    $stationName = trim($data['title'] ?? $data['artist'] ?? 'Unknown Station');
+
+    // Dedup: check marker file
+    $lastSeen = @file_get_contents(RB_LAST_SEEN_MARKER);
+    if ($lastSeen !== false && trim($lastSeen) === $streamUrl) {
+        return ['checked' => true, 'found' => true, 'added' => false, 'reason' => 'already tracked', 'url' => $streamUrl];
+    }
+
+    // Look up station metadata from cfg_radio
+    $meta = ['logo' => 'local', 'country' => '', 'tags' => '', 'bitrate' => 0, 'codec' => ''];
+    $dbh = sqlConnect();
+    if ($dbh) {
+        $result = rb_sql("SELECT name, logo, country, genre, bitrate, format FROM cfg_radio WHERE station = ? LIMIT 1", [$streamUrl], $dbh);
+        if (is_array($result) && count($result) > 0) {
+            $row = $result[0];
+            // Prefer cfg_radio name if available (more reliable than currentsong title)
+            if (!empty($row['name'])) $stationName = trim($row['name']);
+            $meta['logo'] = $row['logo'] ?? 'local';
+            $meta['country'] = $row['country'] ?? '';
+            $meta['tags'] = $row['genre'] ?? '';
+            $meta['bitrate'] = (int)($row['bitrate'] ?? 0);
+            $meta['codec'] = $row['format'] ?? '';
+        }
+    }
+
+    // Add to recently played
+    rb_add_recently_played([
+        'url' => $streamUrl,
+        'name' => $stationName,
+        'logo' => $meta['logo'],
+        'country' => $meta['country'],
+        'tags' => $meta['tags'],
+        'bitrate' => $meta['bitrate'],
+        'codec' => $meta['codec']
+    ]);
+
+    // Update marker file
+    @file_put_contents(RB_LAST_SEEN_MARKER, $streamUrl);
+
+    rb_debug_log('currentsong.txt: Added ' . $stationName . ' (' . $streamUrl . ') to recently played');
+
+    return ['checked' => true, 'found' => true, 'added' => true, 'name' => $stationName, 'url' => $streamUrl];
+}
+
 // Log elke inkomende request
 $cmd = $_GET['cmd'] ?? $_POST['cmd'] ?? '';
 rb_debug_log('IN: cmd=' . $cmd . ', params=' . json_encode($_REQUEST) . ', IP=' . $_SERVER['REMOTE_ADDR']);
@@ -701,6 +795,7 @@ $csrfExempt = [
     'recently_played',
     'favorites',
     'current_status',
+    'check_currentsong',
     'get_settings',
     'service_status',
     'status',
@@ -1096,7 +1191,10 @@ switch ($cmd) {
         $thumbPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '.jpg';
         $thumbSmPath = RADIO_LOGOS_ROOT . 'thumbs/' . $safeName . '_sm.jpg';
 
-        if (!file_exists($thumbSmPath) && !empty($favicon) && !str_contains($favicon, 'encrypted-tbn0.gstatic.com')) {
+        // Retry download if current logo is the fallback placeholder (same size = same file)
+        $hasRealLogo = file_exists($thumbSmPath) && filesize($thumbSmPath) !== filesize(RB_DEFAULT_LOGO);
+
+        if (!$hasRealLogo && !empty($favicon) && !str_contains($favicon, 'encrypted-tbn0.gstatic.com')) {
             rb_debug_log('Play: Getting logo for ' . $name . ' from ' . $favicon);
             $imageData = false;
 
@@ -1388,6 +1486,11 @@ switch ($cmd) {
         $current_url = isset($current['file']) ? $current['file'] : null;
         closeMpdSock($sock);
         $response = ['success' => true, 'is_playing' => $is_playing, 'current_url' => $current_url];
+        break;
+    case 'check_currentsong':
+        // Check moOde's currentsong.txt for stations played outside Radio Browser
+        $result = rb_check_currentsong();
+        $response = ['success' => true] + $result;
         break;
     case 'favorites':
         // Use moOde's native favorites system (type='f' in cfg_radio)

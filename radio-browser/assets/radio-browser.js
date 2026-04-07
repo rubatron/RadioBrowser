@@ -140,6 +140,16 @@ function initRadioBrowser($) {
     $(document).ready(function() {
         // Only initialize if on radio-browser page
         if ($('#rb-name').length > 0 || $('#rb-top-stations').length > 0) {
+            // Inherit moOde's accent color if available (set by main.min.js / config.min.js)
+            if (typeof accentColor !== 'undefined' && accentColor) {
+                var root = document.documentElement;
+                root.style.setProperty('--rb-accent', accentColor);
+                // Derive hover/alt/gradient variants by adjusting lightness
+                root.style.setProperty('--rb-accent-hover', accentColor);
+                root.style.setProperty('--rb-accent-alt', accentColor);
+                root.style.setProperty('--rb-accent-gradient', accentColor);
+            }
+
             initCountryAutocomplete();
             bindEvents();
             bindTabEvents();
@@ -186,7 +196,20 @@ function initRadioBrowser($) {
                 state.initComplete = true;
             }
 
-            // Fire both requests in parallel
+            // Check currentsong.txt first (picks up stations played via moOde UI),
+            // then load favorites + recently played in parallel
+            $.ajax({
+                url: API_URL + '?cmd=check_currentsong',
+                type: 'GET',
+                dataType: 'json',
+                timeout: 3000,
+                complete: function() {
+                    // Fire both requests in parallel after currentsong check
+                    loadInitData();
+                }
+            });
+
+            function loadInitData() {
             $.ajax({
                 url: API_URL + '?cmd=favorites',
                 type: 'GET',
@@ -218,6 +241,7 @@ function initRadioBrowser($) {
                     checkInitComplete();
                 }
             });
+            }
         }
     });
 
@@ -438,6 +462,72 @@ function initRadioBrowser($) {
                 console.log('[RB DEBUG] Debug mode disabled.');
             }
         });
+
+        // Debug Timer
+        var debugTimerState = { delayTimer: null, durationTimer: null };
+        var timerStatus = $('#rb-debug-timer-status');
+        var timerStartBtn = $('#rb-debug-timer-start');
+
+        function setDebugMode(enabled) {
+            localStorage.setItem('rb_debug_mode', enabled ? 'true' : 'false');
+            if (enabled) {
+                $('#rb-debug-mode-on').prop('checked', true);
+            } else {
+                $('#rb-debug-mode-off').prop('checked', true);
+            }
+        }
+
+        function clearDebugTimers() {
+            if (debugTimerState.delayTimer) { clearTimeout(debugTimerState.delayTimer); debugTimerState.delayTimer = null; }
+            if (debugTimerState.durationTimer) { clearTimeout(debugTimerState.durationTimer); debugTimerState.durationTimer = null; }
+        }
+
+        timerStartBtn.on('click', function(e) {
+            e.stopPropagation();
+            var btn = $(this);
+
+            // If running, stop it
+            if (debugTimerState.delayTimer || debugTimerState.durationTimer) {
+                clearDebugTimers();
+                setDebugMode(false);
+                timerStatus.text('Stopped').removeClass('waiting active').addClass('stopped');
+                btn.html('<i class="fa-solid fa-sharp fa-play"></i> Start');
+                notify('Debug timer stopped', '', 'info', 2000);
+                return;
+            }
+
+            var delay = Math.max(0, parseInt($('#rb-debug-delay').val()) || 0);
+            var duration = Math.max(1, parseInt($('#rb-debug-duration').val()) || 5);
+
+            btn.html('<i class="fa-solid fa-sharp fa-stop"></i> Stop');
+
+            if (delay > 0) {
+                timerStatus.text('Waiting ' + delay + 'min...').removeClass('active stopped').addClass('waiting');
+                notify('Debug timer', 'Debug starts in ' + delay + ' minutes for ' + duration + ' minutes', 'info', 3000);
+                debugTimerState.delayTimer = setTimeout(function() {
+                    debugTimerState.delayTimer = null;
+                    startDebugDuration(duration, btn);
+                }, delay * 60000);
+            } else {
+                startDebugDuration(duration, btn);
+            }
+        });
+
+        function startDebugDuration(duration, btn) {
+            setDebugMode(true);
+            timerStatus.text('Active ' + duration + 'min').removeClass('waiting stopped').addClass('active');
+            console.log('[RB DEBUG] Timer: debug mode started for ' + duration + ' minutes');
+            notify('Debug mode STARTED', 'Auto-stops in ' + duration + ' minutes', 'warning', 3000);
+
+            debugTimerState.durationTimer = setTimeout(function() {
+                debugTimerState.durationTimer = null;
+                setDebugMode(false);
+                timerStatus.text('Stopped').removeClass('waiting active').addClass('stopped');
+                btn.html('<i class="fa-solid fa-sharp fa-play"></i> Start');
+                console.log('[RB DEBUG] Timer: debug mode auto-stopped after ' + duration + ' minutes');
+                notify('Debug mode auto-stopped', 'Timer expired', 'info', 3000);
+            }, duration * 60000);
+        }
 
         // === Custom API Management (AJAX) ===
         // NOTE: Custom API add/remove handlers removed - feature hidden pending redesign
@@ -1260,7 +1350,7 @@ function initRadioBrowser($) {
             var imgTag = logoUrl ?
                 '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="' + altText + '" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
                 '<img class="rb-logo" src="/extensions/installed/radio-browser/assets/rb-default-logo.jpg" alt="' + altText + '">';
-            logoHtml = '<div class="rb-logo-wrapper">' + imgTag + '<span class="rb-moode-badge">m</span></div>';
+            logoHtml = '<div class="rb-logo-wrapper">' + imgTag + '<span class="rb-moode-badge" title="In moOde library">m</span></div>';
         } else {
             logoHtml = logoUrl ?
                 '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="' + altText + '" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :

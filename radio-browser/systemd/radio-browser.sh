@@ -98,6 +98,17 @@ else
     [[ "$STATUS" != "error" ]] && STATUS="warning"
 fi
 
+# 9. Check currentsong.txt for stations played outside Radio Browser
+#    This runs every 5 min via timer — picks up moOde UI plays between page loads
+CS_RESULT=$(curl -s --max-time 5 "http://localhost/extensions/installed/radio-browser/backend/api.php?cmd=check_currentsong" 2>/dev/null)
+CS_ADDED=$(echo "$CS_RESULT" | grep -o '"added":true' 2>/dev/null)
+if [[ -n "$CS_ADDED" ]]; then
+    CS_NAME=$(echo "$CS_RESULT" | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4)
+    echo "[+] currentsong: Added '$CS_NAME' to recently played"
+else
+    echo "[·] currentsong: No new station detected"
+fi
+
 # Summary
 echo "---"
 echo "Status: $STATUS ($ERRORS error(s))"

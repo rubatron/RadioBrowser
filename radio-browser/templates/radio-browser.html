@@ -455,6 +455,13 @@
                 <div class="rb-accordion-content">
                     <div class="rb-accordion-body">
 
+                        <p class="rb-help-text" style="margin-bottom: 0.75rem;">
+                            Browse, search and play 30,000+ internet radio stations from
+                            <a href="https://www.radio-browser.info/" target="_blank"
+                                rel="noopener">radio-browser.info</a>
+                            — fully integrated with moOde's native radio system.
+                        </p>
+
                         <!-- Compact info row -->
                         <div class="rb-info-row">
                             <span class="rb-info-chip"><span class="rb-info-label">Version</span> <span
@@ -627,6 +634,39 @@
                                     </div>
                                     <p class="rb-visibility-desc" style="color: var(--rb-accent); font-weight: 500;">
                                         Resource intensive — check browser console (F12) for [RB DEBUG] messages</p>
+                                </div>
+
+                                <!-- Debug Timer -->
+                                <div class="rb-debug-timer"
+                                    style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                                    <div class="rb-visibility-header" style="margin-bottom: 0.5rem;">
+                                        <span class="rb-visibility-label">Debug Timer</span>
+                                        <span id="rb-debug-timer-status" class="rb-debug-timer-badge">Idle</span>
+                                    </div>
+                                    <div class="rb-debug-timer-inputs">
+                                        <div class="rb-debug-timer-field">
+                                            <label for="rb-debug-delay">Start after</label>
+                                            <div class="rb-debug-timer-input-wrap">
+                                                <input type="number" id="rb-debug-delay" min="0" max="60" value="0"
+                                                    class="rb-input-small">
+                                                <span class="rb-input-unit">min</span>
+                                            </div>
+                                        </div>
+                                        <div class="rb-debug-timer-field">
+                                            <label for="rb-debug-duration">Duration</label>
+                                            <div class="rb-debug-timer-input-wrap">
+                                                <input type="number" id="rb-debug-duration" min="1" max="120" value="5"
+                                                    class="rb-input-small">
+                                                <span class="rb-input-unit">min</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="rb-debug-timer-start"
+                                            class="btn btn-small rb-btn-discrete">
+                                            <i class="fa-solid fa-sharp fa-play"></i> Start
+                                        </button>
+                                    </div>
+                                    <p class="rb-visibility-desc" style="margin-top: 0.4rem;">
+                                        Schedule debug mode: starts after delay, auto-stops after duration</p>
                                 </div>
                             </div>
                         </details>

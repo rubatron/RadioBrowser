@@ -297,9 +297,9 @@
     position: absolute;
     bottom: -2px;
     right: -2px;
-    width: 14px;
-    height: 14px;
-    font-size: 0.45rem;
+    width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
     border-radius: 2px;
     display: inline-flex;
     align-items: center;
@@ -1166,4 +1166,77 @@
     color: var(--rb-accent-alt);
     font-size: 0.5rem;
     text-shadow: 0 0 6px rgba(197, 90, 17, 0.8);
+}
+
+/* ============================================
+   Debug Timer
+   ============================================ */
+
+.rb-debug-timer-inputs {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.rb-debug-timer-field {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.rb-debug-timer-field label {
+    color: var(--rb-text-muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.rb-debug-timer-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.rb-input-small {
+    width: 3.5rem;
+    padding: 0.25rem 0.4rem;
+    background: var(--rb-bg-deep);
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: var(--rb-text-primary);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.rb-input-small:focus {
+    border-color: var(--rb-accent);
+    outline: none;
+}
+
+.rb-input-unit {
+    color: var(--rb-text-dim);
+    font-size: 0.8rem;
+}
+
+.rb-debug-timer-badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--rb-text-muted);
+}
+
+.rb-debug-timer-badge.waiting {
+    background: rgba(255, 193, 7, 0.15);
+    color: var(--rb-status-warn);
+}
+
+.rb-debug-timer-badge.active {
+    background: rgba(40, 167, 69, 0.15);
+    color: var(--rb-status-ok);
+}
+
+.rb-debug-timer-badge.stopped {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--rb-text-muted);
 }

@@ -4,5 +4,8 @@ mcp/
 .vscode/
 parkinglot.md
 
+# Backup/old files
+*.old
+
 # Legacy entries
 radio-browser/generate-logo.php

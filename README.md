@@ -77,7 +77,7 @@ ARIA roles, live regions, and keyboard navigation on the country selector and st
 
 - Logo thumbnail passthrough to moOde's Playlist if available
 - Removed the moOde radio icon from the extension header for a simpler look
-- Radio Browser as a Systemd service
+- Radio Browser service
 
 ### Detailed Changes
 
@@ -107,7 +107,7 @@ Flexible menu integration which can be configured within the Radio Browser exten
   <img src="docs/images/04-400-rb-img.png" alt="moOde Library Menu with Radio Browser" width="500">
 </p>
 
-### Player Bar
+### MoOde Player Bar
 
 <p align="center">
   <img src="docs/images/05-400-rb-img.png" alt="moOde Player Bar with Radio Browser" width="700">
@@ -115,7 +115,7 @@ Flexible menu integration which can be configured within the Radio Browser exten
 
 Radio Browser Activity Indicator — shows a Radio Browser logo in the moOde Player Bar. Acts as a shortcut to the extension.
 
-### Configure Tile
+### MoOde Configuration Menu Tile
 
 <p align="center">
   <img src="docs/images/06-400-rb-img.png" alt="moOde Configuration Settings with Radio Browser tile" width="500">
