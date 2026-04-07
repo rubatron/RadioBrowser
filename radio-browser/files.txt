@@ -1,41 +1,24 @@
 # Radio Browser Extension - File Manifest
-# This file lists all files needed for installation
-# The installer downloads this first, then fetches each file
-# Lines starting with # are comments
+# One filename per line. Lines starting with # are comments.
 
-# Core files
-manifest.json                           # Extension metadata for ext-mgr discovery and registration
-radio-browser.php                       # Main entry point — loads moOde chrome, settings, and HTML template
-radio-browser-loader.php                # Lightweight web-root loader (survives moOde's symlink cleanup)
-rb-shell-bridge.php                     # Header.php hook — injects rb-menu-inject.js into every moOde page
-info.json                               # Extended metadata: changelog, features, compatibility matrix
-version.txt                             # Single source of truth for version string (read by all components)
-install.sh                              # Interactive menu-driven installer (install/uninstall/repair/update)
-
-# Backend
-backend/api.php                         # All API endpoints (32 actions): search, play, import, settings, repair
-backend/loader-config.php               # Central path manifest — resolves extension/cache/data directories
-
-# Frontend assets
-assets/radio-browser.js                 # Frontend logic: search, playback, favorites, settings UI (~1700 lines)
-assets/radio-browser.css                # All styling: station cards, sections, toggles, moOde palette (~950 lines)
-assets/rb-menu-inject.js                # IIFE that injects Radio Browser into moOde menus, playbar, covers
-assets/rb-default-logo.jpg              # Fallback station logo when radio-browser.info has no favicon
-
-# Templates
-templates/radio-browser.html            # HTML template with ARIA roles, section tabs, search form, settings
-
-# Scripts
-scripts/fix-permissions.sh              # Reset ownership (www-data) and permissions on extension files
-scripts/test-api.sh                     # Smoke test: curl each API endpoint and report HTTP status
-scripts/flush-cache.sh                  # Clear API response cache and image cache
-scripts/clear-recently-played.sh        # Reset recently played station history
-
-# Systemd service
-systemd/radio-browser.service           # Oneshot unit — runs health check script
-systemd/radio-browser.sh                # Health check: verifies symlink, files, permissions, repairs if needed
-systemd/radio-browser.timer             # Triggers health check every 5 minutes
-
-# Documentation (not installed, repo only)
-# ARCHITECTURE.md                       # Technical design document — loader pattern, API, cover art system
-# LEGAL.md                              # License details and third-party attribution
+manifest.json
+radio-browser.php
+radio-browser-loader.php
+rb-shell-bridge.php
+info.json
+version.txt
+install.sh
+backend/api.php
+backend/loader-config.php
+assets/radio-browser.js
+assets/radio-browser.css
+assets/rb-menu-inject.js
+assets/rb-default-logo.jpg
+templates/radio-browser.html
+scripts/fix-permissions.sh
+scripts/test-api.sh
+scripts/flush-cache.sh
+scripts/clear-recently-played.sh
+systemd/radio-browser.service
+systemd/radio-browser.sh
+systemd/radio-browser.timer

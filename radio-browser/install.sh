@@ -64,8 +64,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     # Skip empty lines and comments
     [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
 
-    # Trim whitespace
-    file=$(echo "$line" | xargs)
+    # Strip inline comments and trim whitespace
+    file=$(echo "$line" | sed 's/#.*//' | xargs)
     [[ -z "$file" ]] && continue
 
     # Create subdirectory if needed
