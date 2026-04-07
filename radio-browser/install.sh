@@ -109,11 +109,16 @@ WEB_ROOT="/var/www"
 declare -A SOURCE_FILES=(
     ["manifest.json"]="${SCRIPT_DIR}/manifest.json"
     ["radio-browser.php"]="${SCRIPT_DIR}/radio-browser.php"
+    ["radio-browser-loader.php"]="${SCRIPT_DIR}/radio-browser-loader.php"
+    ["rb-shell-bridge.php"]="${SCRIPT_DIR}/rb-shell-bridge.php"
+    ["info.json"]="${SCRIPT_DIR}/info.json"
+    ["version.txt"]="${SCRIPT_DIR}/version.txt"
     ["backend/api.php"]="${SCRIPT_DIR}/backend/api.php"
+    ["backend/loader-config.php"]="${SCRIPT_DIR}/backend/loader-config.php"
     ["assets/radio-browser.js"]="${SCRIPT_DIR}/assets/radio-browser.js"
     ["assets/radio-browser.css"]="${SCRIPT_DIR}/assets/radio-browser.css"
     ["assets/rb-menu-inject.js"]="${SCRIPT_DIR}/assets/rb-menu-inject.js"
-    ["rb-shell-bridge.php"]="${SCRIPT_DIR}/rb-shell-bridge.php"
+    ["assets/rb-default-logo.jpg"]="${SCRIPT_DIR}/assets/rb-default-logo.jpg"
     ["templates/radio-browser.html"]="${SCRIPT_DIR}/templates/radio-browser.html"
     ["scripts/fix-permissions.sh"]="${SCRIPT_DIR}/scripts/fix-permissions.sh"
     ["scripts/test-api.sh"]="${SCRIPT_DIR}/scripts/test-api.sh"
@@ -122,9 +127,6 @@ declare -A SOURCE_FILES=(
     ["systemd/radio-browser.sh"]="${SCRIPT_DIR}/systemd/radio-browser.sh"
     ["systemd/radio-browser.service"]="${SCRIPT_DIR}/systemd/radio-browser.service"
     ["systemd/radio-browser.timer"]="${SCRIPT_DIR}/systemd/radio-browser.timer"
-    ["info.json"]="${SCRIPT_DIR}/info.json"
-    ["version.txt"]="${SCRIPT_DIR}/version.txt"
-    ["README.md"]="${SCRIPT_DIR}/README.md"
 )
 
 # moOde integration paths
