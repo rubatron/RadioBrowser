@@ -796,6 +796,21 @@ auto_install() {
     install_systemd_service || warning "Systemd service issue"
     echo
 
+    # Pre-cache: warm up top stations + favicons so first page load is fast
+    if [[ $errors -eq 0 ]]; then
+        echo -e "${BOLD}Warming up cache (top stations + favicons)...${NC}"
+        # Fire the default search (top 30 by clickcount) which caches API response + favicon images
+        local warmup_url="http://localhost/extensions/installed/radio-browser/backend/api.php?cmd=search"
+        local warmup_result
+        warmup_result=$(curl -s --max-time 30 "$warmup_url" 2>/dev/null)
+        if echo "$warmup_result" | grep -q '"success":true'; then
+            success "Cache warmed up — first page load will be fast"
+        else
+            warning "Cache warmup skipped (non-critical)"
+        fi
+        echo
+    fi
+
     # Summary
     if [[ $errors -eq 0 ]]; then
         echo
