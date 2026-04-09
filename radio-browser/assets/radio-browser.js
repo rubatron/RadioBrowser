@@ -821,10 +821,10 @@ function initRadioBrowser($) {
                 name: s.name,
                 stationuuid: s.stationuuid || '',
                 favicon: logoUrl,
-                country: '',
-                tags: '',
-                bitrate: 0,
-                codec: '',
+                country: s.country || '',
+                tags: s.tags || '',
+                bitrate: s.bitrate || 0,
+                codec: s.codec || '',
                 is_moode: s.is_moode || false
             });
 
@@ -1350,7 +1350,7 @@ function initRadioBrowser($) {
             var imgTag = logoUrl ?
                 '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="' + altText + '" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
                 '<img class="rb-logo" src="/extensions/installed/radio-browser/assets/rb-default-logo.jpg" alt="' + altText + '">';
-            logoHtml = '<div class="rb-logo-wrapper">' + imgTag + '<span class="rb-moode-badge" title="In moOde library">m</span></div>';
+            logoHtml = '<div class="rb-logo-wrapper">' + imgTag + '<span class="rb-mbrand-badge" title="In moOde library">m</span></div>';
         } else {
             logoHtml = logoUrl ?
                 '<img class="rb-logo" src="' + escapeHtml(logoUrl) + '" alt="' + altText + '" onerror="this.src=\'/extensions/installed/radio-browser/assets/rb-default-logo.jpg\'">' :
@@ -1369,21 +1369,24 @@ function initRadioBrowser($) {
             logoHtml +
             '<div class="rb-info">' +
                 '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
-                '<div class="rb-meta-lines">' +
-                    '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
-                    '<div class="rb-meta rb-meta-bitrate">' +
-                        ((s.bitrate ? s.bitrate + ' kbps' : '') + (s.codec ? ' ' + s.codec : '')) +
-                        (s.bitrate && s.bitrate >= 320 ? ' <span class="playback-hd-badge">HiRes</span>' : '') +
+                '<div class="rb-meta-row">' +
+                    '<div class="rb-meta-lines">' +
+                        '<div class="rb-meta rb-meta-genre">' +
+                            (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
+                        '</div>' +
+                        '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
+                        '<div class="rb-meta rb-meta-codec">' +
+                            (s.bitrate && s.bitrate >= 320 ? '<span class="playback-hd-badge">HiRes</span>' : '') +
+                            (s.codec ? '<span class="rb-codec-badge">' + escapeHtml(s.codec) + '</span>' : '') +
+                            (s.bitrate ? '<span class="rb-codec-badge">' + s.bitrate + ' kbps</span>' : '') +
+                        '</div>' +
                     '</div>' +
-                    '<div class="rb-meta rb-meta-genre">' +
-                        (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
+                    '<div class="rb-actions">' +
+                        '<button class="btn rb-play-btn" title="Play" aria-label="Play ' + escapeHtml(s.name) + '"><i class="fa-solid fa-sharp fa-play"></i></button>' +
+                        '<button class="' + addBtnClass + '" title="' + addBtnTitle + '" aria-label="' + addBtnTitle + ' ' + escapeHtml(s.name) + '">' + addBtnIcon + '</button>' +
+                        '<button class="btn rb-download-btn" title="Download .m3u" aria-label="Download ' + escapeHtml(s.name) + ' as .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
                     '</div>' +
                 '</div>' +
-            '</div>' +
-            '<div class="rb-actions">' +
-                '<button class="btn rb-play-btn" title="Play" aria-label="Play ' + escapeHtml(s.name) + '"><i class="fa-solid fa-sharp fa-play"></i></button>' +
-                '<button class="' + addBtnClass + '" title="' + addBtnTitle + '" aria-label="' + addBtnTitle + ' ' + escapeHtml(s.name) + '">' + addBtnIcon + '</button>' +
-                '<button class="btn rb-download-btn" title="Download .m3u" aria-label="Download ' + escapeHtml(s.name) + ' as .m3u"><i class="fa-solid fa-sharp fa-download"></i></button>' +
             '</div>' +
         '</div>';
     }
@@ -1741,6 +1744,18 @@ function initRadioBrowser($) {
                             }
                         });
                     } else {
+                        // Re-render station lists when moOde station visibility changes
+                        if (area === 'moode_recently') {
+                            loadRecentlyPlayed();
+                        } else if (area === 'moode_favorites') {
+                            loadAndRenderFavorites();
+                        } else if (area === 'moode_search') {
+                            // Re-run current search if results are showing
+                            var $results = $('#rb-results');
+                            if ($results.children().length > 0) {
+                                $('#rb-search-form').trigger('submit');
+                            }
+                        }
                         notify('Updated', visibilityAreaName(area) + ' visibility updated', 'success');
                     }
                 } else {

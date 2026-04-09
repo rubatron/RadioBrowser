@@ -187,13 +187,10 @@
 
     /**
      * Check if Radio Browser stream is currently playing
-     * Compares localStorage rb_playing_url against MPD current song
+     * Compares localStorage rb_playing_url against MPD current song,
+     * OR checks if current stream is in Radio Browser's recently played list
      */
     function checkRbPlaying(callback) {
-        var rbUrl = '';
-        try { rbUrl = localStorage.getItem('rb_playing_url') || ''; } catch (e) {}
-        if (!rbUrl) { callback(false); return; }
-
         var xhr = new XMLHttpRequest();
         xhr.open('GET', API_URL + '?cmd=current_status', true);
         xhr.timeout = 5000;
@@ -203,9 +200,24 @@
                     try {
                         var data = JSON.parse(xhr.responseText);
                         if (data.success && data.is_playing && data.current_url) {
-                            // Compare URLs (ignore http/https and trailing slashes)
                             var normalize = function(u) { return u.replace(/^https?:\/\//, '').replace(/\/+$/, '').toLowerCase(); };
-                            callback(normalize(rbUrl) === normalize(data.current_url));
+                            var currentNorm = normalize(data.current_url);
+
+                            // Check 1: localStorage match (station played via Radio Browser UI)
+                            var rbUrl = '';
+                            try { rbUrl = localStorage.getItem('rb_playing_url') || ''; } catch (e) {}
+                            if (rbUrl && normalize(rbUrl) === currentNorm) {
+                                callback(true);
+                                return;
+                            }
+
+                            // Check 2: current stream is in recently played (played via moOde but tracked by RB)
+                            if (data.in_recently_played) {
+                                callback(true);
+                                return;
+                            }
+
+                            callback(false);
                         } else {
                             callback(false);
                         }

@@ -1485,7 +1485,20 @@ switch ($cmd) {
         $is_playing = isset($status['state']) && $status['state'] == 'play';
         $current_url = isset($current['file']) ? $current['file'] : null;
         closeMpdSock($sock);
-        $response = ['success' => true, 'is_playing' => $is_playing, 'current_url' => $current_url];
+
+        // Check if current stream is in recently played list
+        $in_recently_played = false;
+        if ($is_playing && $current_url && str_starts_with($current_url, 'http')) {
+            $recentList = rb_get_recently_played();
+            foreach ($recentList as $entry) {
+                if ($entry['url'] === $current_url) {
+                    $in_recently_played = true;
+                    break;
+                }
+            }
+        }
+
+        $response = ['success' => true, 'is_playing' => $is_playing, 'current_url' => $current_url, 'in_recently_played' => $in_recently_played];
         break;
     case 'check_currentsong':
         // Check moOde's currentsong.txt for stations played outside Radio Browser
@@ -1499,7 +1512,7 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'Database connection failed'];
             break;
         }
-        $result = sqlQuery("SELECT station, name, logo, home_page, broadcaster, country, region FROM cfg_radio WHERE type='f'", $dbh);
+        $result = sqlQuery("SELECT station, name, logo, home_page, broadcaster, country, region, genre, bitrate, format FROM cfg_radio WHERE type='f'", $dbh);
         $favorites = [];
         if (is_array($result)) {
             foreach ($result as $row) {
@@ -1507,6 +1520,10 @@ switch ($cmd) {
                     'url' => trim($row['station']),
                     'name' => trim($row['name']),
                     'logo' => trim($row['logo']),
+                    'country' => trim($row['country'] ?? ''),
+                    'tags' => trim($row['genre'] ?? ''),
+                    'bitrate' => (int)($row['bitrate'] ?? 0),
+                    'codec' => trim($row['format'] ?? ''),
                     'is_moode' => rb_is_moode_station($row)
                 ];
             }
@@ -1564,6 +1581,20 @@ switch ($cmd) {
         $fileBasedList = rb_get_recently_played();
 
         if (!empty($fileBasedList)) {
+            // Build moOde station URL set for is_moode detection (covers old entries without the field)
+            $moodeUrls = [];
+            $dbh = sqlConnect();
+            if ($dbh) {
+                $allRadio = sqlQuery("SELECT station, home_page, broadcaster, country, region FROM cfg_radio", $dbh);
+                if (is_array($allRadio)) {
+                    foreach ($allRadio as $r) {
+                        if (rb_is_moode_station($r)) {
+                            $moodeUrls[trim($r['station'])] = true;
+                        }
+                    }
+                }
+            }
+
             $count = 0;
             foreach ($fileBasedList as $entry) {
                 if ($limit > 0 && $count >= $limit) break;
@@ -1575,7 +1606,7 @@ switch ($cmd) {
                     'tags' => $entry['tags'] ?? '',
                     'bitrate' => $entry['bitrate'] ?? 0,
                     'codec' => $entry['codec'] ?? '',
-                    'is_moode' => $entry['is_moode'] ?? false
+                    'is_moode' => isset($moodeUrls[$entry['url']])
                 ];
                 $count++;
             }
