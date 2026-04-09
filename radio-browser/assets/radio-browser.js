@@ -23,6 +23,41 @@ function initRadioBrowser($) {
                 return p1 + p2.toUpperCase();
             });
         }
+
+        /**
+         * Format country name for card display
+         * Shortens formal ISO 3166 names to common short forms
+         */
+        var COUNTRY_SHORT = {
+            'The United Kingdom Of Great Britain And Northern Ireland': 'United Kingdom',
+            'The United States Of America': 'United States',
+            'The United Arab Emirates': 'UAE',
+            'The Russian Federation': 'Russia',
+            'The Dominican Republic': 'Dominican Republic',
+            'Bosnia And Herzegovina': 'Bosnia & Herzegovina',
+            'Antigua And Barbuda': 'Antigua & Barbuda',
+            'Trinidad And Tobago': 'Trinidad & Tobago',
+            'Saint Vincent And The Grenadines': 'St. Vincent',
+            'The Democratic Republic Of The Congo': 'DR Congo'
+        };
+
+        function formatCountry(country) {
+            if (!country) return '';
+            return COUNTRY_SHORT[country] || country;
+        }
+
+        /**
+         * Format station name for card display
+         * Cleans up noise characters while preserving core identity
+         */
+        function formatStationName(name) {
+            if (!name) return '';
+            // Trim content after | that looks like metadata (codec, bitrate, format info)
+            var cleaned = name.replace(/\s*[|]\s*(MP3|AAC|OGG|FLAC|WMA|OPUS|HLS|\d+\s*k(?:bps)?).*$/i, '');
+            // Remove trailing parenthesized metadata like (128kbps), (MP3), (128k)
+            cleaned = cleaned.replace(/\s*\(\s*(MP3|AAC|OGG|FLAC|WMA|OPUS|\d+\s*k(?:bps)?)\s*\)\s*$/i, '');
+            return cleaned.trim();
+        }
     'use strict';
 
     var API_URL = '/extensions/installed/radio-browser/backend/api.php';
@@ -1368,13 +1403,13 @@ function initRadioBrowser($) {
         return '<div class="' + cardClass + '" data-station-index="' + storeIndex + '" data-url="' + escapeHtml(url) + '" data-name="' + escapeHtml(s.name) + '" data-stationuuid="' + escapeHtml(uuid) + '">' +
             logoHtml +
             '<div class="rb-info">' +
-                '<div class="rb-name">' + escapeHtml(s.name) + '</div>' +
+                '<div class="rb-name">' + escapeHtml(formatStationName(s.name)) + '</div>' +
                 '<div class="rb-meta-row">' +
                     '<div class="rb-meta-lines">' +
                         '<div class="rb-meta rb-meta-genre">' +
                             (s.tags ? capitalizeFirstWord(s.tags.split(',')[0]) : '') +
                         '</div>' +
-                        '<div class="rb-meta rb-meta-country">' + (s.country || '') + '</div>' +
+                        '<div class="rb-meta rb-meta-country">' + escapeHtml(formatCountry(s.country)) + '</div>' +
                         '<div class="rb-meta rb-meta-codec">' +
                             (s.bitrate && s.bitrate >= 320 ? '<span class="playback-hd-badge">HiRes</span>' : '') +
                             (s.codec ? '<span class="rb-codec-badge">' + escapeHtml(s.codec) + '</span>' : '') +
