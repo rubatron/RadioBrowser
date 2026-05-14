@@ -1,10 +1,16 @@
 /*!
  * RubaTron's Radio Browser Extension for moOde Audio Player
- * Frontend JavaScript
+ *
+ * File:        assets/radio-browser.js
+ * Function:    Frontend JavaScript — search UI, station card rendering,
+ *              recently-played, favorites, settings, and AJAX integration
+ *              with backend/api.php.
+ * Created:     2026-01-09
+ * Modified:    2026-05-14
+ * Version:     see /radio-browser/version.txt (single source of truth)
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * 2026 RubaTron
- * Version: 4.0.0
+ * © 2026 RubaTron
  */
 
 (function waitForJQuery() {
@@ -926,6 +932,20 @@ function initRadioBrowser($) {
                 state.loading = false;
                 showLoading(false);
                 if (data.success && data.stations && data.stations.length > 0) {
+                    // Sort: stations starting with query first, then contains, preserve API order within groups
+                    var query = ($('#rb-name').val() || '').trim().toLowerCase();
+                    if (query) {
+                        var startsWith = [];
+                        var contains = [];
+                        data.stations.forEach(function(s) {
+                            if (s.name.toLowerCase().indexOf(query) === 0) {
+                                startsWith.push(s);
+                            } else {
+                                contains.push(s);
+                            }
+                        });
+                        data.stations = startsWith.concat(contains);
+                    }
                     renderStations(data.stations);
                     updatePagination(data.stations.length);
                 } else {
@@ -1093,6 +1113,7 @@ function initRadioBrowser($) {
                     try {
                         localStorage.setItem('rb_playing_url', stationData.url);
                         localStorage.setItem('rb_playing_name', stationData.name);
+                        localStorage.setItem('rb_playing_is_moode', stationData.is_moode ? '1' : '0');
                     } catch (e) {}
 
                     // Mark ALL cards with this URL as playing (both recently played and search results)
@@ -1138,6 +1159,7 @@ function initRadioBrowser($) {
             try {
                 localStorage.removeItem('rb_playing_url');
                 localStorage.removeItem('rb_playing_name');
+                localStorage.removeItem('rb_playing_is_moode');
             } catch (e) {}
 
             notify('Stopped', 'Playback stopped', 'info');

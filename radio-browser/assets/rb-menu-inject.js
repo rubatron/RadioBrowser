@@ -1,13 +1,16 @@
 /**
- * Radio Browser Menu Injection Script (Simplified)
+ * RubaTron's Radio Browser Extension for moOde Audio Player
  *
- * Injects Radio Browser entries into moOde menus:
- * - Library dropdown
- * - M Menu (settings)
- * - Configure modal tile
+ * File:        assets/rb-menu-inject.js
+ * Function:    Injects Radio Browser entries into moOde menus (Library
+ *              dropdown, M-menu, Configure modal tile) and drives the
+ *              activity glow on the playbar / coverview icons.
+ * Created:     2026-03-23
+ * Modified:    2026-05-14
+ * Version:     see /radio-browser/version.txt (single source of truth)
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * 2026 RubaTron
+ * © 2026 RubaTron
  */
 (function() {
     'use strict';
@@ -187,10 +190,20 @@
 
     /**
      * Check if Radio Browser stream is currently playing
-     * Compares localStorage rb_playing_url against MPD current song,
-     * OR checks if current stream is in Radio Browser's recently played list
+     * Only matches if the station was started via Radio Browser UI (localStorage)
      */
     function checkRbPlaying(callback) {
+        var rbUrl = '';
+        try { rbUrl = localStorage.getItem('rb_playing_url') || ''; } catch (e) {}
+
+        // No Radio Browser URL stored — not playing via RB
+        if (!rbUrl) { callback(false); return; }
+
+        // moOde stations (M badge) never trigger activity light
+        try {
+            if (localStorage.getItem('rb_playing_is_moode') === '1') { callback(false); return; }
+        } catch (e) {}
+
         var xhr = new XMLHttpRequest();
         xhr.open('GET', API_URL + '?cmd=current_status', true);
         xhr.timeout = 5000;
@@ -201,26 +214,13 @@
                         var data = JSON.parse(xhr.responseText);
                         if (data.success && data.is_playing && data.current_url) {
                             var normalize = function(u) { return u.replace(/^https?:\/\//, '').replace(/\/+$/, '').toLowerCase(); };
-                            var currentNorm = normalize(data.current_url);
-
-                            // Check 1: localStorage match (station played via Radio Browser UI)
-                            var rbUrl = '';
-                            try { rbUrl = localStorage.getItem('rb_playing_url') || ''; } catch (e) {}
-                            if (rbUrl && normalize(rbUrl) === currentNorm) {
+                            // Only glow if MPD is playing the exact URL that was started via Radio Browser
+                            if (normalize(rbUrl) === normalize(data.current_url)) {
                                 callback(true);
                                 return;
                             }
-
-                            // Check 2: current stream is in recently played (played via moOde but tracked by RB)
-                            if (data.in_recently_played) {
-                                callback(true);
-                                return;
-                            }
-
-                            callback(false);
-                        } else {
-                            callback(false);
                         }
+                        callback(false);
                     } catch (e) { callback(false); }
                 } else {
                     callback(false);
