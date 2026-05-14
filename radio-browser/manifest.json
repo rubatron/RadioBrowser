@@ -1,7 +1,11 @@
 {
+    "_file": "manifest.json",
+    "_function": "Extension manifest — declares id, version (synced from version.txt by bump-version.ps1), assets, requirements and entry points. Read by the moOde extension loader and the install.sh deployment script.",
+    "_created": "2026-01-09",
+    "_modified": "2026-05-14",
     "id": "radio-browser",
     "name": "Radio Browser",
-    "version": "4.0.0",
+    "version": "4.0.7",
     "description": "RubaTron's Radio Browser Extension for moOde Audio Player",
     "type": "source",
     "author": "Rubatron",

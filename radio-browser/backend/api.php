@@ -2,11 +2,17 @@
 
 /**
  * RubaTron's Radio Browser Extension for moOde Audio Player
- * Backend API
+ *
+ * File:        backend/api.php
+ * Function:    Backend API — handles all frontend AJAX requests (search, play,
+ *              favorites, recently-played, settings, service status, etc.).
+ *              Single entry point dispatched by ?cmd=<action>.
+ * Created:     2026-01-04
+ * Modified:    2026-05-14
+ * Version:     see /radio-browser/version.txt (single source of truth)
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * 2026 RubaTron
- * Version: 4.0.0
+ * © 2026 RubaTron
  */
 
 // --- EXTENSIEVE BACKEND LOGGING ---
@@ -970,14 +976,25 @@ switch ($cmd) {
         $checks['mpd'] = ['ok' => $mpdOk, 'detail' => $mpdOk ? 'Connected' : 'Not reachable'];
         if (!$mpdOk && $overall !== 'error') $overall = 'warning';
 
-        // Read version
+        // Read version (version.txt is the single source of truth)
         $versionFile = $extBase . '/version.txt';
         $version = file_exists($versionFile) ? trim(file_get_contents($versionFile)) : 'unknown';
+
+        // Detect moOde core OS version (best-effort, multiple sources)
+        $moodeVersion = 'unknown';
+        $moodeutl = trim((string)@shell_exec('command -v moodeutl 2>/dev/null'));
+        if ($moodeutl !== '') {
+            $out = trim((string)@shell_exec($moodeutl . ' --mooderel 2>/dev/null'));
+            if ($out !== '') {
+                $moodeVersion = trim(explode(' ', $out)[0]);
+            }
+        }
 
         $response = [
             'success' => true,
             'status' => $overall,
             'version' => $version,
+            'moode_version' => $moodeVersion,
             'checks' => $checks,
             'timestamp' => time()
         ];

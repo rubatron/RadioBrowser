@@ -1,6 +1,10 @@
 {
+    "_file": "info.json",
+    "_function": "Public extension info — user-facing metadata, feature list and changelog displayed in the Radio Browser Extension Info panel and on the GitHub README.",
+    "_created": "2026-01-09",
+    "_modified": "2026-05-14",
     "name": "RubaTron's Radio Browser Extension",
-    "version": "4.0.0",
+    "version": "4.0.7",
     "author": "RubaTron",
     "license": "GPL-3.0-or-later",
     "description": "Browse and play internet radio stations from radio-browser.info",
