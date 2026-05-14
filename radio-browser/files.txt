@@ -1,5 +1,14 @@
-# Radio Browser Extension - File Manifest
-# One filename per line. Lines starting with # are comments.
+# ============================================================================
+# RubaTron's Radio Browser Extension for moOde Audio Player
+# ============================================================================
+# File:        files.txt
+# Function:    File manifest used by install.sh — lists every file that must
+#              be deployed to /var/www/extensions/installed/radio-browser/.
+#              One filename per line. Lines starting with # are comments.
+# Created:     2026-01-09
+# Modified:    2026-05-14
+# Version:     see /radio-browser/version.txt (single source of truth)
+# ============================================================================
 
 manifest.json
 radio-browser.php

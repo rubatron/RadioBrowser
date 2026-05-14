@@ -1,13 +1,19 @@
 <?php
 
 /**
- * Radio Browser Shell Bridge
+ * RubaTron's Radio Browser Extension for moOde Audio Player
  *
- * This bridge is included from moOde's header.php and injects
- * the Radio Browser menu injection script on every page.
+ * File:        rb-shell-bridge.php
+ * Function:    Shell bridge included from moOde's header.php on every page.
+ *              Injects the Radio Browser menu injection script
+ *              (assets/rb-menu-inject.js) and the activity-glow CSS so the
+ *              extension is reachable from the moOde shell UI.
+ * Created:     2026-03-23
+ * Modified:    2026-05-14
+ * Version:     see /radio-browser/version.txt (single source of truth)
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * 2026 RubaTron
+ * © 2026 RubaTron
  */
 
 // Prevent double loading

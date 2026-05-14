@@ -1,3 +1,18 @@
+# ============================================================================
+# RubaTron's Radio Browser Extension for moOde Audio Player
+# ============================================================================
+# File:        systemd/radio-browser.timer
+# Function:    Timer unit that triggers radio-browser.service — runs once
+#              90s after boot and then every 5 minutes to keep webroot
+#              loaders alive after moOde's symlink cleanup.
+# Created:     2026-04-06
+# Modified:    2026-05-14
+# Version:     see /radio-browser/version.txt (single source of truth)
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+# © 2026 RubaTron
+# ============================================================================
+
 [Unit]
 Description=Radio Browser Timer
 After=nginx.service mpd.service

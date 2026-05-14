@@ -1,11 +1,17 @@
 #!/bin/bash
 # ============================================================================
-# Radio Browser Extension - Health Check Script
+# RubaTron's Radio Browser Extension for moOde Audio Player
 # ============================================================================
-# SPDX-License-Identifier: GPL-3.0-or-later
-# 2026 RubaTron
-# Version: 4.0.0
+# File:        systemd/radio-browser.sh
+# Function:    Health check script invoked by radio-browser.service / .timer.
+#              Verifies webroot loaders, header.php patch and re-deploys
+#              missing pieces after moOde's symlink cleanup.
+# Created:     2026-04-06
+# Modified:    2026-05-14
+# Version:     see /radio-browser/version.txt (single source of truth)
 #
+# SPDX-License-Identifier: GPL-3.0-or-later
+# © 2026 RubaTron
 # Called by systemd timer every 5 minutes
 # Runs as www-data (no root needed — all checks are read-only)
 # Checks: web root loader, PHP files, cache, nginx, php-fpm, API, MPD

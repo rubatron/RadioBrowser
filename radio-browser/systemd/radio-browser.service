@@ -1,3 +1,17 @@
+# ============================================================================
+# RubaTron's Radio Browser Extension for moOde Audio Player
+# ============================================================================
+# File:        systemd/radio-browser.service
+# Function:    Oneshot service unit that runs the health check script
+#              (radio-browser.sh) on boot and on schedule via .timer.
+# Created:     2026-04-06
+# Modified:    2026-05-14
+# Version:     see /radio-browser/version.txt (single source of truth)
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+# © 2026 RubaTron
+# ============================================================================
+
 [Unit]
 Description=Radio Browser Service Check
 After=nginx.service mpd.service

@@ -1,10 +1,16 @@
 #!/bin/bash
+# ============================================================================
 # RubaTron's Radio Browser Extension for moOde Audio Player
-# SPDX-License-Identifier: GPL-3.0-or-later
-# 2026 RubaTron
-# Version: 4.0.0
+# ============================================================================
+# File:        scripts/fix-permissions.sh
+# Function:    Restores correct ownership/permissions on extension files,
+#              cache directory and data directory (www-data:www-data).
+# Created:     2026-01-09
+# Modified:    2026-05-14
+# Version:     see /radio-browser/version.txt (single source of truth)
 #
-# Fix Permissions Script
+# SPDX-License-Identifier: GPL-3.0-or-later
+# © 2026 RubaTron
 
 # Extension base path
 EXT_PATH="/var/www/extensions/installed/radio-browser"

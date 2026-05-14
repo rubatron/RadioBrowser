@@ -1,13 +1,17 @@
 <?php
 
 /**
- * Radio Browser Extension - Web Root Loader
+ * RubaTron's Radio Browser Extension for moOde Audio Player
  *
- * This lightweight loader lives in /var/www/ and includes the actual extension.
- * It's a physical file (not a symlink) so it survives moOde's periodic
- * maintenance that deletes all symlinks in /var/www/ (worker.php).
- *
- * Paths are defined in backend/loader-config.php — the single source of truth.
+ * File:        radio-browser-loader.php
+ * Function:    Web Root Loader — lightweight stub deployed in /var/www/ that
+ *              includes the actual extension entry point. Physical file (not
+ *              a symlink) so it survives moOde's periodic worker.php cleanup
+ *              that deletes all symlinks in /var/www/. Paths come from
+ *              backend/loader-config.php (single source of truth).
+ * Created:     2026-04-06
+ * Modified:    2026-05-14
+ * Version:     see /radio-browser/version.txt (single source of truth)
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  * 2026 RubaTron

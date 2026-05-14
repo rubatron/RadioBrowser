@@ -1,17 +1,20 @@
 <?php
 
 /**
- * Radio Browser Extension - Loader Configuration
+ * RubaTron's Radio Browser Extension for moOde Audio Player
  *
- * Central manifest defining all paths managed by the extension.
- * Used by: radio-browser-loader.php, health.sh, api.php (repair), install.sh
- *
- * The 'webroot_files' array defines files that must exist in /var/www/.
- * moOde's worker.php deletes all symlinks there during maintenance,
- * so we deploy physical loader files that survive the cleanup.
+ * File:        backend/loader-config.php
+ * Function:    Central manifest defining all paths managed by the extension.
+ *              Used by radio-browser-loader.php, health.sh, api.php (repair)
+ *              and install.sh. The 'webroot_files' array lists files that
+ *              must exist in /var/www/ — deployed as physical loader files
+ *              so they survive moOde's periodic symlink cleanup.
+ * Created:     2026-04-06
+ * Modified:    2026-05-14
+ * Version:     see /radio-browser/version.txt (single source of truth)
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
- * 2026 RubaTron
+ * © 2026 RubaTron
  */
 
 return [

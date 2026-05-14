@@ -1,3 +1,17 @@
+/*!
+ * RubaTron's Radio Browser Extension for moOde Audio Player
+ *
+ * File:        assets/radio-browser.css
+ * Function:    All styling for the Radio Browser extension — theme variables,
+ *              station cards, accordions, modals, badges, activity glow.
+ * Created:     2026-01-09
+ * Modified:    2026-05-14
+ * Version:     see /radio-browser/version.txt (single source of truth)
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * © 2026 RubaTron
+ */
+
 /* ============================================
    Theme Variables
    Change these values to customize the color scheme
@@ -56,19 +70,6 @@
     margin-right: 0;
     filter: brightness(85%);
 }
-
-/********************************************************************************
- * RubaTron's Radio Browser Extension for moOde Audio Player
- * Stylesheet
- *
- * SPDX-License-Identifier: GPL-3.0-or-later
- * 2026 RubaTron
- * Version: 4.0.0
- *
- * Radio Browser specific CSS - extends moOde's styles.min.css
- * This file only contains Radio Browser specific styles.
- * Base styles (buttons, forms, layout) are inherited from /css/styles.min.css
- ********************************************************************************/
 
 /* ============================================
    Service Status Dot

@@ -2,12 +2,17 @@
 # ============================================================================
 # RubaTron's Radio Browser Extension for moOde Audio Player
 # ============================================================================
-# SPDX-License-Identifier: GPL-3.0-or-later
-# 2026 RubaTron
-# Version: 4.0.0
-# Date: April 2026
+# File:        install.sh
+# Function:    Interactive installer with menu — install / update / uninstall
+#              the Radio Browser extension on a moOde system. Handles file
+#              deployment, webroot loaders, header.php patch, sudoers entries
+#              and systemd units.
+# Created:     2026-01-09
+# Modified:    2026-05-14
+# Version:     see /radio-browser/version.txt (single source of truth)
 #
-# Interactive installer with menu for moOde Radio Browser Extension
+# SPDX-License-Identifier: GPL-3.0-or-later
+# © 2026 RubaTron
 #
 # This script provides a menu-driven installation process with options to:
 # - Fully automatic installation

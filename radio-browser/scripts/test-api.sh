@@ -1,10 +1,16 @@
 #!/bin/bash
+# ============================================================================
 # RubaTron's Radio Browser Extension for moOde Audio Player
-# SPDX-License-Identifier: GPL-3.0-or-later
-# 2026 RubaTron
-# Version: 4.0.0
+# ============================================================================
+# File:        scripts/test-api.sh
+# Function:    Smoke-tests the radio-browser.info API endpoints used by the
+#              extension and reports reachability + latency.
+# Created:     2026-01-09
+# Modified:    2026-05-14
+# Version:     see /radio-browser/version.txt (single source of truth)
 #
-# Test API Connection Script
+# SPDX-License-Identifier: GPL-3.0-or-later
+# © 2026 RubaTron
 
 echo "Radio Browser: Testing API connections..."
 echo ""
