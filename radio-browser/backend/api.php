@@ -92,6 +92,36 @@ function rb_sql($sql, $params, $dbh)
 }
 
 /**
+ * Normalize a stream URL for comparison (strips scheme, trailing slashes, case).
+ * Mirrors normalizeUrl() in assets/radio-browser.js so front and back agree on identity.
+ */
+function rb_normalize_url($url)
+{
+    $url = trim((string)$url);
+    if ($url === '') return '';
+    $url = preg_replace('#^https?://#i', '', $url);
+    $url = rtrim($url, '/');
+    return strtolower($url);
+}
+
+/**
+ * Collapse duplicate cfg_radio rows for a given stream URL, keeping the lowest id.
+ * cfg_radio has no UNIQUE constraint on station, so the non-atomic check-then-insert
+ * in the import handler can leave identical rows behind. Call after add/promote so the
+ * favorites list self-heals to one row per stream.
+ */
+function rb_dedup_station($url, $dbh)
+{
+    $url = trim((string)$url);
+    if ($url === '') return;
+    rb_sql(
+        "DELETE FROM cfg_radio WHERE station = ? AND id NOT IN (SELECT MIN(id) FROM cfg_radio WHERE station = ?)",
+        [$url, $url],
+        $dbh
+    );
+}
+
+/**
  * Detect if a cfg_radio row is a moOde core station (not imported by Radio Browser).
  * Core stations have metadata (broadcaster/country/region) and home_page != 'radio-browser'.
  */
@@ -1372,6 +1402,7 @@ switch ($cmd) {
             rb_debug_log('Promoting existing station to favorite: ' . $existingName . ' (type: ' . $existingType . ' -> f)');
             $result = rb_sql("UPDATE cfg_radio SET type='f' WHERE station = ?", [$url], $dbh);
             if ($result === true) {
+                rb_dedup_station($url, $dbh);
                 $response = ['success' => true, 'message' => 'Station added to favorites'];
             } else {
                 $response = ['success' => false, 'message' => 'Failed to update station'];
@@ -1456,6 +1487,8 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'Failed to add station to database'];
             break;
         }
+        // Collapse any duplicate rows created by a concurrent import of the same stream
+        rb_dedup_station($url, $dbh);
 
         // Create .pls file for MPD (required for moOde Radio Stations browser)
         $plsFile = '/var/lib/mpd/music/RADIO/' . $name . '.pls';
@@ -1529,10 +1562,18 @@ switch ($cmd) {
             $response = ['success' => false, 'message' => 'Database connection failed'];
             break;
         }
-        $result = sqlQuery("SELECT station, name, logo, home_page, broadcaster, country, region, genre, bitrate, format FROM cfg_radio WHERE type='f'", $dbh);
+        $result = sqlQuery("SELECT station, name, logo, home_page, broadcaster, country, region, genre, bitrate, format FROM cfg_radio WHERE type='f' ORDER BY id", $dbh);
         $favorites = [];
+        // Dedup by normalized stream URL: cfg_radio has no UNIQUE constraint on station,
+        // so identical rows can accumulate (races / legacy data). Keep the first seen.
+        $seen = [];
         if (is_array($result)) {
             foreach ($result as $row) {
+                $key = rb_normalize_url($row['station']);
+                if ($key !== '' && isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
                 $favorites[] = [
                     'url' => trim($row['station']),
                     'name' => trim($row['name']),

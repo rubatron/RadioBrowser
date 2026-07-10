@@ -85,7 +85,6 @@ function initRadioBrowser($) {
         recentStationData: [],     // Recently played stations (separate to prevent memory leak)
         favoriteStationData: [],   // Favorites section stations
         favorites: [],
-        favoriteNames: [],         // Station names for matching when URLs differ
         favoritesMap: {},
         recentlyPlayed: [],
         countries: [],
@@ -105,36 +104,19 @@ function initRadioBrowser($) {
     }
 
     /**
-     * Normalize name for comparison (lowercase, trim whitespace)
+     * Check if station is in favorites by stream URL.
+     * A favorite's identity is its stream URL (url_resolved), which is also how
+     * moOde stores favorites. Matching by name is intentionally NOT done: distinct
+     * radio-browser entries pointing to the same stream (or sharing a name) must not
+     * all light up as favorited when only one is actually in the list.
      */
-    function normalizeName(name) {
-        if (!name) return '';
-        return name.toLowerCase().trim();
-    }
+    function isInFavorites(url) {
+        if (!url) return false;
 
-    /**
-     * Check if station is in favorites (by URL or name)
-     */
-    function isInFavorites(url, name) {
-        if (!url && !name) return false;
-
-        // Check by URL first
-        if (url) {
-            var normalizedUrl = normalizeUrl(url);
-            for (var i = 0; i < state.favorites.length; i++) {
-                if (normalizeUrl(state.favorites[i]) === normalizedUrl) {
-                    return true;
-                }
-            }
-        }
-
-        // Also check by name (handles different URLs for same station)
-        if (name) {
-            var normalizedName = normalizeName(name);
-            for (var i = 0; i < state.favoriteNames.length; i++) {
-                if (normalizeName(state.favoriteNames[i]) === normalizedName) {
-                    return true;
-                }
+        var normalizedUrl = normalizeUrl(url);
+        for (var i = 0; i < state.favorites.length; i++) {
+            if (normalizeUrl(state.favorites[i]) === normalizedUrl) {
+                return true;
             }
         }
 
@@ -219,9 +201,6 @@ function initRadioBrowser($) {
                     state.favorites = initData.favorites.map(function(f) {
                         return typeof f === 'string' ? f : f.url;
                     });
-                    state.favoriteNames = initData.favorites.map(function(f) {
-                        return typeof f === 'object' && f.name ? f.name : '';
-                    }).filter(function(n) { return n; });
                     state.favoritesMap = {};
                     initData.favorites.forEach(function(f) {
                         var url = typeof f === 'string' ? f : f.url;
@@ -802,7 +781,7 @@ function initRadioBrowser($) {
 
             html.push(buildStationCard(
                 { url: s.url, name: s.name, stationuuid: s.stationuuid, logoUrl: logoUrl, country: s.country, tags: s.tags, bitrate: s.bitrate, codec: s.codec, is_moode: s.is_moode },
-                index, 'rb-recent-card', isInFavorites(s.url, s.name)
+                index, 'rb-recent-card', isInFavorites(s.url)
             ));
         });
 
@@ -1034,6 +1013,25 @@ function initRadioBrowser($) {
             filteredStations = stations.filter(function(s) { return !s.is_moode; });
         }
 
+        // Collapse entries that resolve to the same stream URL. radio-browser.info
+        // often returns several catalog entries per stream; rendering them all clutters
+        // results and makes many cards light up as favorited when only one is in the
+        // list. Keep one card per stream, preferring an entry that carries a logo.
+        var deduped = [];
+        var dedupIndex = {};
+        filteredStations.forEach(function(s) {
+            var key = normalizeUrl((s.url_resolved || s.url || '').trim());
+            if (key === '') { deduped.push(s); return; }
+            if (dedupIndex[key] === undefined) {
+                dedupIndex[key] = deduped.length;
+                deduped.push(s);
+            } else if (!deduped[dedupIndex[key]].favicon && s.favicon) {
+                // Upgrade the kept entry to one that has a logo, keeping its position.
+                deduped[dedupIndex[key]] = s;
+            }
+        });
+        filteredStations = deduped;
+
         $('#rb-result-count').text('(' + filteredStations.length + ' stations)');
         announceToScreenReader(filteredStations.length + ' stations found');
 
@@ -1055,7 +1053,7 @@ function initRadioBrowser($) {
 
             html.push(buildStationCard(
                 { url: stationData.url, name: s.name, stationuuid: s.stationuuid, favicon: s.favicon, country: s.country, tags: s.tags, bitrate: s.bitrate, codec: s.codec, is_moode: s.is_moode },
-                index, '', isInFavorites(stationData.url, stationData.name)
+                index, '', isInFavorites(stationData.url)
             ));
         });
 
@@ -1249,15 +1247,10 @@ function initRadioBrowser($) {
      * This ensures both Recently Played and Search Results cards stay in sync
      */
     function updateFavoriteState(url, isFavorite, stationData) {
-        var name = stationData ? stationData.name : null;
-
         if (isFavorite) {
             // Add to state
-            if (!isInFavorites(url, null)) {
+            if (!isInFavorites(url)) {
                 state.favorites.push(url);
-            }
-            if (name && state.favoriteNames.indexOf(name) === -1) {
-                state.favoriteNames.push(name);
             }
             if (stationData) {
                 state.favoritesMap[url] = stationData;
@@ -1267,12 +1260,6 @@ function initRadioBrowser($) {
             var idx = state.favorites.indexOf(url);
             if (idx > -1) {
                 state.favorites.splice(idx, 1);
-            }
-            if (name) {
-                var nameIdx = state.favoriteNames.indexOf(name);
-                if (nameIdx > -1) {
-                    state.favoriteNames.splice(nameIdx, 1);
-                }
             }
             delete state.favoritesMap[url];
         }
